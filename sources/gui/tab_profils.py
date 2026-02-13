@@ -42,6 +42,11 @@ class TabProfils(QWidget):
         self._lbl_current.setStyleSheet("color: #1f77b4; font-weight: bold;")
         ctrl_layout.addWidget(self._lbl_current)
 
+        self._chk_porc_current = QCheckBox("Courbure")
+        self._chk_porc_current.setChecked(True)
+        self._chk_porc_current.stateChanged.connect(self._on_toggle_porc_current)
+        ctrl_layout.addWidget(self._chk_porc_current)
+
         ctrl_layout.addSpacing(20)
 
         # Degre Bezier
@@ -63,6 +68,12 @@ class TabProfils(QWidget):
         self._lbl_reference = QLabel("NACA 0012")
         self._lbl_reference.setStyleSheet("color: #d62728; font-weight: bold;")
         ctrl_layout.addWidget(self._lbl_reference)
+
+        self._chk_porc_reference = QCheckBox("Courbure")
+        self._chk_porc_reference.setChecked(True)
+        self._chk_porc_reference.stateChanged.connect(
+            self._on_toggle_porc_reference)
+        ctrl_layout.addWidget(self._chk_porc_reference)
 
         ctrl_layout.addStretch()
         layout.addLayout(ctrl_layout)
@@ -93,6 +104,14 @@ class TabProfils(QWidget):
     def _on_toggle_reference(self, state):
         """Affiche/masque le profil de reference."""
         self._canvas.set_show_reference(state == Qt.Checked.value)
+
+    def _on_toggle_porc_current(self, state):
+        """Affiche/masque les porcupines du profil courant."""
+        self._canvas.set_show_porcupines_current(state == Qt.Checked.value)
+
+    def _on_toggle_porc_reference(self, state):
+        """Affiche/masque les porcupines du profil de reference."""
+        self._canvas.set_show_porcupines_reference(state == Qt.Checked.value)
 
     def _on_degree_changed(self, degree):
         """Change le degre des Beziers du profil courant (si en mode Bezier)."""
@@ -168,7 +187,7 @@ class TabProfils(QWidget):
             self,
             "Sauvegarder le profil courant",
             "%s.dat" % self._profil_current.name,
-            "Selig (*.dat);;Lednicer (*.dat);;CSV (*.csv)"
+            u"Selig (*.dat);;Lednicer (*.dat);;B\u00e9zier (*.bez);;CSV (*.csv)"
         )
         if not filepath:
             return None, None
@@ -177,6 +196,8 @@ class TabProfils(QWidget):
             fmt = 'csv'
         elif "Lednicer" in selected_filter:
             fmt = 'lednicer'
+        elif "zier" in selected_filter:
+            fmt = 'bezier'
         else:
             fmt = 'selig'
 

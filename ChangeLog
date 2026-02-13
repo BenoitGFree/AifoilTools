@@ -1,5 +1,31 @@
 # Changelog
 
+## [Non publié] - 2026-02-14 00:30
+
+### Added (Ajouté)
+- **Format Bézier (.bez)** dans `profil.py` :
+  - `_write_bezier()` : sauvegarde les points de contrôle (EXTRADOS/INTRADOS)
+  - `_read_bezier()` : charge un profil en mode Bézier depuis un `.bez`
+  - Détection automatique du format via l'extension `.bez`
+  - Intégré dans `write()`, `from_file()` et `_detect_format()`
+- **Checkboxes Courbure** dans `tab_profils.py` :
+  - Activation/désactivation indépendante des porcupines courant et référence
+  - `set_show_porcupines_current()` / `set_show_porcupines_reference()` dans le canvas
+- **Enveloppes de courbure** dans `profil_canvas.py` :
+  - Ligne reliant les sommets des porcupines (trait fin, couleur du profil)
+  - 4 artists `_env_current_ext/int`, `_env_ref_ext/int`
+- **Menu contextuel** (clic droit) dans `profil_canvas.py` :
+  - Dialogue d'échelle courbure (`QInputDialog.getDouble`)
+  - `_porcupine_scale` : facteur d'échelle appliqué aux porcupines
+- **Contraintes de drag** dans `profil_canvas.py` :
+  - P0 et P_last (extrémités) non déplaçables
+  - P1 (à côté du BA) contraint en déplacement vertical uniquement
+
+### Changed (Modifié)
+- Porcupines inversées : les quills pointent vers l'intérieur du profil
+- Ligne moyenne du profil courant en bleu (était vert)
+- Dialogues Ouvrir/Sauvegarder : ajout du filtre Bézier (*.bez)
+
 ## [Non publié] - 2026-02-13 22:00
 
 ### Added (Ajouté)

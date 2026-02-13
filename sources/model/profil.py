@@ -494,6 +494,10 @@ class Profil(object):
         if fmt == 'auto':
             fmt = cls._detect_format(filepath)
 
+        # Format bezier : traitement separe (cree les Beziers directement)
+        if fmt == 'bezier':
+            return cls._read_bezier(filepath)
+
         readers = {
             'selig': cls._read_selig,
             'lednicer': cls._read_lednicer,
@@ -558,6 +562,10 @@ class Profil(object):
         :returns: format detecte
         :rtype: str
         """
+        # Extension .bez -> format bezier
+        if filepath.lower().endswith('.bez'):
+            return 'bezier'
+
         with open(filepath, 'r') as f:
             lines = f.readlines()
 
@@ -895,6 +903,7 @@ class Profil(object):
             'selig': self._write_selig,
             'lednicer': self._write_lednicer,
             'csv': self._write_csv,
+            'bezier': self._write_bezier,
         }
         if fmt not in writers:
             raise ValueError(
@@ -938,6 +947,97 @@ class Profil(object):
             for i in range(len(self._points)):
                 f.write('%.6f;%.6f\n'
                         % (self._points[i, 0], self._points[i, 1]))
+
+    def _write_bezier(self, filepath):
+        u"""Ecrit au format Bezier (.bez).
+
+        Format texte::
+
+            NomDuProfil
+            EXTRADOS n
+            x0 y0
+            x1 y1
+            ...
+            INTRADOS n
+            x0 y0
+            x1 y1
+            ...
+
+        ou n est le nombre de points de controle de chaque cote.
+        """
+        if not self.has_beziers:
+            raise ValueError(
+                u"Le profil n'est pas en mode Bezier. "
+                u"Utilisez approximate_bezier() d'abord.")
+
+        cp_ext = self._bezier_extrados.control_points
+        cp_int = self._bezier_intrados.control_points
+
+        with open(filepath, 'w') as f:
+            f.write('%s\n' % self._name)
+            f.write('EXTRADOS %d\n' % len(cp_ext))
+            for i in range(len(cp_ext)):
+                f.write(' %12.8f %12.8f\n' % (cp_ext[i, 0], cp_ext[i, 1]))
+            f.write('INTRADOS %d\n' % len(cp_int))
+            for i in range(len(cp_int)):
+                f.write(' %12.8f %12.8f\n' % (cp_int[i, 0], cp_int[i, 1]))
+
+    @classmethod
+    def _read_bezier(cls, filepath):
+        u"""Lit un fichier Bezier (.bez) et cree un Profil en mode Bezier.
+
+        :param filepath: chemin du fichier .bez
+        :type filepath: str
+        :returns: instance Profil avec Beziers
+        :rtype: Profil
+        """
+        with open(filepath, 'r') as f:
+            lines = f.readlines()
+
+        name = lines[0].strip()
+
+        # Parser EXTRADOS
+        idx = 1
+        parts = lines[idx].strip().split()
+        if parts[0] != 'EXTRADOS':
+            raise ValueError(u"Attendu 'EXTRADOS', lu '%s'" % parts[0])
+        n_ext = int(parts[1])
+        idx += 1
+        cp_ext = []
+        for i in range(n_ext):
+            vals = lines[idx + i].strip().split()
+            cp_ext.append([float(vals[0]), float(vals[1])])
+        idx += n_ext
+
+        # Parser INTRADOS
+        parts = lines[idx].strip().split()
+        if parts[0] != 'INTRADOS':
+            raise ValueError(u"Attendu 'INTRADOS', lu '%s'" % parts[0])
+        n_int = int(parts[1])
+        idx += 1
+        cp_int = []
+        for i in range(n_int):
+            vals = lines[idx + i].strip().split()
+            cp_int.append([float(vals[0]), float(vals[1])])
+
+        cp_ext = np.array(cp_ext)
+        cp_int = np.array(cp_int)
+
+        # Creer les Beziers depuis les points de controle
+        bez_ext = Bezier(cp_ext)
+        bez_int = Bezier(cp_int)
+
+        # Reconstruire les points discrets (convention Selig)
+        ext_pts = bez_ext.points      # BA -> BF
+        int_pts = bez_int.points      # BA -> BF
+        points = np.vstack([ext_pts[::-1], int_pts[1:]])  # BF->ext->BA->int->BF
+
+        profil = cls(points, name=name)
+        profil._bezier_extrados = bez_ext
+        profil._bezier_intrados = bez_int
+        profil._output_path = filepath
+        profil._output_format = 'bezier'
+        return profil
 
     # ------------------------------------------------------------------
     #  Trace

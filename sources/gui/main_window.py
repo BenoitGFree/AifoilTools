@@ -124,7 +124,7 @@ class MainWindow(QMainWindow):
             self,
             "Ouvrir profil %s" % label,
             "",
-            "Profils (*.dat);;CSV (*.csv);;Tous (*)"
+            u"Profils (*.dat);;B\u00e9zier (*.bez);;CSV (*.csv);;Tous (*)"
         )
         if not filepath:
             return
