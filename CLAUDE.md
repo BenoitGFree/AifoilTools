@@ -10,58 +10,66 @@
 
 ## Python Environment
 
-- **Python** : 2.7.18 (legacy)
-- **Environnement virtuel** : `C:\Liclipse\workspace\Axile\env_axile_27\` (partagé avec Axile)
-- **Dépendances** : numpy 1.16.6, matplotlib 2.2.5, scipy 1.2.3
-- **Encodage** : UTF-8 obligatoire (`#-*-coding: utf-8 -*-` en haut de chaque fichier)
+- **Python** : 3.10+ (venv local `env_py3/`)
+- **Environnement virtuel** : `env_py3/` (créé via `py -3 -m venv env_py3`)
+- **Dépendances** : numpy, matplotlib, scipy, PySide6 (voir `requirements.txt`)
+- **Activation** : `env_py3\Scripts\activate` (Windows)
 
 ## Architecture
 
 ```
 AifoilTools/
-├── airfoiltools/           # Package principal
-│   ├── __init__.py         # Exports publics
-│   ├── bezier.py           # Courbes de Bézier 2D de degré arbitraire
-│   ├── profil.py           # Profil aérodynamique (points, NACA, Bézier)
-│   ├── analyse.py          # Comparaison multi-profils
-│   ├── simulation.py       # Orchestration simulations XFoil
-│   ├── pipeline.py         # Pipeline extensible pre/sim/post
-│   ├── base.py             # Classes abstraites (ABC)
-│   ├── foilconfig.py       # Chargement config solveurs
-│   ├── xfoil_preprocessor.py
-│   ├── xfoil_simulator.py
-│   ├── xfoil_postprocessor.py
-│   └── defaults_xfoil.cfg  # Paramètres XFoil par défaut
+├── sources/
+│   ├── __init__.py
+│   ├── model/                    # Package calcul (pip: airfoiltools)
+│   │   ├── __init__.py           # Exports publics (imports relatifs)
+│   │   ├── bezier.py             # Courbes de Bézier 2D de degré arbitraire
+│   │   ├── profil.py             # Profil aérodynamique (points, NACA, Bézier)
+│   │   ├── analyse.py            # Comparaison multi-profils
+│   │   ├── simulation.py         # Orchestration simulations XFoil
+│   │   ├── pipeline.py           # Pipeline extensible pre/sim/post
+│   │   ├── base.py               # Classes abstraites (ABC)
+│   │   ├── foilconfig.py         # Chargement config solveurs
+│   │   ├── xfoil_preprocessor.py
+│   │   ├── xfoil_simulator.py
+│   │   ├── xfoil_postprocessor.py
+│   │   └── defaults_xfoil.cfg    # Paramètres XFoil par défaut
+│   └── gui/                      # GUI PySide6 + matplotlib
+│       ├── __init__.py
+│       ├── __main__.py            # python -m gui (depuis sources/)
+│       ├── main_window.py         # QMainWindow + menus + onglets
+│       ├── tab_profils.py         # Onglet Profils (contrôles + canvas)
+│       ├── profil_canvas.py       # Canvas matplotlib interactif
+│       ├── tab_xfoil.py           # Onglet Paramétrage XFoil
+│       └── tab_results.py         # Onglet Résultats
 ├── tests/
-│   ├── test_bezier.py      # 174 tests
-│   ├── test_profil.py      # 37 tests
-│   ├── test_simulation.py  # 33 tests
-│   ├── test_foil2d.py      # Tests pipeline (sans XFoil)
-│   ├── test_foil2d_xfoil.py # Tests avec XFoil réel
-│   └── test.py             # Démo end-to-end (requiert XFoil + TkAgg)
-└── setup.py
+│   ├── test_bezier.py             # 174 tests
+│   ├── test_profil.py             # 37 tests
+│   ├── test_simulation.py         # 33 tests
+│   ├── test_foil2d.py             # Tests pipeline (sans XFoil)
+│   ├── test_foil2d_xfoil.py       # Tests avec XFoil réel
+│   └── test.py                    # Démo end-to-end
+├── run_gui.py                     # Lanceur GUI
+├── requirements.txt               # Dépendances Python 3
+└── setup.py                       # pip install (package_dir mapping)
 ```
 
-## Running Tests
+## Running
 
 ```bash
-# Tests Bezier (174 tests)
-cd C:\Liclipse\workspace\AifoilTools
-python -c "import unittest; import sys; sys.path.insert(0, 'tests'); from test_bezier import *; unittest.main(module='test_bezier', exit=False, verbosity=2)"
+# Lancer la GUI
+env_py3\Scripts\python.exe run_gui.py
 
-# Tests Profil (37 tests)
-python -c "import unittest; import sys; sys.path.insert(0, 'tests'); from test_profil import *; unittest.main(module='test_profil', exit=False, verbosity=2)"
-
-# Tests Simulation (33 tests, sans XFoil)
-python -c "import unittest; import sys; sys.path.insert(0, 'tests'); from test_simulation import *; unittest.main(module='test_simulation', exit=False, verbosity=2)"
-
-# Tests Pipeline (sans XFoil)
-python tests/test_foil2d.py
+# Tests (avec le venv Python 3)
+env_py3\Scripts\python.exe -c "import unittest; import sys; sys.path.insert(0, 'tests'); from test_bezier import *; unittest.main(module='test_bezier', exit=False, verbosity=2)"
+env_py3\Scripts\python.exe -c "import unittest; import sys; sys.path.insert(0, 'tests'); from test_profil import *; unittest.main(module='test_profil', exit=False, verbosity=2)"
+env_py3\Scripts\python.exe -c "import unittest; import sys; sys.path.insert(0, 'tests'); from test_simulation import *; unittest.main(module='test_simulation', exit=False, verbosity=2)"
+env_py3\Scripts\python.exe tests/test_foil2d.py
 ```
 
 ## Key Classes
 
-### Bezier (`airfoiltools/bezier.py`)
+### Bezier (`sources/model/bezier.py`)
 
 Courbe de Bézier 2D de degré arbitraire.
 
@@ -76,7 +84,7 @@ Courbe de Bézier 2D de degré arbitraire.
 - **Properties cachées** : `points`, `tangents`, `normals`, `curvatures`
 - **Cache** : `_cache = {}`, invalidation à deux niveaux (géométrie / échantillonnage)
 
-### Profil (`airfoiltools/profil.py`)
+### Profil (`sources/model/profil.py`)
 
 Profil aérodynamique 2D, stockage en millimètres, convention Selig.
 
@@ -92,9 +100,8 @@ Profil aérodynamique 2D, stockage en millimètres, convention Selig.
   - `clear_beziers()` : retour au mode discret
   - `points` setter efface automatiquement les Béziers
 - **I/O** : `write(path, fmt)`, formats selig/lednicer/csv
-- **Méthodes internes** : `_leading_edge_index()`, `find_leading_edge()`, `find_trailing_edge()`
 
-### Simulation / Analyse (`airfoiltools/simulation.py`, `analyse.py`)
+### Simulation / Analyse (`sources/model/simulation.py`, `analyse.py`)
 
 - **Simulation** : orchestre le pipeline XFoil pour un profil + paramètres
 - **SimulationResults** : résultats structurés, accès `get_polar(re)`, `cl_max(re)`, `finesse_max(re)`
@@ -122,16 +129,12 @@ def _invalidate(self, geometry=True):
 - `points` = points échantillonnés (pas les points de contrôle)
 - Transformations retournent `self` (chaînage)
 
-### Imports entre modules
+### Imports
 
-Les modules utilisent des imports directs (`from bezier import Bezier`) qui fonctionnent car les tests ajoutent `airfoiltools/` au `sys.path`. Pattern dans `profil.py` :
-
-```python
-try:
-    from bezier import Bezier
-except ImportError:
-    from airfoiltools.bezier import Bezier
-```
+- **Dans sources/model/** : imports relatifs explicites (`from .bezier import Bezier`)
+- **Dans sources/gui/** : imports absolus depuis `model` (`from model.profil import Profil`)
+- **Dans tests/** : `sys.path.insert(0, 'sources')` puis `from model.bezier import Bezier`
+- **pip install** : `package_dir={'airfoiltools': 'sources/model'}` → `from airfoiltools import Bezier`
 
 ## Projet parent Axile
 

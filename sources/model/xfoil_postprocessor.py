@@ -18,7 +18,7 @@ import re
 import logging
 import numpy as np
 
-from base import AbstractPostprocessor
+from .base import AbstractPostprocessor
 
 logger = logging.getLogger(__name__)
 

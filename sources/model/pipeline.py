@@ -45,9 +45,9 @@ def register_solver(name, preprocessor_cls, simulator_cls, postprocessor_cls):
 def _ensure_xfoil_registered():
     u"""Enregistre XFoil si ce n'est pas deja fait (lazy import)."""
     if 'xfoil' not in _SOLVER_REGISTRY:
-        from xfoil_preprocessor import XFoilPreprocessor
-        from xfoil_simulator import XFoilSimulator
-        from xfoil_postprocessor import XFoilPostprocessor
+        from .xfoil_preprocessor import XFoilPreprocessor
+        from .xfoil_simulator import XFoilSimulator
+        from .xfoil_postprocessor import XFoilPostprocessor
         register_solver('xfoil', XFoilPreprocessor, XFoilSimulator,
                         XFoilPostprocessor)
 

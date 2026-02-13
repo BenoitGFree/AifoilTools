@@ -29,10 +29,7 @@ import logging
 
 import numpy as np
 
-try:
-    from bezier import Bezier
-except ImportError:
-    from airfoiltools.bezier import Bezier
+from .bezier import Bezier
 
 logger = logging.getLogger(__name__)
 

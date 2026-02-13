@@ -22,9 +22,9 @@ import logging
 
 # --- Setup des chemins pour les imports ---
 _here = os.path.dirname(os.path.abspath(__file__))
-_pkg = os.path.normpath(os.path.join(_here, '..', 'airfoiltools'))
-if _pkg not in sys.path:
-    sys.path.insert(0, _pkg)
+_src = os.path.normpath(os.path.join(_here, '..', 'sources'))
+if _src not in sys.path:
+    sys.path.insert(0, _src)
 
 # --- Logging visible en console ---
 logging.basicConfig(

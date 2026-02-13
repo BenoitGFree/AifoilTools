@@ -25,16 +25,16 @@ import tempfile
 import shutil
 import numpy as np
 
-# Ajouter le repertoire airfoiltools/ au path
+# Ajouter le repertoire sources/ au path
 _here = os.path.dirname(os.path.abspath(__file__))
-_pkg = os.path.normpath(os.path.join(_here, '..', 'airfoiltools'))
-if _pkg not in sys.path:
-    sys.path.insert(0, _pkg)
+_src = os.path.normpath(os.path.join(_here, '..', 'sources'))
+if _src not in sys.path:
+    sys.path.insert(0, _src)
 
-from foilconfig import load_defaults, merge_params, load_config
-from xfoil_preprocessor import XFoilPreprocessor
-from xfoil_postprocessor import XFoilPostprocessor
-from pipeline import FoilAnalysisPipeline
+from model.foilconfig import load_defaults, merge_params, load_config
+from model.xfoil_preprocessor import XFoilPreprocessor
+from model.xfoil_postprocessor import XFoilPostprocessor
+from model.pipeline import FoilAnalysisPipeline
 
 
 def make_naca0012(n=50):

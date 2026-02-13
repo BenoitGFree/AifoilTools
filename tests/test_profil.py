@@ -19,13 +19,13 @@ import math
 
 import numpy as np
 
-# Ajouter le repertoire airfoiltools/ au path
+# Ajouter le repertoire sources/ au path
 _here = os.path.dirname(os.path.abspath(__file__))
-_pkg = os.path.normpath(os.path.join(_here, '..', 'airfoiltools'))
-if _pkg not in sys.path:
-    sys.path.insert(0, _pkg)
+_src = os.path.normpath(os.path.join(_here, '..', 'sources'))
+if _src not in sys.path:
+    sys.path.insert(0, _src)
 
-from profil import Profil
+from model.profil import Profil
 
 
 class TestProfilNaca(unittest.TestCase):

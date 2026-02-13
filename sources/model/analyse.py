@@ -178,7 +178,7 @@ class Analyse(object):
 
         Pour chaque simulation et chaque Reynolds : CL_max, finesse_max.
         """
-        from simulation import SimulationResults
+        from .simulation import SimulationResults
         for e in self._entries:
             sim = e['simulation']
             name = e['name']

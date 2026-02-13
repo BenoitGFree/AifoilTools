@@ -5,3 +5,6 @@ dist/
 build/
 .eggs/
 *.egg
+env_py3/
+.vscode/
+.claude/

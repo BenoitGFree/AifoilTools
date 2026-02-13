@@ -541,7 +541,7 @@ class Simulation(object):
         :param work_dir: repertoire de travail (None = temporaire)
         :type work_dir: str or None
         """
-        from profil import Profil
+        from .profil import Profil
         if not isinstance(profil, Profil):
             raise TypeError(
                 u"profil doit etre une instance de Profil, pas %s"
@@ -559,7 +559,7 @@ class Simulation(object):
         self._work_dir = work_dir
 
         # Fusionner les parametres
-        from foilconfig import load_defaults, merge_params
+        from .foilconfig import load_defaults, merge_params
         try:
             defaults = load_defaults(solver)
         except IOError:
@@ -641,8 +641,8 @@ class Simulation(object):
         self._error = None
 
         try:
-            from profil import Profil
-            from pipeline import FoilAnalysisPipeline
+            from .profil import Profil
+            from .pipeline import FoilAnalysisPipeline
 
             # Copier et normaliser le profil pour le solveur
             p_temp = Profil(self._profil.points.copy(),
@@ -680,8 +680,8 @@ class Simulation(object):
         :returns: liste des fichiers generes
         :rtype: list[str]
         """
-        from profil import Profil
-        from pipeline import FoilAnalysisPipeline
+        from .profil import Profil
+        from .pipeline import FoilAnalysisPipeline
 
         p_temp = Profil(self._profil.points.copy(),
                         name=self._profil.name)

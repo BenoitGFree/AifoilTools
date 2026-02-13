@@ -26,9 +26,9 @@ import sys
 import logging
 
 _here = os.path.dirname(os.path.abspath(__file__))
-_pkg = os.path.normpath(os.path.join(_here, '..', 'airfoiltools'))
-if _pkg not in sys.path:
-    sys.path.insert(0, _pkg)
+_src = os.path.normpath(os.path.join(_here, '..', 'sources'))
+if _src not in sys.path:
+    sys.path.insert(0, _src)
 
 # Logging visible en console
 logging.basicConfig(
@@ -40,9 +40,9 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
-from profil import Profil
-from simulation import Simulation
-from analyse import Analyse
+from model.profil import Profil
+from model.simulation import Simulation
+from model.analyse import Analyse
 
 
 # =====================================================================

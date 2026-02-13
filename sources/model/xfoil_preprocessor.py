@@ -14,8 +14,8 @@ Preprocesseur XFoil : genere les fichiers d'entree pour XFoil.
 import os
 import numpy as np
 
-from base import AbstractPreprocessor
-from foilconfig import load_defaults, merge_params
+from .base import AbstractPreprocessor
+from .foilconfig import load_defaults, merge_params
 
 
 def _re_label(re_val):

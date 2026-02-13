@@ -11,10 +11,10 @@ implemente les 3 classes abstraites Preprocessor, Simulator, Postprocessor.
 @date: 2026-02
 """
 
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 
 
-class AbstractPreprocessor(object):
+class AbstractPreprocessor(ABC):
     u"""Prepare les donnees d'entree pour un solveur 2D.
 
     Responsabilites :
@@ -22,7 +22,6 @@ class AbstractPreprocessor(object):
     - Generer les fichiers d'entree specifiques au solveur
     - Gerer le repertoire de travail
     """
-    __metaclass__ = ABCMeta
 
     def __init__(self, work_dir):
         u"""
@@ -45,7 +44,7 @@ class AbstractPreprocessor(object):
         pass
 
 
-class AbstractSimulator(object):
+class AbstractSimulator(ABC):
     u"""Execute un solveur aerodynamique 2D.
 
     Responsabilites :
@@ -53,7 +52,6 @@ class AbstractSimulator(object):
     - Lancer le calcul avec timeout
     - Gerer les erreurs d'execution
     """
-    __metaclass__ = ABCMeta
 
     def __init__(self, exe_path, timeout=30):
         u"""
@@ -79,14 +77,13 @@ class AbstractSimulator(object):
         pass
 
 
-class AbstractPostprocessor(object):
+class AbstractPostprocessor(ABC):
     u"""Parse les resultats d'un solveur aerodynamique 2D.
 
     Responsabilites :
     - Lire les fichiers de sortie du solveur
     - Structurer les resultats en donnees neutres (dicts + numpy arrays)
     """
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def parse(self, work_dir):

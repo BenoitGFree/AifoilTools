@@ -19,14 +19,14 @@ import unittest
 
 import numpy as np
 
-# Ajouter le repertoire airfoiltools/ au path
+# Ajouter le repertoire sources/ au path
 _here = os.path.dirname(os.path.abspath(__file__))
-_pkg = os.path.normpath(os.path.join(_here, '..', 'airfoiltools'))
-if _pkg not in sys.path:
-    sys.path.insert(0, _pkg)
+_src = os.path.normpath(os.path.join(_here, '..', 'sources'))
+if _src not in sys.path:
+    sys.path.insert(0, _src)
 
-from simulation import Simulation, SimulationResults
-from profil import Profil
+from model.simulation import Simulation, SimulationResults
+from model.profil import Profil
 
 
 def make_fake_results(re_list=None, n_alpha=25):

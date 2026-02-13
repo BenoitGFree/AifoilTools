@@ -13,10 +13,9 @@ en stdin. Gere le timeout et les erreurs d'execution.
 
 import os
 import subprocess
-import threading
 import logging
 
-from base import AbstractSimulator
+from .base import AbstractSimulator
 
 logger = logging.getLogger(__name__)
 
@@ -58,9 +57,9 @@ class XFoilSimulator(AbstractSimulator):
         """
         # Chercher dans externaltools/
         base = os.path.dirname(os.path.abspath(__file__))
-        # Remonter de sources/model/aerodynamique/foil2d/ vers la racine
+        # Remonter de sources/model/ vers la racine du projet
         project_root = os.path.normpath(
-            os.path.join(base, '..', '..', '..', '..'))
+            os.path.join(base, '..', '..'))
         candidates = [
             os.path.join(project_root, 'externaltools', 'xfoil', 'xfoil.exe'),
             os.path.join(project_root, 'externaltools', 'xfoil', 'xfoil'),
@@ -137,33 +136,24 @@ class XFoilSimulator(AbstractSimulator):
                 cwd=work_dir
             )
 
-            # Python 2.7 : communicate() n'a pas de parametre timeout.
-            # On utilise un timer qui tue le process si le delai est depasse.
-            timed_out = [False]
-
-            def _kill():
-                timed_out[0] = True
-                try:
-                    proc.kill()
-                except OSError:
-                    pass
-
-            timer = threading.Timer(self.timeout, _kill)
-            timer.start()
             try:
-                stdout, stderr = proc.communicate(input=cmd_content)
-            finally:
-                timer.cancel()
-
-            if timed_out[0]:
+                stdout, stderr = proc.communicate(
+                    input=cmd_content.encode('utf-8'),
+                    timeout=self.timeout)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.communicate()
                 logger.error(
                     u"XFoil timeout (%d s) pour %s", self.timeout, cmd_file)
                 return False
 
+            stdout = stdout.decode('utf-8', errors='replace') if stdout else ''
+            stderr = stderr.decode('utf-8', errors='replace') if stderr else ''
+
             # Sauvegarder la sortie console de XFoil pour debug
             log_file = os.path.join(work_dir,
                                     os.path.basename(cmd_file) + '.log')
-            with open(log_file, 'w') as f:
+            with open(log_file, 'w', encoding='utf-8') as f:
                 f.write(stdout)
                 if stderr:
                     f.write('\n--- STDERR ---\n')

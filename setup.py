@@ -1,7 +1,7 @@
 #!/usr/bin/python
 #-*-coding: utf-8 -*-
 
-from setuptools import setup, find_packages
+from setuptools import setup
 
 setup(
     name='airfoiltools',
@@ -10,12 +10,21 @@ setup(
     author='Nervures',
     author_email='be@nervures.com',
     license='LGPL-3.0',
-    packages=find_packages(),
+    package_dir={
+        'airfoiltools': 'sources/model',
+        'airfoiltools_gui': 'sources/gui',
+    },
+    packages=['airfoiltools', 'airfoiltools_gui'],
     package_data={
         'airfoiltools': ['*.cfg'],
     },
     install_requires=[
-        'numpy>=1.16',
+        'numpy>=1.20',
+        'scipy>=1.7',
+        'matplotlib>=3.5',
     ],
-    python_requires='>=2.7',
+    extras_require={
+        'gui': ['PySide6>=6.5'],
+    },
+    python_requires='>=3.8',
 )

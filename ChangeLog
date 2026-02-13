@@ -1,0 +1,30 @@
+# Changelog
+
+## [Non publié] - 2026-02-13 18:00
+
+### Added (Ajouté)
+- GUI interactive PySide6 + matplotlib dans `sources/gui/`
+  - `main_window.py` : fenêtre principale avec menus (Fichier, Edition, Affichage, Aide) et 3 onglets
+  - `tab_profils.py` : onglet Profils avec checkboxes courant/référence et spinbox degré Bézier
+  - `profil_canvas.py` : canvas matplotlib interactif (profils, points de contrôle draggables, porcupines de courbure, polygone de contrôle, ligne moyenne)
+  - `tab_xfoil.py`, `tab_results.py` : onglets placeholder
+  - `run_gui.py` : lanceur de l'application
+- Fichier `requirements.txt` (numpy, scipy, matplotlib, PySide6)
+- Environnement virtuel Python 3 (`env_py3/`)
+
+### Changed (Modifié)
+- **Migration Python 3** de `sources/model/` :
+  - 21 imports convertis en imports relatifs explicites (`from .bezier import Bezier`)
+  - 3 classes abstraites migrées de `__metaclass__ = ABCMeta` vers `class Xxx(ABC)`
+  - `xfoil_simulator.py` : subprocess modernisé (bytes + `timeout=` natif, suppression `threading.Timer`)
+  - Correction du chemin `_find_xfoil()` (4 niveaux → 2 niveaux)
+- **Restructuration** `airfoiltools/` → `sources/model/` + `sources/gui/`
+  - `setup.py` : `package_dir` mapping explicite, Python >= 3.8, dépendances mises à jour
+  - 6 fichiers de tests adaptés (`from model.xxx import Xxx`, sys.path vers `sources/`)
+  - `CLAUDE.md` mis à jour (architecture, commandes, imports)
+- `.gitignore` : ajout `env_py3/`, `.vscode/`, `.claude/`
+
+### Removed (Supprimé)
+- Import fallback Python 2 dans `profil.py` (`try/except ImportError`)
+- `threading.Timer` dans `xfoil_simulator.py` (remplacé par `communicate(timeout=)`)
+- Dépendance à Python 2.7 (`python_requires >= 2.7` → `>= 3.8`)
