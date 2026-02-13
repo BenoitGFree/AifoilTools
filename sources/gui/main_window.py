@@ -88,6 +88,20 @@ class MainWindow(QMainWindow):
         act_zoom_fit.triggered.connect(self._on_zoom_fit)
         view_menu.addAction(act_zoom_fit)
 
+        # Sous-menu Disposition
+        disp_menu = view_menu.addMenu("&Disposition")
+        self._disp_actions = []
+        for rows, cols in [(1, 1), (1, 2), (2, 2), (2, 3), (3, 3)]:
+            label = "%d \u00d7 %d" % (rows, cols)
+            act = QAction(label, self)
+            act.setCheckable(True)
+            if rows == 2 and cols == 2:
+                act.setChecked(True)
+            act.triggered.connect(
+                lambda checked, r=rows, c=cols: self._on_set_grid(r, c))
+            disp_menu.addAction(act)
+            self._disp_actions.append((rows, cols, act))
+
         # --- Aide ---
         help_menu = menubar.addMenu("&Aide")
 
@@ -111,6 +125,16 @@ class MainWindow(QMainWindow):
         self._tabs.addTab(self._tab_profils, "Profils")
         self._tabs.addTab(self._tab_xfoil, u"Param\u00e9trage XFoil")
         self._tabs.addTab(self._tab_results, u"R\u00e9sultats")
+
+        # Connecter le bouton Lancer
+        self._tab_xfoil.run_requested.connect(self._on_run_simulations)
+
+        # Marquer les resultats obsoletes quand un profil change
+        self._tab_profils.profil_changed.connect(
+            self._tab_results.mark_stale)
+
+        # Worker en cours
+        self._sim_worker = None
 
     # ------------------------------------------------------------------
     # Slots
@@ -169,6 +193,86 @@ class MainWindow(QMainWindow):
         else:
             from PySide6.QtWidgets import QMessageBox
             QMessageBox.warning(self, "Erreur de conversion", info)
+
+    # ------------------------------------------------------------------
+    # Simulation
+    # ------------------------------------------------------------------
+
+    def _on_run_simulations(self, target='both'):
+        u"""Lance les simulations XFoil pour les profils demandes.
+
+        :param target: 'both', 'current' ou 'reference'
+        :type target: str
+        """
+        if self._sim_worker is not None and self._sim_worker.isRunning():
+            self.statusBar().showMessage("Simulation deja en cours...")
+            return
+
+        profils = {}
+        if target in ('both', 'current'):
+            profils['current'] = self._tab_profils.profil_current
+        if target in ('both', 'reference'):
+            profils['reference'] = self._tab_profils.profil_reference
+
+        # Retirer les None
+        profils = {k: v for k, v in profils.items() if v is not None}
+        if not profils:
+            self.statusBar().showMessage("Aucun profil a simuler")
+            return
+
+        self._sim_target = target
+        params = self._tab_xfoil.get_params()
+
+        from .simulation_worker import SimulationWorker
+        self._sim_worker = SimulationWorker(profils, params, parent=self)
+        self._sim_worker.progress.connect(self._on_sim_progress)
+        self._sim_worker.finished_ok.connect(self._on_sim_finished)
+        self._sim_worker.finished_error.connect(self._on_sim_error)
+
+        self._tab_xfoil.set_enabled(False)
+        self.statusBar().showMessage("Simulations en cours...")
+        self._sim_worker.start()
+
+    def _on_sim_progress(self, msg):
+        """Met a jour la barre de statut pendant la simulation."""
+        self.statusBar().showMessage(msg)
+
+    def _on_sim_finished(self, results):
+        u"""Traite les resultats des simulations."""
+        self._tab_xfoil.set_enabled(True)
+        self._sim_worker = None
+
+        n_profils = len(results)
+        total_pts = sum(r.n_converged for r in results.values())
+        self.statusBar().showMessage(
+            "Terminees : %d profil(s), %d pts converges"
+            % (n_profils, total_pts))
+
+        # Merge partiel ou remplacement complet
+        target = getattr(self, '_sim_target', 'both')
+        if target == 'both':
+            self._tab_results.set_results(results)
+        else:
+            self._tab_results.update_results(results)
+
+        # Basculer sur l'onglet Resultats
+        self._tabs.setCurrentWidget(self._tab_results)
+
+    def _on_sim_error(self, error_msg):
+        """Affiche l'erreur de simulation."""
+        self._tab_xfoil.set_enabled(True)
+        self._sim_worker = None
+
+        from PySide6.QtWidgets import QMessageBox
+        QMessageBox.warning(self, "Erreur de simulation", error_msg)
+        self.statusBar().showMessage("Echec de la simulation")
+
+    def _on_set_grid(self, rows, cols):
+        """Change la disposition de la grille de resultats."""
+        self._tab_results.set_grid(rows, cols)
+        # Mettre a jour les coches du menu
+        for r, c, act in self._disp_actions:
+            act.setChecked(r == rows and c == cols)
 
     def _on_zoom_fit(self):
         """Zoom adapte sur le canvas."""

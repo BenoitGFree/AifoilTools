@@ -1,5 +1,50 @@
 # Changelog
 
+## [Non publié] - 2026-02-13 20:31
+
+### Added (Ajouté)
+- **Onglet Paramétrage XFoil** complet dans `tab_xfoil.py` :
+  - Saisie Reynolds (min/max/pas), Alpha (min/max/pas)
+  - Paramètres XFoil (viscosité, NCRIT, XTR, repanel, npanel, timeout)
+  - 3 boutons de lancement sélectif : "Lancer les 2", "Courant seul", "Référence seul"
+  - Signal `run_requested(str)` avec cible 'both'/'current'/'reference'
+- **Onglet Résultats** avec grille configurable dans `tab_results.py` :
+  - Grille NxM de `ResultCell` (défaut 2×2)
+  - Méthodes `set_results()` (remplacement) et `update_results()` (merge partiel)
+  - Bandeau d'avertissement "résultats obsolètes" par profil
+  - Méthode `mark_stale(role)` pour signaler les profils modifiés
+- **Cellule d'analyse** `result_cell.py` (643 lignes) :
+  - Canvas matplotlib interactif (zoom molette, pan bouton milieu, coordonnées curseur)
+  - Combo d'analyse avec 18 types prédéfinis
+  - Checkboxes courant (C) / référence (R) par cellule
+  - Légende interactive (clic pour masquer/afficher une courbe)
+  - Menu contextuel : tout afficher / tout masquer
+  - Persistance des courbes masquées lors du changement de Reynolds
+  - Combo Reynolds (visible pour -Cp(x)) avec sélection par Re
+- **18 analyses prédéfinies** dans `ANALYSIS_REGISTRY` :
+  - Polaires : CL(α), CD(α), Finesse(α), CL(CD), CM(α), Xtr(α), CDp(α)
+  - Distribution pression : -Cp(x) avec sélecteur Reynolds
+  - Couche limite f(s) : Ue(s), δ*(s), θ(s), Cf(s), H(s)
+  - Couche limite f(x) : Ue(x), δ*(x), θ(x), Cf(x), H(x)
+- **Worker de simulation** `simulation_worker.py` :
+  - `SimulationWorker(QThread)` avec signaux progress/finished_ok/finished_error
+- **Orchestration simulation** dans `main_window.py` :
+  - Lancement sélectif (both/current/reference) via le worker
+  - Merge partiel des résultats pour simulation d'un seul profil
+  - Bascule automatique vers l'onglet Résultats après simulation
+  - Menu Affichage > Disposition (1×1, 1×2, 2×2, 2×3, 3×3)
+- **Signal `profil_changed`** dans `tab_profils.py` :
+  - Émis lors de drag, conversion Bézier, chargement fichier
+  - Connecté à `mark_stale()` pour invalider les résultats
+- **Signal `profil_edited`** dans `profil_canvas.py` :
+  - Émis à la fin d'un drag de point de contrôle
+- **Propriété `has_bl`** dans `SimulationResults` (`simulation.py`)
+
+### Changed (Modifié)
+- `profil_canvas.py` : ajout zoom molette centré sur curseur et pan bouton milieu
+- `profil_canvas.py` : densité porcupines configurable (`_porcupine_n_quills = 200`)
+- `profil_canvas.py` : échelle porcupines par défaut 1.0 → 200.0
+
 ## [Non publié] - 2026-02-14 00:30
 
 ### Added (Ajouté)

@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QCheckBox, QComboBox, QLabel,
     QGroupBox, QSpinBox
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 
 from model.profil import Profil
 from .profil_canvas import ProfilCanvas
@@ -14,6 +14,8 @@ from .profil_canvas import ProfilCanvas
 
 class TabProfils(QWidget):
     """Onglet principal d'edition des profils aerodynamiques."""
+
+    profil_changed = Signal(str)  # role: 'current' ou 'reference'
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -80,6 +82,8 @@ class TabProfils(QWidget):
 
         # --- Canvas matplotlib ---
         self._canvas = ProfilCanvas(self)
+        self._canvas.profil_edited.connect(
+            lambda: self.profil_changed.emit('current'))
         layout.addWidget(self._canvas, stretch=1)
 
     def _load_default_profiles(self):
@@ -121,6 +125,7 @@ class TabProfils(QWidget):
             self._profil_current.approximate_bezier(degree=degree,
                                                     smoothing=0.1)
             self._canvas.set_current_profil(self._profil_current)
+            self.profil_changed.emit('current')
 
     def load_profil_from_file(self, filepath, role="current"):
         """Charge un profil depuis un fichier.
@@ -148,6 +153,7 @@ class TabProfils(QWidget):
             self._lbl_current.setText(profil.name)
             self._chk_current.setChecked(True)
             self._canvas.set_current_profil(self._profil_current)
+        self.profil_changed.emit(role)
         return True, profil.name
 
     def convert_current_to_bezier(self):
@@ -170,6 +176,7 @@ class TabProfils(QWidget):
             return False, str(e)
 
         self._canvas.set_current_profil(p)
+        self.profil_changed.emit('current')
         return True, p.name
 
     def save_current_profil(self):
@@ -207,6 +214,16 @@ class TabProfils(QWidget):
             return False, str(e)
 
         return True, filepath
+
+    @property
+    def profil_current(self):
+        """Retourne le profil courant (ou None)."""
+        return self._profil_current
+
+    @property
+    def profil_reference(self):
+        """Retourne le profil de reference (ou None)."""
+        return self._profil_reference
 
     def zoom_fit(self):
         """Zoom adapte (appele depuis le menu)."""

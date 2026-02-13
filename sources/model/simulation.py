@@ -125,6 +125,11 @@ class SimulationResults(object):
         return any(len(alphas) > 0 for alphas in self._cp.values())
 
     @property
+    def has_bl(self):
+        u"""True si au moins une donnee de couche limite disponible."""
+        return any(v is not None for v in self._bl.values())
+
+    @property
     def n_converged(self):
         u"""Nombre total de points alpha converges (toutes polaires).
 

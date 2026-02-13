@@ -18,6 +18,8 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.collections import LineCollection
 
+from PySide6.QtCore import Signal
+
 
 # Couleurs
 COLOR_CURRENT = '#1f77b4'      # bleu
@@ -30,6 +32,8 @@ PICK_RADIUS = 8                # pixels pour la detection clic
 
 class ProfilCanvas(FigureCanvasQTAgg):
     """Canvas matplotlib pour l'affichage et l'edition interactive de profils."""
+
+    profil_edited = Signal()  # emis a la fin d'un drag de point de controle
 
     def __init__(self, parent=None):
         self._fig = Figure(figsize=(10, 4), dpi=100)
@@ -105,8 +109,9 @@ class ProfilCanvas(FigureCanvasQTAgg):
         self._line_mean_ref, = self._ax.plot(
             [], [], '--', color=COLOR_REFERENCE, linewidth=0.6, alpha=0.3)
 
-        # --- Echelle porcupines ---
-        self._porcupine_scale = 1.0
+        # --- Echelle et densite porcupines ---
+        self._porcupine_scale = 200.0
+        self._porcupine_n_quills = 200  # nombre de quills par courbe
 
         # --- Drag state ---
         self._dragging = False
@@ -114,10 +119,15 @@ class ProfilCanvas(FigureCanvasQTAgg):
         self._drag_index = None      # index du point de controle
         self._drag_start_xy = None   # position souris au debut du drag
 
+        # --- Pan state (bouton milieu) ---
+        self._panning = False
+        self._pan_start_xy = None    # position souris en pixels au debut du pan
+
         # --- Connecter les evenements souris ---
         self.mpl_connect('button_press_event', self._on_press)
         self.mpl_connect('motion_notify_event', self._on_motion)
         self.mpl_connect('button_release_event', self._on_release)
+        self.mpl_connect('scroll_event', self._on_scroll)
 
     # ==================================================================
     # API publique
@@ -279,9 +289,12 @@ class ProfilCanvas(FigureCanvasQTAgg):
         :param chord: corde du profil (pour l'echelle)
         :param envelope_line: Line2D pour l'enveloppe (optionnel)
         """
-        pts = bezier.points
-        normals = bezier.normals
-        curvatures = bezier.curvatures
+        # Evaluer le bezier au nombre de quills demande
+        n = self._porcupine_n_quills
+        t = np.linspace(0, 1, n)
+        pts = bezier.evaluate(t)
+        normals = bezier.normal(t)
+        curvatures = bezier.curvature(t)
 
         # Echelle : la longueur des quills est proportionnelle a la courbure
         # Signe negatif : les quills pointent vers l'interieur du profil
@@ -324,10 +337,17 @@ class ProfilCanvas(FigureCanvasQTAgg):
     # ==================================================================
 
     def _on_press(self, event):
-        """Detecte un clic sur un point de controle ou menu contextuel."""
+        """Detecte un clic sur un point de controle, pan ou menu contextuel."""
         if event.button == 3 and event.inaxes == self._ax:
             self._show_context_menu(event)
             return
+
+        # Bouton milieu : demarrer le pan
+        if event.button == 2:
+            self._panning = True
+            self._pan_start_xy = (event.x, event.y)
+            return
+
         if event.button != 1 or event.inaxes != self._ax:
             return
         p = self._profil_current
@@ -343,7 +363,28 @@ class ProfilCanvas(FigureCanvasQTAgg):
             self._drag_start_xy = np.array([event.xdata, event.ydata])
 
     def _on_motion(self, event):
-        """Deplace le point de controle pendant le drag."""
+        """Deplace le point de controle pendant le drag, ou pan la vue."""
+        # Pan avec bouton milieu
+        if self._panning:
+            if self._pan_start_xy is None:
+                return
+            dx_pix = event.x - self._pan_start_xy[0]
+            dy_pix = event.y - self._pan_start_xy[1]
+            self._pan_start_xy = (event.x, event.y)
+
+            # Convertir pixels -> coordonnees data
+            xlim = self._ax.get_xlim()
+            ylim = self._ax.get_ylim()
+            # Taille de l'axe en pixels
+            bbox = self._ax.get_window_extent()
+            dx_data = -dx_pix * (xlim[1] - xlim[0]) / bbox.width
+            dy_data = -dy_pix * (ylim[1] - ylim[0]) / bbox.height
+
+            self._ax.set_xlim(xlim[0] + dx_data, xlim[1] + dx_data)
+            self._ax.set_ylim(ylim[0] + dy_data, ylim[1] + dy_data)
+            self.draw_idle()
+            return
+
         if not self._dragging or event.inaxes != self._ax:
             return
         if event.xdata is None or event.ydata is None:
@@ -369,11 +410,18 @@ class ProfilCanvas(FigureCanvasQTAgg):
         self.draw_idle()
 
     def _on_release(self, event):
-        """Finalise le drag."""
+        """Finalise le drag ou le pan."""
+        if self._panning:
+            self._panning = False
+            self._pan_start_xy = None
+            return
+        was_dragging = self._dragging
         self._dragging = False
         self._drag_bezier = None
         self._drag_index = None
         self._drag_start_xy = None
+        if was_dragging:
+            self.profil_edited.emit()
 
     def _find_nearest_cpoint(self, event):
         """Trouve le point de controle le plus proche du clic.
@@ -407,6 +455,45 @@ class ProfilCanvas(FigureCanvasQTAgg):
         return best_idx, best_side
 
     # ==================================================================
+    # Zoom molette
+    # ==================================================================
+
+    def _on_scroll(self, event):
+        """Zoom avant/arriere centre sur la position du curseur."""
+        if event.inaxes != self._ax:
+            return
+
+        # Facteur de zoom
+        base_scale = 1.2
+        if event.button == 'up':
+            scale_factor = 1.0 / base_scale  # zoom avant
+        elif event.button == 'down':
+            scale_factor = base_scale         # zoom arriere
+        else:
+            return
+
+        # Position du curseur en coordonnees data
+        xdata = event.xdata
+        ydata = event.ydata
+
+        xlim = self._ax.get_xlim()
+        ylim = self._ax.get_ylim()
+
+        # Nouvelles limites centrees sur le curseur
+        new_width = (xlim[1] - xlim[0]) * scale_factor
+        new_height = (ylim[1] - ylim[0]) * scale_factor
+
+        # Ratio de la position du curseur dans la fenetre
+        rel_x = (xdata - xlim[0]) / (xlim[1] - xlim[0])
+        rel_y = (ydata - ylim[0]) / (ylim[1] - ylim[0])
+
+        self._ax.set_xlim(xdata - new_width * rel_x,
+                          xdata + new_width * (1 - rel_x))
+        self._ax.set_ylim(ydata - new_height * rel_y,
+                          ydata + new_height * (1 - rel_y))
+        self.draw_idle()
+
+    # ==================================================================
     # Menu contextuel
     # ==================================================================
 
@@ -421,6 +508,14 @@ class ProfilCanvas(FigureCanvasQTAgg):
         act_scale = menu.addAction(
             "Echelle courbure (%.2f)..." % self._porcupine_scale)
         act_scale.triggered.connect(self._on_change_porcupine_scale)
+
+        # --- Densite porcupines ---
+        density_menu = menu.addMenu(
+            u"Densit\u00e9 (%d quills)" % self._porcupine_n_quills)
+        act_density_up = density_menu.addAction(u"Densit\u00e9 \u00d72")
+        act_density_up.triggered.connect(self._on_density_double)
+        act_density_down = density_menu.addAction(u"Densit\u00e9 \u00f72")
+        act_density_down.triggered.connect(self._on_density_halve)
 
         # Convertir position matplotlib -> position widget Qt
         # matplotlib: y=0 en bas ; Qt: y=0 en haut
@@ -441,6 +536,20 @@ class ProfilCanvas(FigureCanvasQTAgg):
     def _set_porcupine_scale(self, scale):
         """Change l'echelle des porcupines et rafraichit."""
         self._porcupine_scale = scale
+        self._update_current()
+        self._update_reference()
+        self.draw_idle()
+
+    def _on_density_double(self):
+        """Double le nombre de quills."""
+        self._porcupine_n_quills *= 2
+        self._update_current()
+        self._update_reference()
+        self.draw_idle()
+
+    def _on_density_halve(self):
+        """Divise le nombre de quills par 2."""
+        self._porcupine_n_quills = max(5, self._porcupine_n_quills // 2)
         self._update_current()
         self._update_reference()
         self.draw_idle()
