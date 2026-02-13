@@ -41,7 +41,9 @@ AifoilTools/
 │       ├── tab_profils.py         # Onglet Profils (contrôles + canvas)
 │       ├── profil_canvas.py       # Canvas matplotlib interactif
 │       ├── tab_xfoil.py           # Onglet Paramétrage XFoil
-│       └── tab_results.py         # Onglet Résultats
+│       ├── tab_results.py         # Onglet Résultats (grille de ResultCell)
+│       ├── result_cell.py         # Cellule d'analyse (18 types, canvas interactif)
+│       └── simulation_worker.py   # QThread pour simulations non-bloquantes
 ├── tests/
 │   ├── test_bezier.py             # 174 tests
 │   ├── test_profil.py             # 37 tests
