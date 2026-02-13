@@ -29,7 +29,14 @@ import logging
 
 import numpy as np
 
-from .bezier import Bezier
+if __name__ == '__main__' and not __package__:
+    import sys as _sys
+    _src = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if _src not in _sys.path:
+        _sys.path.insert(0, _src)
+    from model.bezier import Bezier
+else:
+    from .bezier import Bezier
 
 logger = logging.getLogger(__name__)
 
@@ -410,7 +417,8 @@ class Profil(object):
     #  Mode Bezier
     # ------------------------------------------------------------------
 
-    def approximate_bezier(self, degree, max_dev=None, n_points=None):
+    def approximate_bezier(self, degree, max_dev=None, n_points=None,
+                           smoothing=0.0, ba_vertical=True):
         u"""Approxime extrados et intrados par des courbes de Bezier.
 
         Utilise les points discrets (``_points``) comme cibles.
@@ -423,6 +431,13 @@ class Profil(object):
         :param n_points: nombre de points d'echantillonnage des Beziers
             (defaut : nombre de points discrets de chaque cote)
         :type n_points: int or None
+        :param smoothing: poids de regularisation (0 = aucun lissage).
+            Penalise les differences secondes du polygone de controle.
+        :type smoothing: float
+        :param ba_vertical: imposer une tangente verticale au bord
+            d'attaque (vers le haut pour extrados, vers le bas pour
+            intrados). Defaut True.
+        :type ba_vertical: bool
         :returns: self (pour chainage)
         :rtype: Profil
         """
@@ -433,10 +448,16 @@ class Profil(object):
         n_ext = n_points if n_points is not None else len(ext_pts)
         n_int = n_points if n_points is not None else len(int_pts)
 
+        # Tangente verticale au BA : (0, +1) extrados, (0, -1) intrados
+        tan_ext = 90.0 if ba_vertical else None
+        tan_int = -90.0 if ba_vertical else None
+
         self._bezier_extrados = Bezier(
-            ext_pts, degree=degree, max_dev=max_dev, n_points=n_ext)
+            ext_pts, degree=degree, max_dev=max_dev, n_points=n_ext,
+            smoothing=smoothing, start_tangent=tan_ext)
         self._bezier_intrados = Bezier(
-            int_pts, degree=degree, max_dev=max_dev, n_points=n_int)
+            int_pts, degree=degree, max_dev=max_dev, n_points=n_int,
+            smoothing=smoothing, start_tangent=tan_int)
         return self
 
     def clear_beziers(self):
@@ -980,13 +1001,12 @@ if __name__ == '__main__':
     # # Ecriture
     # output_file = 'naca2412_normalized.dat'
     # p.write(output_file, fmt='selig')
-    p = Profil.from_naca('2412', n_points=200)
+    p = Profil.from_naca('0012', n_points=200)
     print("points = ", p.points)
     p.normalize()
-    print("points apres nomr= ", p.points)
-    print("intrados =", p.intrados)
-    print("extrados =", p.extrados)
-    p.approximate_bezier(degree=3, n_points=50)
-    print("bezier extrados points =", p.bezier_extrados.points)
-    print("bezier intrados points =", p.bezier_intrados.points)
+    p.approximate_bezier(degree=8, max_dev=0.5)
     
+
+
+
+    p.write('naca0012_normalized.dat', fmt='selig')

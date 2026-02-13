@@ -38,10 +38,17 @@ class MainWindow(QMainWindow):
         # --- Fichier ---
         file_menu = menubar.addMenu("&Fichier")
 
-        act_open = QAction("&Ouvrir profil...", self)
-        act_open.setShortcut("Ctrl+O")
-        act_open.triggered.connect(self._on_open)
-        file_menu.addAction(act_open)
+        act_open_current = QAction("Ouvrir profil &courant...", self)
+        act_open_current.setShortcut("Ctrl+O")
+        act_open_current.triggered.connect(self._on_open_current)
+        file_menu.addAction(act_open_current)
+
+        act_open_ref = QAction(u"Ouvrir profil r\u00e9f\u00e9rence...", self)
+        act_open_ref.setShortcut("Ctrl+Shift+O")
+        act_open_ref.triggered.connect(self._on_open_reference)
+        file_menu.addAction(act_open_ref)
+
+        file_menu.addSeparator()
 
         act_save = QAction("&Sauvegarder profil...", self)
         act_save.setShortcut("Ctrl+S")
@@ -65,6 +72,13 @@ class MainWindow(QMainWindow):
         act_redo = QAction("&Refaire", self)
         act_redo.setShortcut("Ctrl+Y")
         edit_menu.addAction(act_redo)
+
+        edit_menu.addSeparator()
+
+        act_to_bezier = QAction(u"Convertir en B\u00e9zier", self)
+        act_to_bezier.setShortcut("Ctrl+B")
+        act_to_bezier.triggered.connect(self._on_convert_to_bezier)
+        edit_menu.addAction(act_to_bezier)
 
         # --- Affichage ---
         view_menu = menubar.addMenu("&Affichage")
@@ -102,13 +116,59 @@ class MainWindow(QMainWindow):
     # Slots
     # ------------------------------------------------------------------
 
-    def _on_open(self):
-        """Ouvre un fichier profil."""
-        self.statusBar().showMessage("Ouvrir profil... (a implementer)")
+    def _open_profil(self, role):
+        """Ouvre un fichier profil et le charge comme courant ou reference."""
+        from PySide6.QtWidgets import QFileDialog
+        label = "courant" if role == "current" else u"r\u00e9f\u00e9rence"
+        filepath, _ = QFileDialog.getOpenFileName(
+            self,
+            "Ouvrir profil %s" % label,
+            "",
+            "Profils (*.dat);;CSV (*.csv);;Tous (*)"
+        )
+        if not filepath:
+            return
+
+        ok, info = self._tab_profils.load_profil_from_file(filepath, role)
+        if ok:
+            self.statusBar().showMessage("Profil %s charge : %s" % (label, info))
+        else:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Erreur de chargement", info)
+            self.statusBar().showMessage("Echec du chargement")
+
+    def _on_open_current(self):
+        """Ouvre un fichier comme profil courant."""
+        self._open_profil("current")
+
+    def _on_open_reference(self):
+        """Ouvre un fichier comme profil de reference."""
+        self._open_profil("reference")
 
     def _on_save(self):
-        """Sauvegarde le profil courant."""
-        self.statusBar().showMessage("Sauvegarder... (a implementer)")
+        """Sauvegarde le profil courant dans un fichier."""
+        ok, info = self._tab_profils.save_current_profil()
+        if ok is None:
+            return  # annule ou pas de profil
+        if ok:
+            self.statusBar().showMessage("Profil sauvegarde : %s" % info)
+        else:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Erreur de sauvegarde", info)
+            self.statusBar().showMessage("Echec de la sauvegarde")
+
+    def _on_convert_to_bezier(self):
+        """Convertit le profil courant en mode Bezier."""
+        ok, info = self._tab_profils.convert_current_to_bezier()
+        if ok is None:
+            self.statusBar().showMessage(
+                u"Pas de profil ou d\u00e9j\u00e0 en mode B\u00e9zier")
+        elif ok:
+            self.statusBar().showMessage(
+                u"Profil '%s' converti en B\u00e9zier" % info)
+        else:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Erreur de conversion", info)
 
     def _on_zoom_fit(self):
         """Zoom adapte sur le canvas."""

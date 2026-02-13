@@ -61,7 +61,8 @@ class Bezier(object):
 
     def __init__(self, control_points, name='Sans nom',
                  n_points=100, sample_mode='curvilinear', tolerance=None,
-                 degree=None, max_dev=None):
+                 degree=None, max_dev=None, smoothing=0.0,
+                 start_tangent=None, end_tangent=None):
         u"""
         Si ``degree`` est None, ``control_points`` sont les points de
         controle P0..Pn (comportement standard).
@@ -90,6 +91,13 @@ class Bezier(object):
         :type degree: int, str or None
         :param max_dev: deviation max autorisee (requis si degree='find')
         :type max_dev: float or None
+        :param smoothing: poids de regularisation par differences secondes
+            (0 = pas de lissage). Utilise seulement si ``degree`` est fourni.
+        :type smoothing: float
+        :param start_tangent: direction tangente en t=0 (angle deg ou vecteur)
+        :type start_tangent: float, tuple or None
+        :param end_tangent: direction tangente en t=1 (angle deg ou vecteur)
+        :type end_tangent: float, tuple or None
         """
         pts = np.asarray(control_points, dtype=float)
         if pts.ndim != 2 or pts.shape[1] != 2:
@@ -109,7 +117,10 @@ class Bezier(object):
                 self._cpts = np.zeros((2, 2), dtype=float)
             else:
                 self._cpts = np.zeros((int(degree) + 1, 2), dtype=float)
-            self.approximate(pts, degree=degree, max_dev=max_dev)
+            self.approximate(pts, degree=degree, max_dev=max_dev,
+                             smoothing=smoothing,
+                             start_tangent=start_tangent,
+                             end_tangent=end_tangent)
         else:
             self._cpts = pts
 
@@ -552,30 +563,202 @@ class Bezier(object):
             N[:, i] = binom[i] * t**i * (1.0 - t)**(n - i)
         return N
 
+    @staticmethod
+    def _smoothing_matrix(n, clamp_ends=True):
+        u"""Matrice de regularisation par differences secondes.
+
+        Construit la matrice D2 telle que D2 @ P donne les differences
+        secondes du polygone de controle : P[i-1] - 2*P[i] + P[i+1].
+        Si ``clamp_ends``, seuls les points interieurs sont penalises
+        (lignes correspondant a i = 2 .. n-2).
+
+        :param n: degre de la courbe (n+1 points de controle)
+        :type n: int
+        :param clamp_ends: exclure les extremites de la penalisation
+        :type clamp_ends: bool
+        :returns: matrice (k, n+1) avec k = n-1 ou n-3 selon clamp_ends
+        :rtype: numpy.ndarray
+        """
+        # Differences secondes completes : (n-1) lignes
+        rows = n - 1
+        D2 = np.zeros((rows, n + 1))
+        for i in range(rows):
+            D2[i, i] = 1.0
+            D2[i, i + 1] = -2.0
+            D2[i, i + 2] = 1.0
+
+        if clamp_ends and rows > 2:
+            # Exclure la premiere et derniere ligne (touchent P0, Pn)
+            D2 = D2[1:-1]
+
+        return D2
+
+    @staticmethod
+    def _parse_tangent(tangent):
+        u"""Convertit une specification de tangente en vecteur unitaire.
+
+        :param tangent: None, angle en degres (float) ou vecteur (tuple/list)
+        :returns: vecteur unitaire ndarray(2,) ou None
+        """
+        if tangent is None:
+            return None
+        if isinstance(tangent, (int, float)):
+            a = math.radians(float(tangent))
+            return np.array([math.cos(a), math.sin(a)])
+        d = np.asarray(tangent, dtype=float).ravel()
+        if len(d) != 2:
+            raise ValueError(
+                u"tangent doit etre 2D, recu %d composantes" % len(d))
+        nrm = np.linalg.norm(d)
+        if nrm < 1e-15:
+            raise ValueError(u"tangent ne doit pas etre un vecteur nul")
+        return d / nrm
+
+    def _solve_clamped_with_tangents(self, N, points, n,
+                                     d_start, d_end, smoothing):
+        u"""Resout les moindres carres avec extremites fixees et tangentes.
+
+        P0 = points[0], Pn = points[-1] (fixes).
+        Si d_start: P1 = P0 + alpha * d_start  (1 DOF au lieu de 2).
+        Si d_end:   Pn-1 = Pn - gamma * d_end  (1 DOF au lieu de 2).
+        Les autres Pi restent libres (2 DOF chacun).
+
+        Comme alpha et gamma couplent x et y, on empile les deux
+        coordonnees dans un seul systeme.
+
+        :param N: matrice de Bernstein (m+1, n+1)
+        :param points: points cibles (m+1, 2)
+        :param n: degre
+        :param d_start: direction unitaire start ou None
+        :param d_end: direction unitaire end ou None
+        :param smoothing: poids de regularisation
+        :returns: points de controle (n+1, 2)
+        """
+        m1 = len(points)
+        P0, Pn = points[0], points[-1]
+        has_ds = d_start is not None
+        has_de = d_end is not None
+
+        # Indices des points de controle libres (2 DOF chacun)
+        i0 = 2 if has_ds else 1
+        i1 = n - 2 if has_de else n - 1
+        free_idx = list(range(i0, i1 + 1))
+        n_free = len(free_idx)
+
+        # Layout des inconnues : [alpha?, Q0x, Q0y, Q1x, Q1y, ..., gamma?]
+        c_a = 0 if has_ds else -1
+        c_f = 1 if has_ds else 0
+        c_g = c_f + 2 * n_free if has_de else -1
+        n_unk = c_f + 2 * n_free + (1 if has_de else 0)
+
+        # RHS : soustraire les contributions connues (P0, Pn, et les
+        # parties constantes de P1 = P0 + alpha*d et Pn-1 = Pn - gamma*d)
+        rhs = points - np.outer(N[:, 0], P0) - np.outer(N[:, n], Pn)
+        if has_ds:
+            rhs -= np.outer(N[:, 1], P0)
+        if has_de:
+            rhs -= np.outer(N[:, n - 1], Pn)
+        b = rhs.ravel()  # [x0, y0, x1, y1, ...]
+
+        # --- Matrice de fitting (2*m1 lignes, n_unk colonnes) ---
+        A = np.zeros((2 * m1, n_unk))
+        if has_ds:
+            A[0::2, c_a] = N[:, 1] * d_start[0]
+            A[1::2, c_a] = N[:, 1] * d_start[1]
+        for k, i in enumerate(free_idx):
+            cx = c_f + 2 * k
+            A[0::2, cx] = N[:, i]
+            A[1::2, cx + 1] = N[:, i]
+        if has_de:
+            A[0::2, c_g] = -N[:, n - 1] * d_end[0]
+            A[1::2, c_g] = -N[:, n - 1] * d_end[1]
+
+        # --- Regularisation (differences secondes) ---
+        if smoothing > 0 and n >= 3:
+            free_col = {i: c_f + 2 * k for k, i in enumerate(free_idx)}
+            n_sd = n - 1  # nombre de differences secondes
+            A_s = np.zeros((2 * n_sd, n_unk))
+            b_s = np.zeros(2 * n_sd)
+            for di, i in enumerate(range(1, n)):
+                rx, ry = 2 * di, 2 * di + 1
+                for coeff, j in [(1.0, i - 1), (-2.0, i), (1.0, i + 1)]:
+                    if j == 0:
+                        b_s[rx] -= coeff * P0[0]
+                        b_s[ry] -= coeff * P0[1]
+                    elif j == n:
+                        b_s[rx] -= coeff * Pn[0]
+                        b_s[ry] -= coeff * Pn[1]
+                    elif has_ds and j == 1:
+                        A_s[rx, c_a] += coeff * d_start[0]
+                        A_s[ry, c_a] += coeff * d_start[1]
+                        b_s[rx] -= coeff * P0[0]
+                        b_s[ry] -= coeff * P0[1]
+                    elif has_de and j == n - 1:
+                        A_s[rx, c_g] -= coeff * d_end[0]
+                        A_s[ry, c_g] -= coeff * d_end[1]
+                        b_s[rx] -= coeff * Pn[0]
+                        b_s[ry] -= coeff * Pn[1]
+                    elif j in free_col:
+                        cx = free_col[j]
+                        A_s[rx, cx] += coeff
+                        A_s[ry, cx + 1] += coeff
+            sl = np.sqrt(smoothing)
+            A = np.vstack([A, sl * A_s])
+            b = np.concatenate([b, sl * b_s])
+
+        # --- Resolution ---
+        u = np.linalg.lstsq(A, b, rcond=None)[0]
+
+        # --- Reconstruction des points de controle ---
+        cpts = np.empty((n + 1, 2))
+        cpts[0] = P0
+        cpts[n] = Pn
+        if has_ds:
+            cpts[1] = P0 + u[c_a] * d_start
+        for k, i in enumerate(free_idx):
+            cx = c_f + 2 * k
+            cpts[i] = [u[cx], u[cx + 1]]
+        if has_de:
+            cpts[n - 1] = Pn - u[c_g] * d_end
+        return cpts
+
     def approximate(self, points, degree=None, clamp_ends=True, max_iter=5,
-                    max_dev=None):
-        u"""Approche un ensemble de points par moindres carres.
+                    max_dev=None, smoothing=0.0,
+                    start_tangent=None, end_tangent=None):
+        u"""Approche un ensemble de points par moindres carres regularises.
 
         Met a jour les points de controle pour approcher au mieux
         les points donnes. La parametrisation initiale est par longueur
-        de corde, puis affinee par reprojection iterative (projection
-        des points sur la courbe courante + raffinement Newton).
+        de corde, puis affinee par reprojection iterative.
 
-        Si ``degree='find'`` et ``max_dev`` est fourni, le degre est
-        augmente progressivement depuis 1 jusqu'a ce que la deviation
-        max entre les points et la courbe soit <= ``max_dev``.
+        Le parametre ``smoothing`` controle la regularisation par
+        differences secondes du polygone de controle. Plus la valeur
+        est elevee, plus le polygone est lisse (mais moins fidele
+        aux points cibles).
+
+        ``start_tangent`` / ``end_tangent`` imposent la direction de la
+        tangente aux extremites. Le point de controle P1 (resp. Pn-1)
+        est contraint a se deplacer le long d'une droite passant par
+        P0 (resp. Pn) dans la direction imposee (1 DOF au lieu de 2).
 
         :param points: points cibles, ndarray(m, 2) avec m >= degree + 1
         :type points: numpy.ndarray or list
         :param degree: degre cible (defaut : degre actuel), ou ``'find'``
-            pour recherche automatique du degre minimal
         :type degree: int, str or None
         :param clamp_ends: matcher les extremites exactement (defaut True)
         :type clamp_ends: bool
-        :param max_iter: iterations de reprojection (defaut 5, 0 = corde seule)
+        :param max_iter: iterations de reprojection (defaut 5)
         :type max_iter: int
         :param max_dev: deviation max autorisee (requis si degree='find')
         :type max_dev: float or None
+        :param smoothing: poids de regularisation (0 = aucun lissage)
+        :type smoothing: float
+        :param start_tangent: direction tangente en t=0 : angle en degres
+            (float) ou vecteur direction (tuple). None = libre.
+        :type start_tangent: float, tuple or None
+        :param end_tangent: direction tangente en t=1 : angle en degres
+            (float) ou vecteur direction (tuple). None = libre.
+        :type end_tangent: float, tuple or None
         :returns: self (pour chainage)
         :rtype: Bezier
         """
@@ -584,6 +767,10 @@ class Bezier(object):
             raise ValueError(
                 u"points doit etre un tableau (m, 2), recu shape %s"
                 % str(points.shape))
+        smoothing = max(0.0, float(smoothing))
+        d_start = self._parse_tangent(start_tangent)
+        d_end = self._parse_tangent(end_tangent)
+        has_tangents = d_start is not None or d_end is not None
 
         # --- Mode recherche automatique du degre ---
         if degree == 'find':
@@ -592,14 +779,22 @@ class Bezier(object):
                     u"max_dev doit etre > 0 en mode degree='find', "
                     u"recu %s" % str(max_dev))
             m = len(points) - 1
-            max_degree = m  # degre max = interpolation
-            for n_try in range(1, max_degree + 1):
+            max_degree = m
+            # Degre minimum selon les contraintes de tangente
+            min_degree = 1
+            if d_start is not None and d_end is not None:
+                min_degree = 3
+            elif has_tangents:
+                min_degree = 2
+            for n_try in range(min_degree, max_degree + 1):
                 self.approximate(points, degree=n_try,
-                                 clamp_ends=clamp_ends, max_iter=max_iter)
+                                 clamp_ends=clamp_ends, max_iter=max_iter,
+                                 smoothing=smoothing,
+                                 start_tangent=start_tangent,
+                                 end_tangent=end_tangent)
                 dev, _t = self.max_deviation(points)
                 if dev <= max_dev:
                     return self
-            # degre max atteint, on garde le meilleur possible
             return self
 
         if degree is None:
@@ -613,6 +808,18 @@ class Bezier(object):
                 u"Il faut au moins %d points pour un degre %d, recu %d"
                 % (n + 1, n, m + 1))
         max_iter = max(0, int(max_iter))
+
+        # Desactiver les tangentes si le degre est insuffisant
+        if n < 2:
+            d_start = d_end = None
+            has_tangents = False
+        elif n < 3 and d_start is not None and d_end is not None:
+            d_end = None  # garder seulement la contrainte start
+
+        # --- Matrice de lissage (utilisee seulement sans tangentes) ---
+        use_smoothing = smoothing > 0.0 and n >= 3
+        if use_smoothing and not has_tangents:
+            D2_full = self._smoothing_matrix(n, clamp_ends=clamp_ends)
 
         # --- Parametrisation initiale par longueur de corde ---
         diffs = np.diff(points, axis=0)
@@ -630,24 +837,51 @@ class Bezier(object):
 
         # --- Boucle fit + reprojection ---
         for iteration in range(max_iter + 1):
-            # Matrice de Bernstein et resolution
             N = self._bernstein_matrix(n, t)
 
-            if clamp_ends:
+            if clamp_ends and has_tangents:
+                # Systeme empile x/y avec contraintes de tangente
+                cpts = self._solve_clamped_with_tangents(
+                    N, points, n, d_start, d_end, smoothing)
+            elif clamp_ends:
                 if n == 1:
                     cpts = np.array([points[0], points[-1]], dtype=float)
+                elif n == 2 or not use_smoothing:
+                    rhs = (points
+                           - np.outer(N[:, 0], points[0])
+                           - np.outer(N[:, n], points[-1]))
+                    N_inner = N[:, 1:n]
+                    P_inner = np.linalg.lstsq(
+                        N_inner, rhs, rcond=None)[0]
+                    cpts = np.empty((n + 1, 2), dtype=float)
+                    cpts[0] = points[0]
+                    cpts[-1] = points[-1]
+                    cpts[1:-1] = P_inner
                 else:
                     rhs = (points
                            - np.outer(N[:, 0], points[0])
                            - np.outer(N[:, n], points[-1]))
                     N_inner = N[:, 1:n]
-                    P_inner = np.linalg.lstsq(N_inner, rhs, rcond=None)[0]
+                    D2_inner = D2_full[:, 1:n]
+                    lam = smoothing
+                    A = np.vstack([N_inner, np.sqrt(lam) * D2_inner])
+                    b = np.vstack(
+                        [rhs, np.zeros((D2_inner.shape[0], 2))])
+                    P_inner = np.linalg.lstsq(A, b, rcond=None)[0]
                     cpts = np.empty((n + 1, 2), dtype=float)
                     cpts[0] = points[0]
                     cpts[-1] = points[-1]
                     cpts[1:-1] = P_inner
             else:
-                cpts = np.linalg.lstsq(N, points, rcond=None)[0]
+                if not use_smoothing:
+                    cpts = np.linalg.lstsq(N, points, rcond=None)[0]
+                else:
+                    D2 = self._smoothing_matrix(n, clamp_ends=False)
+                    lam = smoothing
+                    A = np.vstack([N, np.sqrt(lam) * D2])
+                    b = np.vstack(
+                        [points, np.zeros((D2.shape[0], 2))])
+                    cpts = np.linalg.lstsq(A, b, rcond=None)[0]
 
             self._cpts = cpts
 
@@ -659,30 +893,28 @@ class Bezier(object):
             t_fine = np.linspace(0, 1, n_fine)
             pts_curve = self.evaluate(t_fine)
 
-            inner_pts = points[1:m]  # (m-1, 2)
+            inner_pts = points[1:m]
             if len(inner_pts) == 0:
                 break
 
-            # Recherche vectorisee du plus proche sur la courbe
             dx = inner_pts[:, None, 0] - pts_curve[None, :, 0]
             dy = inner_pts[:, None, 1] - pts_curve[None, :, 1]
             dists_sq = dx**2 + dy**2
             idx = np.argmin(dists_sq, axis=1)
             t0 = t_fine[idx].copy()
 
-            # Raffinement Newton (minimise ||B(t) - D||^2)
             for _ in range(4):
                 bt = self.evaluate(t0)
                 d1 = self.derivative(t0, order=1)
                 d2 = self.derivative(t0, order=2)
                 diff = bt - inner_pts
                 num = np.sum(diff * d1, axis=1)
-                den = np.sum(d1 * d1, axis=1) + np.sum(diff * d2, axis=1)
+                den = (np.sum(d1 * d1, axis=1)
+                       + np.sum(diff * d2, axis=1))
                 mask = np.abs(den) > 1e-15
                 t0[mask] -= num[mask] / den[mask]
                 t0 = np.clip(t0, 0.0, 1.0)
 
-            # Assembler et assurer la monotonie
             t_new = np.empty(m + 1)
             t_new[0] = 0.0
             t_new[1:m] = t0
@@ -691,7 +923,6 @@ class Bezier(object):
                 if t_new[j] <= t_new[j - 1]:
                     t_new[j] = t_new[j - 1] + 1e-10
 
-            # Convergence ?
             if np.max(np.abs(t_new - t)) < 1e-8:
                 break
             t = t_new
@@ -1088,6 +1319,66 @@ class Bezier(object):
         return smoothed[radius:radius + len(values)]
 
     # ------------------------------------------------------------------
+    #  I/O
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, filepath, **kwargs):
+        u"""Charge des points depuis un fichier texte et cree une Bezier.
+
+        Le fichier doit contenir deux colonnes (x y) separees par des
+        espaces, tabulations, virgules ou points-virgules.
+        Les lignes vides et celles commencant par '#' sont ignorees.
+        La premiere ligne non-commentaire est utilisee comme nom si elle
+        ne contient pas de valeurs numeriques.
+
+        Les points lus sont traites comme des **points de controle**.
+        Pour les utiliser comme points cibles, passer ``degree=<int>``
+        dans les kwargs.
+
+        :param filepath: chemin du fichier
+        :type filepath: str
+        :param kwargs: arguments supplementaires passes au constructeur
+        :returns: instance Bezier
+        :rtype: Bezier
+        """
+        import os
+        filepath = str(filepath)
+        if not os.path.isfile(filepath):
+            raise IOError(u"Fichier introuvable : %s" % filepath)
+
+        name = kwargs.pop('name', None)
+        points = []
+
+        with open(filepath, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                # Remplacer les separateurs courants
+                line = line.replace(';', ' ').replace(',', ' ').replace('\t', ' ')
+                parts = line.split()
+                try:
+                    vals = [float(v) for v in parts[:2]]
+                except ValueError:
+                    # Ligne non numerique : utiliser comme nom
+                    if name is None and not points:
+                        name = line.strip()
+                    continue
+                if len(vals) == 2:
+                    points.append(vals)
+
+        if len(points) < 2:
+            raise ValueError(
+                u"Pas assez de points dans '%s' (%d trouves)"
+                % (filepath, len(points)))
+
+        if name is None:
+            name = os.path.splitext(os.path.basename(filepath))[0]
+
+        return cls(np.array(points), name=name, **kwargs)
+
+    # ------------------------------------------------------------------
     #  Visualisation
     # ------------------------------------------------------------------
 
@@ -1139,8 +1430,13 @@ class Bezier(object):
 
         return ax
 
+def test_bezier_profil():
+    b = Bezier.from_file('C:/Liclipse/workspace/AifoilTools/naca0012_normalized_intrados.dat', degree=16, max_dev=5, sample_mode='adaptive', tolerance=15.0)
+    b.plot()
+    return
 
 if __name__ == "__main__":
+    
     # Exemple d'utilisation
     # b = Bezier([[0, 0], [150, 200], [250, 200], [400, 0]], name='Exemple Cubique')
     # print(b)
@@ -1173,23 +1469,27 @@ if __name__ == "__main__":
     
     
 
-    b = Bezier([[0, 0], [150, 200], [250, 200], [400, 0]], name='Exemple Cubique')
-    pts_b = b.points
-    print("Echantillonage adaptatif points =", pts_b)
-    b.plot()
-    c=Bezier([[0, 0], [150, 0], [250, 0], [400, 0]], name='approx')
-    c.approximate(pts_b, degree='find', clamp_ends=True, max_iter=10, max_dev=1.0)
-    pts_c=c.points
+    # b = Bezier([[0, 0], [150, 200], [250, 200], [400, 0]], name='Exemple Cubique')
+    # pts_b = b.points
+    # print("Echantillonage adaptatif points =", pts_b)
+    # b.plot()
+    # c=Bezier([[0, 0], [150, 0], [250, 0], [400, 0]], name='approx')
+    # c.approximate(pts_b, degree='find', clamp_ends=True, max_iter=10, max_dev=1.0)
+    # pts_c=c.points
     
-    import matplotlib.pyplot as plt
-    fig, ax = plt.subplots(1, 1, figsize=(10, 6))
-    ax.plot(pts_b[:, 0], pts_b[:, 1], 'o', markersize=5, label='Points cibles')
-    ax.plot(pts_c[:, 0], pts_c[:, 1], 'r-', linewidth=2, label='Courbe approximee')
-    plt.show()
-    print("Deviation max =", c.max_deviation(pts_b))
-    c.plot()    
+    # import matplotlib.pyplot as plt
+    # fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+    # ax.plot(pts_b[:, 0], pts_b[:, 1], 'o', markersize=5, label='Points cibles')
+    # ax.plot(pts_c[:, 0], pts_c[:, 1], 'r-', linewidth=2, label='Courbe approximee')
+    # plt.show()
+    # print("Deviation max =", c.max_deviation(pts_b))
+    # c.plot()    
 
     # fig, ax = plt.subplots(1, 1, figsize=(10, 6))
     # ax.plot(pts_b[:, 0], pts_b[:, 1], 'o', markersize=5, label='Points cibles')
     # ax.plot(pts_c[:, 0], pts_c[:, 1], 'r-', linewidth=2, label='Courbe approximee')
     # plt.show()
+
+
+    b = test_bezier_profil()
+    

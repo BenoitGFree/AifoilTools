@@ -48,7 +48,7 @@ class TabProfils(QWidget):
         ctrl_layout.addWidget(QLabel(u"Degr\u00e9 B\u00e9zier:"))
         self._spn_degree = QSpinBox()
         self._spn_degree.setRange(2, 15)
-        self._spn_degree.setValue(5)
+        self._spn_degree.setValue(6)
         self._spn_degree.valueChanged.connect(self._on_degree_changed)
         ctrl_layout.addWidget(self._spn_degree)
 
@@ -72,17 +72,12 @@ class TabProfils(QWidget):
         layout.addWidget(self._canvas, stretch=1)
 
     def _load_default_profiles(self):
-        """Charge les profils par defaut au demarrage."""
-        # Profil courant : NACA 2412 en mode Bezier
+        """Charge les profils par defaut au demarrage (mode discret)."""
         self._profil_current = Profil.from_naca('2412', n_points=150)
         self._profil_current.normalize()
-        degree = self._spn_degree.value()
-        self._profil_current.approximate_bezier(degree=degree)
 
-        # Profil reference : NACA 0012 en mode Bezier
         self._profil_reference = Profil.from_naca('0012', n_points=150)
         self._profil_reference.normalize()
-        self._profil_reference.approximate_bezier(degree=degree)
 
         self._canvas.set_current_profil(self._profil_current)
         self._canvas.set_reference_profil(self._profil_reference)
@@ -100,11 +95,97 @@ class TabProfils(QWidget):
         self._canvas.set_show_reference(state == Qt.Checked.value)
 
     def _on_degree_changed(self, degree):
-        """Change le degre des Beziers du profil courant."""
-        if self._profil_current is not None:
+        """Change le degre des Beziers du profil courant (si en mode Bezier)."""
+        if (self._profil_current is not None
+                and self._profil_current.has_beziers):
             self._profil_current.clear_beziers()
-            self._profil_current.approximate_bezier(degree=degree)
+            self._profil_current.approximate_bezier(degree=degree,
+                                                    smoothing=0.1)
             self._canvas.set_current_profil(self._profil_current)
+
+    def load_profil_from_file(self, filepath, role="current"):
+        """Charge un profil depuis un fichier.
+
+        :param filepath: chemin du fichier profil
+        :type filepath: str
+        :param role: 'current' ou 'reference'
+        :type role: str
+        :returns: (succes, nom_ou_message_erreur)
+        :rtype: tuple(bool, str)
+        """
+        try:
+            profil = Profil.from_file(filepath)
+            profil.normalize()
+        except Exception as e:
+            return False, str(e)
+
+        if role == "reference":
+            self._profil_reference = profil
+            self._lbl_reference.setText(profil.name)
+            self._chk_reference.setChecked(True)
+            self._canvas.set_reference_profil(self._profil_reference)
+        else:
+            self._profil_current = profil
+            self._lbl_current.setText(profil.name)
+            self._chk_current.setChecked(True)
+            self._canvas.set_current_profil(self._profil_current)
+        return True, profil.name
+
+    def convert_current_to_bezier(self):
+        """Convertit le profil courant en mode Bezier.
+
+        :returns: (True, nom) si ok, (False, message) si erreur,
+                  (None, None) si pas de profil ou deja en Bezier
+        :rtype: tuple
+        """
+        p = self._profil_current
+        if p is None:
+            return None, None
+        if p.has_beziers:
+            return None, None
+
+        try:
+            degree = self._spn_degree.value()
+            p.approximate_bezier(degree=degree, smoothing=0.1)
+        except Exception as e:
+            return False, str(e)
+
+        self._canvas.set_current_profil(p)
+        return True, p.name
+
+    def save_current_profil(self):
+        """Sauvegarde le profil courant via un dialogue fichier.
+
+        :returns: (None, None) si annule/pas de profil,
+                  (True, chemin) si ok, (False, message) si erreur
+        :rtype: tuple
+        """
+        if self._profil_current is None:
+            return None, None
+
+        from PySide6.QtWidgets import QFileDialog
+        filepath, selected_filter = QFileDialog.getSaveFileName(
+            self,
+            "Sauvegarder le profil courant",
+            "%s.dat" % self._profil_current.name,
+            "Selig (*.dat);;Lednicer (*.dat);;CSV (*.csv)"
+        )
+        if not filepath:
+            return None, None
+
+        if "CSV" in selected_filter:
+            fmt = 'csv'
+        elif "Lednicer" in selected_filter:
+            fmt = 'lednicer'
+        else:
+            fmt = 'selig'
+
+        try:
+            self._profil_current.write(filepath, fmt=fmt)
+        except Exception as e:
+            return False, str(e)
+
+        return True, filepath
 
     def zoom_fit(self):
         """Zoom adapte (appele depuis le menu)."""

@@ -1,5 +1,32 @@
 # Changelog
 
+## [Non publié] - 2026-02-13 22:00
+
+### Added (Ajouté)
+- **Menus Fichier** dans `main_window.py` :
+  - Ouvrir profil courant (Ctrl+O) et référence (Ctrl+Shift+O) via `QFileDialog`
+  - Sauvegarder profil courant (Ctrl+S) en format Selig, Lednicer ou CSV
+- **Menu Edition > Convertir en Bézier** (Ctrl+B) dans `main_window.py`
+- **Régularisation par smoothing** dans `Bezier.approximate()` :
+  - Paramètre `smoothing` : pénalise les différences secondes du polygone de contrôle
+  - Méthode `_smoothing_matrix()` : matrice de régularisation Δ²
+- **Contraintes de tangente** dans `Bezier.approximate()` :
+  - Paramètres `start_tangent` / `end_tangent` (angle en degrés ou vecteur direction)
+  - P1 contraint sur une droite P0 + α·d (1 DOF au lieu de 2), idem Pn-1
+  - Méthodes `_parse_tangent()` et `_solve_clamped_with_tangents()`
+- **Tangente verticale au BA** dans `Profil.approximate_bezier()` :
+  - Paramètre `ba_vertical=True` : impose (0,+1) extrados, (0,-1) intrados
+- `Bezier.from_file()` : chargement de points depuis un fichier texte (x y en colonnes)
+- `TabProfils.load_profil_from_file()`, `save_current_profil()`, `convert_current_to_bezier()`
+- Guard d'import dans `profil.py` pour exécution directe (`__main__`)
+
+### Changed (Modifié)
+- Profils chargés en **mode discret** par défaut (plus de conversion Bézier automatique)
+- Le spinbox degré Bézier ne reconvertit que si le profil est déjà en mode Bézier
+- Degré Bézier par défaut : 5 → 6
+- `Bezier.__init__()` : nouveaux paramètres `smoothing`, `start_tangent`, `end_tangent`
+- `Profil.approximate_bezier()` : nouveaux paramètres `smoothing`, `ba_vertical`
+
 ## [Non publié] - 2026-02-13 18:00
 
 ### Added (Ajouté)
