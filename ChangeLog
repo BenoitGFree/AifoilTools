@@ -1,5 +1,22 @@
 # Changelog
 
+## [Non publié] - 2026-02-16 14:00
+
+### Added (Ajouté)
+- **Déviation entre profils** dans `profil.py` :
+  - `Profil.deviation(p_current, p_reference, n_points)` : méthode statique
+  - Interpolation extrados/intrados sur grille commune en x
+  - Retourne un dict avec coordonnées interpolées des deux profils
+- **Visualisation déviation** dans `profil_canvas.py` :
+  - Porcupines verticales (quills noirs) du profil courant vers la référence
+  - Enveloppe noire reliant les extrémités des quills
+  - Échelle indépendante (`_deviation_scale`, défaut 1.0 = taille réelle)
+  - Densité indépendante (`_deviation_n_quills`, défaut 200)
+  - Menu contextuel : échelle déviation (dialogue) + densité ×2/÷2
+- **Checkbox "Déviation"** dans `tab_profils.py` (décochée par défaut)
+- **4 tests** `TestProfilDeviation` dans `test_profil.py` :
+  - Profils identiques, profils différents, clés du dict, mode Bézier
+
 ## [Non publié] - 2026-02-13 20:31
 
 ### Added (Ajouté)

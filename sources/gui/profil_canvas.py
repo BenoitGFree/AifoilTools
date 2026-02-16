@@ -27,6 +27,7 @@ COLOR_REFERENCE = '#d62728'    # rouge
 COLOR_CTRL_POLYGON = '#888888' # gris
 COLOR_MEAN_LINE = '#2ca02c'    # vert
 COLOR_PORCUPINE = '#ff7f0e'    # orange
+COLOR_DEVIATION = '#000000'     # noir
 PICK_RADIUS = 8                # pixels pour la detection clic
 
 
@@ -113,6 +114,23 @@ class ProfilCanvas(FigureCanvasQTAgg):
         self._porcupine_scale = 200.0
         self._porcupine_n_quills = 200  # nombre de quills par courbe
 
+        # --- Deviation (ecart entre profil courant et reference) ---
+        self._show_deviation = False
+        self._deviation_scale = 1.0
+        self._deviation_n_quills = 200
+
+        self._dev_ext = LineCollection(
+            [], colors=COLOR_DEVIATION, linewidths=0.7)
+        self._ax.add_collection(self._dev_ext)
+        self._dev_int = LineCollection(
+            [], colors=COLOR_DEVIATION, linewidths=0.7)
+        self._ax.add_collection(self._dev_int)
+
+        self._dev_env_ext, = self._ax.plot(
+            [], [], '-', color=COLOR_DEVIATION, linewidth=0.8)
+        self._dev_env_int, = self._ax.plot(
+            [], [], '-', color=COLOR_DEVIATION, linewidth=0.8)
+
         # --- Drag state ---
         self._dragging = False
         self._drag_bezier = None     # 'ext' ou 'int'
@@ -181,6 +199,12 @@ class ProfilCanvas(FigureCanvasQTAgg):
         self._porc_ref_int.set_visible(visible)
         self.draw_idle()
 
+    def set_show_deviation(self, visible):
+        """Affiche/masque la deviation entre profils."""
+        self._show_deviation = visible
+        self._update_deviation()
+        self.draw_idle()
+
     def zoom_fit(self):
         """Ajuste le zoom pour voir tout le profil."""
         self._ax.relim()
@@ -242,6 +266,8 @@ class ProfilCanvas(FigureCanvasQTAgg):
             self._line_current_int.set_data(intr[:, 0], intr[:, 1])
             self._clear_ctrl_artists()
 
+        self._update_deviation()
+
     def _update_reference(self):
         """Met a jour tous les artists du profil de reference."""
         p = self._profil_reference
@@ -279,6 +305,7 @@ class ProfilCanvas(FigureCanvasQTAgg):
             self._env_ref_int.set_data([], [])
 
         self._update_mean_line(p, self._line_mean_ref)
+        self._update_deviation()
 
     def _update_porcupines(self, bezier, collection, chord,
                            envelope_line=None):
@@ -331,6 +358,52 @@ class ProfilCanvas(FigureCanvasQTAgg):
         y_mean = (y_ext + y_int) / 2.0
 
         line_artist.set_data(x_common, y_mean)
+
+    def _update_deviation(self):
+        """Calcule et affiche la deviation entre profils."""
+        p_cur = self._profil_current
+        p_ref = self._profil_reference
+
+        if (not self._show_deviation
+                or p_cur is None or p_ref is None):
+            self._clear_deviation_artists()
+            return
+
+        from model.profil import Profil
+        n = self._deviation_n_quills
+        dev = Profil.deviation(p_cur, p_ref, n_points=n)
+        scale = self._deviation_scale
+
+        # Extrados
+        x_ext = dev['x_ext']
+        y_cur_ext = dev['y_current_ext']
+        dy_ext = dev['y_reference_ext'] - y_cur_ext
+        tips_y_ext = y_cur_ext - dy_ext * scale
+
+        bases_ext = np.column_stack([x_ext, y_cur_ext])
+        tips_ext = np.column_stack([x_ext, tips_y_ext])
+        self._dev_ext.set_segments(
+            np.stack([bases_ext, tips_ext], axis=1))
+        self._dev_env_ext.set_data(x_ext, tips_y_ext)
+
+        # Intrados
+        x_int = dev['x_int']
+        y_cur_int = dev['y_current_int']
+        dy_int = dev['y_reference_int'] - y_cur_int
+        tips_y_int = y_cur_int - dy_int * scale
+
+        bases_int = np.column_stack([x_int, y_cur_int])
+        tips_int = np.column_stack([x_int, tips_y_int])
+        self._dev_int.set_segments(
+            np.stack([bases_int, tips_int], axis=1))
+        self._dev_env_int.set_data(x_int, tips_y_int)
+
+    def _clear_deviation_artists(self):
+        """Vide les artists de deviation."""
+        self._dev_ext.set_segments([])
+        self._dev_int.set_segments([])
+        self._dev_env_ext.set_data([], [])
+        self._dev_env_int.set_data([], [])
 
     # ==================================================================
     # Drag & drop des points de controle
@@ -517,6 +590,26 @@ class ProfilCanvas(FigureCanvasQTAgg):
         act_density_down = density_menu.addAction(u"Densit\u00e9 \u00f72")
         act_density_down.triggered.connect(self._on_density_halve)
 
+        menu.addSeparator()
+
+        # --- Echelle deviation ---
+        act_dev_scale = menu.addAction(
+            u"\u00c9chelle d\u00e9viation (%.2f)..."
+            % self._deviation_scale)
+        act_dev_scale.triggered.connect(
+            self._on_change_deviation_scale)
+
+        # --- Densite deviation ---
+        dev_menu = menu.addMenu(
+            u"Densit\u00e9 d\u00e9viation (%d)"
+            % self._deviation_n_quills)
+        act_dev_up = dev_menu.addAction(u"Densit\u00e9 \u00d72")
+        act_dev_up.triggered.connect(
+            self._on_deviation_density_double)
+        act_dev_down = dev_menu.addAction(u"Densit\u00e9 \u00f72")
+        act_dev_down.triggered.connect(
+            self._on_deviation_density_halve)
+
         # Convertir position matplotlib -> position widget Qt
         # matplotlib: y=0 en bas ; Qt: y=0 en haut
         qt_pos = QPoint(int(event.x), int(self.height() - event.y))
@@ -552,6 +645,32 @@ class ProfilCanvas(FigureCanvasQTAgg):
         self._porcupine_n_quills = max(5, self._porcupine_n_quills // 2)
         self._update_current()
         self._update_reference()
+        self.draw_idle()
+
+    def _on_change_deviation_scale(self):
+        """Ouvre un dialogue pour changer l'echelle de deviation."""
+        from PySide6.QtWidgets import QInputDialog
+        value, ok = QInputDialog.getDouble(
+            self, u"\u00c9chelle d\u00e9viation",
+            u"Facteur (1.0 = taille r\u00e9elle) :",
+            self._deviation_scale,
+            0.01, 1e9, 2)
+        if ok:
+            self._deviation_scale = value
+            self._update_deviation()
+            self.draw_idle()
+
+    def _on_deviation_density_double(self):
+        """Double le nombre de quills de deviation."""
+        self._deviation_n_quills *= 2
+        self._update_deviation()
+        self.draw_idle()
+
+    def _on_deviation_density_halve(self):
+        """Divise le nombre de quills de deviation par 2."""
+        self._deviation_n_quills = max(
+            5, self._deviation_n_quills // 2)
+        self._update_deviation()
         self.draw_idle()
 
     # ==================================================================
@@ -593,6 +712,7 @@ class ProfilCanvas(FigureCanvasQTAgg):
         self._env_current_ext.set_data([], [])
         self._env_current_int.set_data([], [])
         self._line_mean_current.set_data([], [])
+        self._clear_deviation_artists()
 
     def _clear_ctrl_artists(self):
         """Vide les artists de controle (polygone + points)."""
@@ -614,6 +734,7 @@ class ProfilCanvas(FigureCanvasQTAgg):
         self._env_ref_ext.set_data([], [])
         self._env_ref_int.set_data([], [])
         self._line_mean_ref.set_data([], [])
+        self._clear_deviation_artists()
 
     def _update_axes(self):
         """Recalcule les limites des axes."""

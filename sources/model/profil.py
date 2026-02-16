@@ -333,6 +333,52 @@ class Profil(object):
 
         return float(max_camber / c)
 
+    @staticmethod
+    def deviation(p_current, p_reference, n_points=200):
+        u"""Calcule la deviation entre deux profils.
+
+        Interpole extrados et intrados des deux profils sur une grille
+        commune en x, puis retourne les coordonnees interpolees.
+
+        :param p_current: profil courant
+        :type p_current: Profil
+        :param p_reference: profil de reference
+        :type p_reference: Profil
+        :param n_points: nombre de points de la grille commune
+        :type n_points: int
+        :returns: dict avec cles 'x_ext', 'y_current_ext',
+            'y_reference_ext', 'x_int', 'y_current_int',
+            'y_reference_int'
+        :rtype: dict
+        """
+        cur_ext = p_current.extrados    # BA -> BF, x croissant
+        cur_int = p_current.intrados
+        ref_ext = p_reference.extrados
+        ref_int = p_reference.intrados
+
+        # Extrados : grille commune
+        x_min_ext = max(cur_ext[0, 0], ref_ext[0, 0])
+        x_max_ext = min(cur_ext[-1, 0], ref_ext[-1, 0])
+        x_ext = np.linspace(x_min_ext, x_max_ext, n_points)
+        y_cur_ext = np.interp(x_ext, cur_ext[:, 0], cur_ext[:, 1])
+        y_ref_ext = np.interp(x_ext, ref_ext[:, 0], ref_ext[:, 1])
+
+        # Intrados : grille commune
+        x_min_int = max(cur_int[0, 0], ref_int[0, 0])
+        x_max_int = min(cur_int[-1, 0], ref_int[-1, 0])
+        x_int = np.linspace(x_min_int, x_max_int, n_points)
+        y_cur_int = np.interp(x_int, cur_int[:, 0], cur_int[:, 1])
+        y_ref_int = np.interp(x_int, ref_int[:, 0], ref_int[:, 1])
+
+        return {
+            'x_ext': x_ext,
+            'y_current_ext': y_cur_ext,
+            'y_reference_ext': y_ref_ext,
+            'x_int': x_int,
+            'y_current_int': y_cur_int,
+            'y_reference_int': y_ref_int,
+        }
+
     # ------------------------------------------------------------------
     #  Methodes de transformation (in-place, retournent self)
     # ------------------------------------------------------------------

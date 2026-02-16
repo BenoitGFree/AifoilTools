@@ -322,5 +322,55 @@ class TestProfilBezier(unittest.TestCase):
         self.assertEqual(len(self.profil.intrados), 50)
 
 
+class TestProfilDeviation(unittest.TestCase):
+    u"""Tests de deviation entre profils."""
+
+    def test_deviation_identical_profiles(self):
+        u"""Deviation entre deux profils identiques = 0 partout."""
+        p1 = Profil.from_naca('2412')
+        p1.normalize()
+        p2 = Profil.from_naca('2412')
+        p2.normalize()
+        dev = Profil.deviation(p1, p2)
+        dy_ext = dev['y_current_ext'] - dev['y_reference_ext']
+        dy_int = dev['y_current_int'] - dev['y_reference_int']
+        np.testing.assert_allclose(dy_ext, 0.0, atol=0.5)
+        np.testing.assert_allclose(dy_int, 0.0, atol=0.5)
+
+    def test_deviation_different_profiles(self):
+        u"""Deviation entre NACA 2412 et 0012 : non nulle."""
+        p1 = Profil.from_naca('2412')
+        p1.normalize()
+        p2 = Profil.from_naca('0012')
+        p2.normalize()
+        dev = Profil.deviation(p1, p2)
+        dy_ext = dev['y_current_ext'] - dev['y_reference_ext']
+        self.assertGreater(np.max(np.abs(dy_ext)), 1.0)
+
+    def test_deviation_returns_correct_keys(self):
+        u"""Le dict retourne contient les 6 cles attendues."""
+        p1 = Profil.from_naca('2412')
+        p1.normalize()
+        p2 = Profil.from_naca('0012')
+        p2.normalize()
+        dev = Profil.deviation(p1, p2, n_points=100)
+        for key in ('x_ext', 'y_current_ext', 'y_reference_ext',
+                     'x_int', 'y_current_int', 'y_reference_int'):
+            self.assertIn(key, dev)
+            self.assertEqual(len(dev[key]), 100)
+
+    def test_deviation_with_bezier_mode(self):
+        u"""Deviation fonctionne aussi en mode Bezier."""
+        p1 = Profil.from_naca('2412')
+        p1.normalize()
+        p1.approximate_bezier(degree=8)
+        p2 = Profil.from_naca('0012')
+        p2.normalize()
+        dev = Profil.deviation(p1, p2)
+        self.assertEqual(len(dev['x_ext']), 200)
+        dy_ext = dev['y_current_ext'] - dev['y_reference_ext']
+        self.assertGreater(np.max(np.abs(dy_ext)), 1.0)
+
+
 if __name__ == '__main__':
     unittest.main()

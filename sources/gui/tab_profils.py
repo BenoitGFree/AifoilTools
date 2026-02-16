@@ -77,6 +77,14 @@ class TabProfils(QWidget):
             self._on_toggle_porc_reference)
         ctrl_layout.addWidget(self._chk_porc_reference)
 
+        ctrl_layout.addSpacing(20)
+
+        self._chk_deviation = QCheckBox(u"D\u00e9viation")
+        self._chk_deviation.setChecked(False)
+        self._chk_deviation.stateChanged.connect(
+            self._on_toggle_deviation)
+        ctrl_layout.addWidget(self._chk_deviation)
+
         ctrl_layout.addStretch()
         layout.addLayout(ctrl_layout)
 
@@ -116,6 +124,11 @@ class TabProfils(QWidget):
     def _on_toggle_porc_reference(self, state):
         """Affiche/masque les porcupines du profil de reference."""
         self._canvas.set_show_porcupines_reference(state == Qt.Checked.value)
+
+    def _on_toggle_deviation(self, state):
+        """Affiche/masque la deviation entre profils."""
+        self._canvas.set_show_deviation(
+            state == Qt.Checked.value)
 
     def _on_degree_changed(self, degree):
         """Change le degre des Beziers du profil courant (si en mode Bezier)."""
