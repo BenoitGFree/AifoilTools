@@ -12,6 +12,7 @@ en stdin. Gere le timeout et les erreurs d'execution.
 """
 
 import os
+import sys
 import subprocess
 import logging
 
@@ -56,14 +57,24 @@ class XFoilSimulator(AbstractSimulator):
         :raises IOError: si XFoil n'est pas trouve
         """
         # Chercher dans externaltools/
-        base = os.path.dirname(os.path.abspath(__file__))
-        # Remonter de sources/model/ vers la racine du projet
-        project_root = os.path.normpath(
-            os.path.join(base, '..', '..'))
-        candidates = [
-            os.path.join(project_root, 'externaltools', 'xfoil', 'xfoil.exe'),
-            os.path.join(project_root, 'externaltools', 'xfoil', 'xfoil'),
-        ]
+        if getattr(sys, 'frozen', False):
+            # Mode PyInstaller : chercher a cote de l'exe
+            exe_dir = os.path.dirname(sys.executable)
+            candidates = [
+                os.path.join(exe_dir, 'externaltools',
+                             'xfoil', 'xfoil.exe'),
+            ]
+        else:
+            base = os.path.dirname(os.path.abspath(__file__))
+            # Remonter de sources/model/ vers la racine du projet
+            project_root = os.path.normpath(
+                os.path.join(base, '..', '..'))
+            candidates = [
+                os.path.join(project_root, 'externaltools',
+                             'xfoil', 'xfoil.exe'),
+                os.path.join(project_root, 'externaltools',
+                             'xfoil', 'xfoil'),
+            ]
         for path in candidates:
             if os.path.isfile(path):
                 return path

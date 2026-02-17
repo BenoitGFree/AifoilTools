@@ -1,5 +1,13 @@
 # Changelog
 
+## [Non publié] - 2026-02-17 16:00
+
+### Added (Ajouté)
+- **Support PyInstaller** pour distribution en `.exe` :
+  - `AifoilTools.spec` : fichier de configuration PyInstaller (onedir, windowed)
+  - `run_gui.py` : détection mode frozen (`sys._MEIPASS`) pour le sys.path
+  - `xfoil_simulator.py` : recherche `xfoil.exe` à côté de l'exe en mode frozen
+
 ## [Non publié] - 2026-02-16 14:00
 
 ### Added (Ajouté)

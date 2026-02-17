@@ -5,11 +5,17 @@
 import sys
 import os
 
-# Ajouter sources/ au path pour les imports model.* et gui.*
-_root = os.path.dirname(os.path.abspath(__file__))
-_src = os.path.join(_root, 'sources')
-if _src not in sys.path:
-    sys.path.insert(0, _src)
+if getattr(sys, 'frozen', False):
+    # Mode PyInstaller : les modules sont dans le bundle
+    _base = sys._MEIPASS
+    if _base not in sys.path:
+        sys.path.insert(0, _base)
+else:
+    # Mode developpement
+    _root = os.path.dirname(os.path.abspath(__file__))
+    _src = os.path.join(_root, 'sources')
+    if _src not in sys.path:
+        sys.path.insert(0, _src)
 
 from gui.main_window import main
 
