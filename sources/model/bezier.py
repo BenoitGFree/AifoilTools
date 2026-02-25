@@ -48,6 +48,38 @@ def _de_casteljau(points, t):
     return pts[0]
 
 
+def _de_casteljau_split(points, t):
+    u"""Scinde une courbe de Bezier en t par l'algorithme de De Casteljau.
+
+    Construit la pyramide complete des points intermediaires et extrait
+    les points de controle des deux sous-courbes.
+
+    :param points: points de controle, ndarray(n+1, 2)
+    :param t: parametre scalaire dans ]0, 1[
+    :returns: (left_cpts, right_cpts) points de controle des deux
+        sous-courbes, chacun ndarray(n+1, 2)
+    :rtype: tuple(numpy.ndarray, numpy.ndarray)
+    """
+    n = len(points) - 1
+    # Pyramide : pyramid[r] a (n+1-r) points
+    pyramid = [points.copy()]
+    for r in range(1, n + 1):
+        prev = pyramid[r - 1]
+        pyramid.append((1.0 - t) * prev[:-1] + t * prev[1:])
+
+    # Sous-courbe gauche : bord gauche de la pyramide
+    left = np.empty((n + 1, 2), dtype=float)
+    for i in range(n + 1):
+        left[i] = pyramid[i][0]
+
+    # Sous-courbe droite : bord droit de la pyramide
+    right = np.empty((n + 1, 2), dtype=float)
+    for i in range(n + 1):
+        right[i] = pyramid[n - i][i]
+
+    return left, right
+
+
 # --------------------------------------------------------------------------
 #  Classe Bezier
 # --------------------------------------------------------------------------
@@ -401,6 +433,42 @@ class Bezier(object):
         self._cpts = self._cpts[::-1].copy()
         self._invalidate(geometry=True)
         return self
+
+    def split(self, t):
+        u"""Scinde la courbe en deux au parametre t.
+
+        Utilise l'algorithme de De Casteljau pour extraire les points
+        de controle des deux sous-courbes. Le resultat est exact :
+        meme degre, continuite C-infini au point de scission.
+
+        :param t: parametre de scission dans ]0, 1[
+        :type t: float
+        :returns: BezierSpline a 2 segments, continuite C2
+        :rtype: BezierSpline
+        :raises ValueError: si t n'est pas dans ]0, 1[
+        """
+        t = float(t)
+        if t <= 0.0 or t >= 1.0:
+            raise ValueError(
+                u"t doit etre dans ]0, 1[, recu %.6f" % t)
+
+        left_cpts, right_cpts = _de_casteljau_split(self._cpts, t)
+
+        left = Bezier(left_cpts, name='%s [0]' % self._name,
+                      n_points=self._n_points,
+                      sample_mode=self._sample_mode,
+                      tolerance=self._tolerance)
+        right = Bezier(right_cpts, name='%s [1]' % self._name,
+                       n_points=self._n_points,
+                       sample_mode=self._sample_mode,
+                       tolerance=self._tolerance)
+
+        from .bezier_spline import BezierSpline
+        return BezierSpline([left, right], continuities=['C2'],
+                            name=self._name,
+                            n_points=self._n_points,
+                            sample_mode=self._sample_mode,
+                            tolerance=self._tolerance)
 
     def elevate(self, times=1):
         u"""Eleve le degre de la courbe sans modifier sa forme.

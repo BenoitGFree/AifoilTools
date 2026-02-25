@@ -1,5 +1,49 @@
 # Changelog
 
+## [Non publié] - 2026-02-25 18:00
+
+### Added (Ajouté)
+- **Classe `BezierSpline`** dans `bezier_spline.py` (651 lignes) :
+  - Spline multi-segment de courbes de Bézier avec continuités paramétrables (C0/C1/C2)
+  - Évaluation, dérivées, tangentes, normales, courbure sur domaine global `[0, N]`
+  - Échantillonnage (`points`), points de contrôle globaux (`control_points`)
+  - `project(point)` : projection sur la spline (échantillonnage + Newton)
+  - `split(t)` : scission exacte (De Casteljau) en t, retourne nouvelle spline
+  - `translate_cpoint(index, vector)` : translation d'un point de contrôle global avec gestion des jonctions
+  - Transformations : `translate`, `rotate`, `scale`, `reverse`
+  - Cache invalidable à deux niveaux (géométrie / échantillonnage)
+- **Classe `ProfilSpline`** dans `profil_spline.py` (1227 lignes) :
+  - Variante de `Profil` utilisant des `BezierSpline` (multi-segment) pour extrados/intrados
+  - `approximate_spline(degree, max_dev, smoothing)` : approximation par BezierSpline
+  - `has_splines`, `spline_extrados`, `spline_intrados`, `clear_splines()`
+  - I/O format `.bspl` (sauvegarde/chargement des splines multi-segment)
+  - `deviation()` : calcul de déviation entre deux ProfilSpline
+  - Même interface que `Profil` : `.points`, `.name`, `.normalize()`, etc.
+- **`Bezier.split(t)`** dans `bezier.py` :
+  - Scission d'une courbe en deux au paramètre t (De Casteljau exact)
+  - Fonction auxiliaire `_de_casteljau_split()` (pyramide complète)
+  - Retourne une `BezierSpline` à 2 segments, continuité C2
+- **Split interactif** dans `profil_canvas.py` :
+  - Menu contextuel "Split extrados" / "Split intrados" (clic droit)
+  - Projection du clic sur la spline, scission au point le plus proche
+  - Garde-fou : rejet si trop proche d'un bord ou d'une jonction
+- **Analyse "Profil + CL"** dans `result_cell.py` :
+  - Visualisation du profil tourné par l'incidence + frontière couche limite (δ*)
+  - Normales sortantes par différences finies, enveloppe jaune
+  - Ajouté au registre `ANALYSIS_REGISTRY` (19e type)
+- **Menu Échantillonnage** dans `main_window.py` :
+  - Sous-menu Edition > Échantillonnage > profil courant / référence
+  - `change_sampling()` dans `tab_profils.py` : dialogue nombre de points
+- **Tests** : 479 lignes `test_bezier_spline.py` (50 tests), 586 lignes `test_profil_spline.py` (61 tests), 137 lignes ajoutées à `test_bezier.py` (split)
+- Export `BezierSpline` et `ProfilSpline` dans `model/__init__.py`
+
+### Changed (Modifié)
+- **Migration GUI Profil → ProfilSpline** :
+  - `tab_profils.py` : `Profil` → `ProfilSpline`, `has_beziers` → `has_splines`, `approximate_bezier` → `approximate_spline`
+  - `profil_canvas.py` : `bezier_extrados/intrados` → `spline_extrados/intrados`, porcupines adaptées au domaine `[0, N]`
+  - `main_window.py` : "Convertir en Bézier" → "Convertir en Spline", filtre fichier `.bspl`
+- `simulation.py` : `Simulation.__init__()` accepte `ProfilSpline` en plus de `Profil`
+
 ## [Non publié] - 2026-02-17 16:00
 
 ### Added (Ajouté)

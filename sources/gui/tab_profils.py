@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal
 
-from model.profil import Profil
+from model.profil_spline import ProfilSpline
 from .profil_canvas import ProfilCanvas
 
 
@@ -96,10 +96,10 @@ class TabProfils(QWidget):
 
     def _load_default_profiles(self):
         """Charge les profils par defaut au demarrage (mode discret)."""
-        self._profil_current = Profil.from_naca('2412', n_points=150)
+        self._profil_current = ProfilSpline.from_naca('2412', n_points=150)
         self._profil_current.normalize()
 
-        self._profil_reference = Profil.from_naca('0012', n_points=150)
+        self._profil_reference = ProfilSpline.from_naca('0012', n_points=150)
         self._profil_reference.normalize()
 
         self._canvas.set_current_profil(self._profil_current)
@@ -133,10 +133,10 @@ class TabProfils(QWidget):
     def _on_degree_changed(self, degree):
         """Change le degre des Beziers du profil courant (si en mode Bezier)."""
         if (self._profil_current is not None
-                and self._profil_current.has_beziers):
-            self._profil_current.clear_beziers()
-            self._profil_current.approximate_bezier(degree=degree,
-                                                    smoothing=0.1)
+                and self._profil_current.has_splines):
+            self._profil_current.clear_splines()
+            self._profil_current.approximate_spline(
+                degree=degree, smoothing=0.1)
             self._canvas.set_current_profil(self._profil_current)
             self.profil_changed.emit('current')
 
@@ -151,7 +151,7 @@ class TabProfils(QWidget):
         :rtype: tuple(bool, str)
         """
         try:
-            profil = Profil.from_file(filepath)
+            profil = ProfilSpline.from_file(filepath)
             profil.normalize()
         except Exception as e:
             return False, str(e)
@@ -169,8 +169,8 @@ class TabProfils(QWidget):
         self.profil_changed.emit(role)
         return True, profil.name
 
-    def convert_current_to_bezier(self):
-        """Convertit le profil courant en mode Bezier.
+    def convert_current_to_spline(self):
+        """Convertit le profil courant en mode Spline.
 
         :returns: (True, nom) si ok, (False, message) si erreur,
                   (None, None) si pas de profil ou deja en Bezier
@@ -179,12 +179,12 @@ class TabProfils(QWidget):
         p = self._profil_current
         if p is None:
             return None, None
-        if p.has_beziers:
+        if p.has_splines:
             return None, None
 
         try:
             degree = self._spn_degree.value()
-            p.approximate_bezier(degree=degree, smoothing=0.1)
+            p.approximate_spline(degree=degree, smoothing=0.1)
         except Exception as e:
             return False, str(e)
 
@@ -207,7 +207,7 @@ class TabProfils(QWidget):
             self,
             "Sauvegarder le profil courant",
             "%s.dat" % self._profil_current.name,
-            u"Selig (*.dat);;Lednicer (*.dat);;B\u00e9zier (*.bez);;CSV (*.csv)"
+            u"Selig (*.dat);;Lednicer (*.dat);;Spline (*.bspl);;CSV (*.csv)"
         )
         if not filepath:
             return None, None
@@ -216,8 +216,8 @@ class TabProfils(QWidget):
             fmt = 'csv'
         elif "Lednicer" in selected_filter:
             fmt = 'lednicer'
-        elif "zier" in selected_filter:
-            fmt = 'bezier'
+        elif "Spline" in selected_filter:
+            fmt = 'bspl'
         else:
             fmt = 'selig'
 
@@ -237,6 +237,41 @@ class TabProfils(QWidget):
     def profil_reference(self):
         """Retourne le profil de reference (ou None)."""
         return self._profil_reference
+
+    def change_sampling(self, role='current'):
+        """Change le nombre de points d'echantillonnage d'un profil Bezier.
+
+        :param role: 'current' ou 'reference'
+        :type role: str
+        :returns: (True, info), (False, erreur) ou (None, message)
+        :rtype: tuple
+        """
+        profil = (self._profil_current if role == 'current'
+                  else self._profil_reference)
+        if profil is None:
+            return None, "Pas de profil"
+        if not profil.has_splines:
+            return None, u"Le profil n'est pas en mode Spline"
+
+        current_n = profil.spline_extrados.n_points
+        from PySide6.QtWidgets import QInputDialog
+        label = "courant" if role == 'current' else u"r\u00e9f\u00e9rence"
+        value, ok = QInputDialog.getInt(
+            self,
+            u"\u00c9chantillonnage profil %s" % label,
+            "Nombre de points :",
+            current_n, 10, 10000, 10)
+        if not ok:
+            return None, None
+
+        profil.spline_extrados.n_points = value
+        profil.spline_intrados.n_points = value
+        if role == 'current':
+            self._canvas.set_current_profil(profil)
+        else:
+            self._canvas.set_reference_profil(profil)
+        self.profil_changed.emit(role)
+        return True, "%s : %d points" % (profil.name, value)
 
     def zoom_fit(self):
         """Zoom adapte (appele depuis le menu)."""

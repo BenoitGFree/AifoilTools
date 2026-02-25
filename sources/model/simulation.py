@@ -547,10 +547,11 @@ class Simulation(object):
         :type work_dir: str or None
         """
         from .profil import Profil
-        if not isinstance(profil, Profil):
+        from .profil_spline import ProfilSpline
+        if not isinstance(profil, (Profil, ProfilSpline)):
             raise TypeError(
-                u"profil doit etre une instance de Profil, pas %s"
-                % type(profil).__name__)
+                u"profil doit etre une instance de Profil ou "
+                u"ProfilSpline, pas %s" % type(profil).__name__)
 
         self._profil = profil
         self._solver = solver

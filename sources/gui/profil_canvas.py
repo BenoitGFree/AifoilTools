@@ -222,19 +222,19 @@ class ProfilCanvas(FigureCanvasQTAgg):
             self._clear_current_artists()
             return
 
-        if p.has_beziers:
-            b_ext = p.bezier_extrados
-            b_int = p.bezier_intrados
+        if p.has_splines:
+            s_ext = p.spline_extrados
+            s_int = p.spline_intrados
 
             # Courbes
-            pts_ext = b_ext.points
-            pts_int = b_int.points
+            pts_ext = s_ext.points
+            pts_int = s_int.points
             self._line_current_ext.set_data(pts_ext[:, 0], pts_ext[:, 1])
             self._line_current_int.set_data(pts_int[:, 0], pts_int[:, 1])
 
             # Points de controle
-            cp_ext = b_ext.control_points
-            cp_int = b_int.control_points
+            cp_ext = s_ext.control_points
+            cp_int = s_int.control_points
             self._scatter_ctrl_ext.set_data(cp_ext[:, 0], cp_ext[:, 1])
             self._scatter_ctrl_int.set_data(cp_int[:, 0], cp_int[:, 1])
 
@@ -245,10 +245,10 @@ class ProfilCanvas(FigureCanvasQTAgg):
             # Porcupines
             if self._show_porc_current:
                 self._update_porcupines(
-                    b_ext, self._porc_current_ext, p.chord,
+                    s_ext, self._porc_current_ext, p.chord,
                     self._env_current_ext)
                 self._update_porcupines(
-                    b_int, self._porc_current_int, p.chord,
+                    s_int, self._porc_current_int, p.chord,
                     self._env_current_int)
             else:
                 self._porc_current_ext.set_segments([])
@@ -275,19 +275,19 @@ class ProfilCanvas(FigureCanvasQTAgg):
             self._clear_reference_artists()
             return
 
-        if p.has_beziers:
-            b_ext = p.bezier_extrados
-            b_int = p.bezier_intrados
-            pts_ext = b_ext.points
-            pts_int = b_int.points
+        if p.has_splines:
+            s_ext = p.spline_extrados
+            s_int = p.spline_intrados
+            pts_ext = s_ext.points
+            pts_int = s_int.points
             self._line_ref_ext.set_data(pts_ext[:, 0], pts_ext[:, 1])
             self._line_ref_int.set_data(pts_int[:, 0], pts_int[:, 1])
             if self._show_porc_reference:
                 self._update_porcupines(
-                    b_ext, self._porc_ref_ext, p.chord,
+                    s_ext, self._porc_ref_ext, p.chord,
                     self._env_ref_ext)
                 self._update_porcupines(
-                    b_int, self._porc_ref_int, p.chord,
+                    s_int, self._porc_ref_int, p.chord,
                     self._env_ref_int)
             else:
                 self._porc_ref_ext.set_segments([])
@@ -307,21 +307,21 @@ class ProfilCanvas(FigureCanvasQTAgg):
         self._update_mean_line(p, self._line_mean_ref)
         self._update_deviation()
 
-    def _update_porcupines(self, bezier, collection, chord,
+    def _update_porcupines(self, spline, collection, chord,
                            envelope_line=None):
-        """Calcule et met a jour les porcupines pour une courbe Bezier.
+        """Calcule et met a jour les porcupines pour une spline.
 
-        :param bezier: courbe Bezier
+        :param spline: BezierSpline (ou Bezier)
         :param collection: LineCollection a mettre a jour
         :param chord: corde du profil (pour l'echelle)
         :param envelope_line: Line2D pour l'enveloppe (optionnel)
         """
-        # Evaluer le bezier au nombre de quills demande
         n = self._porcupine_n_quills
-        t = np.linspace(0, 1, n)
-        pts = bezier.evaluate(t)
-        normals = bezier.normal(t)
-        curvatures = bezier.curvature(t)
+        t_max = getattr(spline, 'n_segments', 1)
+        t = np.linspace(0, t_max, n)
+        pts = spline.evaluate(t)
+        normals = spline.normal(t)
+        curvatures = spline.curvature(t)
 
         # Echelle : la longueur des quills est proportionnelle a la courbure
         # Signe negatif : les quills pointent vers l'interieur du profil
@@ -369,9 +369,9 @@ class ProfilCanvas(FigureCanvasQTAgg):
             self._clear_deviation_artists()
             return
 
-        from model.profil import Profil
+        from model.profil_spline import ProfilSpline
         n = self._deviation_n_quills
-        dev = Profil.deviation(p_cur, p_ref, n_points=n)
+        dev = ProfilSpline.deviation(p_cur, p_ref, n_points=n)
         scale = self._deviation_scale
 
         # Extrados
@@ -424,7 +424,7 @@ class ProfilCanvas(FigureCanvasQTAgg):
         if event.button != 1 or event.inaxes != self._ax:
             return
         p = self._profil_current
-        if p is None or not p.has_beziers:
+        if p is None or not p.has_splines:
             return
 
         # Chercher le point de controle le plus proche
@@ -464,8 +464,8 @@ class ProfilCanvas(FigureCanvasQTAgg):
             return
 
         p = self._profil_current
-        bez = (p.bezier_extrados if self._drag_bezier == 'ext'
-               else p.bezier_intrados)
+        spl = (p.spline_extrados if self._drag_bezier == 'ext'
+               else p.spline_intrados)
 
         current_xy = np.array([event.xdata, event.ydata])
         delta = current_xy - self._drag_start_xy
@@ -476,7 +476,7 @@ class ProfilCanvas(FigureCanvasQTAgg):
             delta[0] = 0.0
 
         # Deplacer le point de controle
-        bez.translate_cpoint(self._drag_index, delta)
+        spl.translate_cpoint(self._drag_index, delta)
 
         # Mise a jour temps reel
         self._update_current()
@@ -502,16 +502,16 @@ class ProfilCanvas(FigureCanvasQTAgg):
         :returns: (index, 'ext'|'int') ou (None, None)
         """
         p = self._profil_current
-        if not p.has_beziers:
+        if not p.has_splines:
             return None, None
 
         best_dist = PICK_RADIUS  # en pixels
         best_idx = None
         best_side = None
 
-        for side, bez in [('ext', p.bezier_extrados),
-                          ('int', p.bezier_intrados)]:
-            cp = bez.control_points
+        for side, spl in [('ext', p.spline_extrados),
+                          ('int', p.spline_intrados)]:
+            cp = spl.control_points
             n_cp = len(cp)
             for i in range(n_cp):
                 # Extremites (P0 et P_last) : non deplacables
@@ -610,6 +610,19 @@ class ProfilCanvas(FigureCanvasQTAgg):
         act_dev_down.triggered.connect(
             self._on_deviation_density_halve)
 
+        # --- Split spline ---
+        p = self._profil_current
+        if p is not None and p.has_splines:
+            menu.addSeparator()
+            self._split_event_xy = np.array(
+                [event.xdata, event.ydata])
+            act_split_ext = menu.addAction("Split extrados")
+            act_split_ext.triggered.connect(
+                self._on_split_extrados)
+            act_split_int = menu.addAction("Split intrados")
+            act_split_int.triggered.connect(
+                self._on_split_intrados)
+
         # Convertir position matplotlib -> position widget Qt
         # matplotlib: y=0 en bas ; Qt: y=0 en haut
         qt_pos = QPoint(int(event.x), int(self.height() - event.y))
@@ -672,6 +685,55 @@ class ProfilCanvas(FigureCanvasQTAgg):
             5, self._deviation_n_quills // 2)
         self._update_deviation()
         self.draw_idle()
+
+    # ==================================================================
+    # Split spline
+    # ==================================================================
+
+    def _on_split_extrados(self):
+        """Split l'extrados au point le plus proche du clic."""
+        self._do_split('ext')
+
+    def _on_split_intrados(self):
+        """Split l'intrados au point le plus proche du clic."""
+        self._do_split('int')
+
+    def _do_split(self, side):
+        """Execute le split sur le cote specifie.
+
+        :param side: 'ext' ou 'int'
+        """
+        p = self._profil_current
+        if p is None or not p.has_splines:
+            return
+
+        spl = (p.spline_extrados if side == 'ext'
+               else p.spline_intrados)
+        t, pt, dist = spl.project(self._split_event_xy)
+
+        # Rejeter si trop proche d'un bord ou d'une jonction
+        eps = 0.01
+        N = spl.n_segments
+        if t < eps or t > N - eps:
+            return
+        t_frac = t - int(t)
+        if t_frac < eps or t_frac > 1.0 - eps:
+            return
+
+        try:
+            new_spline = spl.split(t)
+        except ValueError:
+            return
+
+        if side == 'ext':
+            p._spline_extrados = new_spline
+        else:
+            p._spline_intrados = new_spline
+
+        self._update_current()
+        self._update_axes()
+        self.draw_idle()
+        self.profil_edited.emit()
 
     # ==================================================================
     # Utilitaires

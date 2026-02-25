@@ -224,6 +224,68 @@ def _plot_h_x(ax, sim_results, color, label_base):
     _plot_bl_x(ax, sim_results, color, label_base, 'H')
 
 
+def _plot_profil_bl(ax, sim_results, color, label_base,
+                    re_selected=None, alpha_selected=None):
+    u"""Profil tourne par l'incidence + frontiere couche limite.
+
+    Trace le profil (depuis les donnees BL) tourne de alpha degres,
+    et la frontiere de couche limite (surface + delta* le long des
+    normales sortantes) en jaune.
+
+    :param re_selected: Reynolds selectionne (None = premier dispo)
+    :param alpha_selected: incidence en degres (None = 0)
+    """
+    if not sim_results.has_bl:
+        return
+
+    bl_dict = sim_results.bl
+    re_vals = sorted(k for k in bl_dict
+                     if isinstance(k, float)
+                     and bl_dict[k] is not None)
+    if not re_vals:
+        return
+    re_val = (re_selected
+              if re_selected in bl_dict
+              and bl_dict.get(re_selected) is not None
+              else re_vals[0])
+    bl = bl_dict[re_val]
+
+    x = bl['x']
+    y = bl['y']
+    dstar = bl['Dstar']
+
+    # Rotation par l'angle d'incidence
+    alpha_deg = alpha_selected if alpha_selected is not None else 0.0
+    alpha_rad = np.radians(alpha_deg)
+    cos_a = np.cos(alpha_rad)
+    sin_a = np.sin(alpha_rad)
+    xr = x * cos_a + y * sin_a
+    yr = -x * sin_a + y * cos_a
+
+    # Normales sortantes par differences finies
+    dx = np.gradient(xr)
+    dy = np.gradient(yr)
+    norm = np.sqrt(dx**2 + dy**2)
+    norm = np.where(norm < 1e-15, 1.0, norm)
+    # Convention Selig (BF->ext->BA->int->BF) : (dy, -dx) pointe
+    # vers l'exterieur du profil
+    nx = dy / norm
+    ny = -dx / norm
+
+    # Frontiere couche limite
+    xbl = xr + nx * dstar
+    ybl = yr + ny * dstar
+
+    # Tracer le profil
+    ax.plot(xr, yr, color=color, linewidth=1.2, label=label_base)
+
+    # Frontiere CL en jaune
+    ax.plot(xbl, ybl, color='#FFD700', linewidth=1.0,
+            label=u'%s \u03b4*' % label_base)
+
+    ax.set_aspect('equal', adjustable='datalim')
+
+
 def _format_re(re_val):
     u"""Formate un Reynolds pour la legende."""
     if re_val >= 1e6:
@@ -258,6 +320,7 @@ ANALYSIS_REGISTRY = [
     (u'Theta(x)',      _plot_theta_x,       'x',           u'\u03b8'),
     ('Cf(x)',          _plot_cf_x,          'x',           'Cf'),
     ('H(x)',           _plot_h_x,           'x',           'H'),
+    ('Profil + CL',    _plot_profil_bl,     'x',           'y'),
 ]
 
 # Noms pour acces rapide
@@ -331,7 +394,7 @@ class ResultCell(QWidget):
             self._on_toggle_reference)
         ctrl.addWidget(self._chk_reference)
 
-        # Combo Reynolds (visible pour -Cp(x))
+        # Combo Reynolds (visible pour -Cp(x) et Profil + CL)
         self._combo_re = QComboBox()
         self._combo_re.setToolTip("Reynolds")
         self._combo_re.setMinimumWidth(90)
@@ -339,6 +402,15 @@ class ResultCell(QWidget):
             self._on_re_changed)
         self._combo_re.setVisible(False)
         ctrl.addWidget(self._combo_re)
+
+        # Combo Alpha (visible pour Profil + CL)
+        self._combo_alpha = QComboBox()
+        self._combo_alpha.setToolTip("Incidence")
+        self._combo_alpha.setMinimumWidth(70)
+        self._combo_alpha.currentTextChanged.connect(
+            self._on_alpha_changed)
+        self._combo_alpha.setVisible(False)
+        ctrl.addWidget(self._combo_alpha)
 
         self._lbl_cursor = QLabel("")
         self._lbl_cursor.setStyleSheet("font-size: 9px; color: #666;")
@@ -373,6 +445,7 @@ class ResultCell(QWidget):
         """
         self._results = results
         self._populate_re_combo()
+        self._populate_alpha_combo()
         self._replot()
 
     def set_analysis(self, name):
@@ -410,19 +483,23 @@ class ResultCell(QWidget):
             return
 
         is_cp = (self._analysis_name == '-Cp(x)')
+        is_profil_bl = (self._analysis_name == 'Profil + CL')
         is_bl = self._analysis_name in (
             'Ue(s)', 'Dstar(s)', 'Theta(s)', 'Cf(s)', 'H(s)',
             'Ue(x)', 'Dstar(x)', 'Theta(x)', 'Cf(x)', 'H(x)')
         for role, sim_results in self._results.items():
             if is_cp and not sim_results.has_cp:
                 continue
-            if is_bl and not sim_results.has_bl:
+            if (is_bl or is_profil_bl) \
+                    and not sim_results.has_bl:
                 continue
-            if not is_cp and not is_bl and not sim_results.has_polars:
+            if not is_cp and not is_bl and not is_profil_bl \
+                    and not sim_results.has_polars:
                 continue
             if role == 'current' and not self._show_current:
                 continue
-            if role == 'reference' and not self._show_reference:
+            if role == 'reference' \
+                    and not self._show_reference:
                 continue
             color = COLOR_CURRENT if role == 'current' \
                 else COLOR_REFERENCE
@@ -431,6 +508,10 @@ class ResultCell(QWidget):
             if is_cp:
                 plot_fn(self._ax, sim_results, color,
                         label_base, self._selected_re)
+            elif is_profil_bl:
+                plot_fn(self._ax, sim_results, color,
+                        label_base, self._selected_re,
+                        self._selected_alpha)
             else:
                 plot_fn(self._ax, sim_results, color,
                         label_base)
@@ -440,6 +521,13 @@ class ResultCell(QWidget):
         title = self._analysis_name
         if is_cp and self._selected_re is not None:
             title += '  %s' % _format_re(self._selected_re)
+        if is_profil_bl:
+            if self._selected_re is not None:
+                title += '  %s' % _format_re(
+                    self._selected_re)
+            if self._selected_alpha is not None:
+                title += u'  \u03b1=%.1f\u00b0' % (
+                    self._selected_alpha)
         self._ax.set_title(title, fontsize=9)
         self._ax.tick_params(labelsize=7)
 
@@ -465,11 +553,19 @@ class ResultCell(QWidget):
     def _on_analysis_changed(self, name):
         u"""Appele quand le combo d'analyse change."""
         self._analysis_name = name
-        self._combo_re.setVisible(name == '-Cp(x)')
+        needs_re = name in ('-Cp(x)', 'Profil + CL')
+        self._combo_re.setVisible(needs_re)
+        self._combo_alpha.setVisible(name == 'Profil + CL')
+        if name == 'Profil + CL':
+            self._populate_alpha_combo()
         self._replot()
 
     def _on_re_changed(self, text):
         u"""Appele quand le combo Reynolds change."""
+        self._replot()
+
+    def _on_alpha_changed(self, text):
+        u"""Appele quand le combo alpha change."""
         self._replot()
 
     def _on_toggle_current(self, state):
@@ -530,29 +626,59 @@ class ResultCell(QWidget):
         self._combo_re.blockSignals(True)
         old_text = self._combo_re.currentText()
         self._combo_re.clear()
-        # Collecter les Re depuis les Cp de tous les roles
         re_set = set()
         for sim_results in self._results.values():
             if sim_results.has_cp:
                 for k in sim_results.cp:
                     if isinstance(k, float):
                         re_set.add(k)
+            if sim_results.has_bl:
+                for k in sim_results.bl:
+                    if isinstance(k, float):
+                        re_set.add(k)
         for re_val in sorted(re_set):
             self._combo_re.addItem(
                 _format_re(re_val), re_val)
-        # Restaurer la selection precedente si possible
         idx = self._combo_re.findText(old_text)
         if idx >= 0:
             self._combo_re.setCurrentIndex(idx)
         self._combo_re.blockSignals(False)
-        self._combo_re.setVisible(
-            self._analysis_name == '-Cp(x)')
+        needs_re = self._analysis_name in (
+            '-Cp(x)', 'Profil + CL')
+        self._combo_re.setVisible(needs_re)
+
+    def _populate_alpha_combo(self):
+        u"""Peuple le combo alpha depuis les polaires."""
+        self._combo_alpha.blockSignals(True)
+        old_text = self._combo_alpha.currentText()
+        self._combo_alpha.clear()
+        alpha_set = set()
+        for sim_results in self._results.values():
+            if sim_results.has_polars:
+                for re_val in sim_results.re_list:
+                    polar = sim_results.get_polar(re_val)
+                    if polar is not None:
+                        for a in polar['alpha']:
+                            alpha_set.add(float(a))
+        for a in sorted(alpha_set):
+            self._combo_alpha.addItem(
+                u'%.1f\u00b0' % a, a)
+        idx = self._combo_alpha.findText(old_text)
+        if idx >= 0:
+            self._combo_alpha.setCurrentIndex(idx)
+        self._combo_alpha.blockSignals(False)
+        self._combo_alpha.setVisible(
+            self._analysis_name == 'Profil + CL')
 
     @property
     def _selected_re(self):
         u"""Retourne le Re selectionne ou None."""
-        data = self._combo_re.currentData()
-        return data
+        return self._combo_re.currentData()
+
+    @property
+    def _selected_alpha(self):
+        u"""Retourne l'alpha selectionne ou None."""
+        return self._combo_alpha.currentData()
 
     def _set_combo_value(self, name):
         u"""Positionne le combo sans declencher le signal."""

@@ -24,7 +24,8 @@ _src = os.path.normpath(os.path.join(_here, '..', 'sources'))
 if _src not in sys.path:
     sys.path.insert(0, _src)
 
-from model.bezier import Bezier
+from model.bezier import Bezier, _de_casteljau_split
+from model.bezier_spline import BezierSpline
 
 
 class TestBezierConstruction(unittest.TestCase):
@@ -1427,6 +1428,140 @@ class TestBezierFindDegree(unittest.TestCase):
         self.assertLessEqual(b.degree, 3)
         dev, _t = b.max_deviation(pts)
         self.assertLessEqual(dev, 1.0)
+
+
+class TestDeCasteljauSplit(unittest.TestCase):
+    u"""Tests de la fonction _de_casteljau_split."""
+
+    def test_split_preserves_degree(self):
+        u"""Les deux sous-courbes ont le meme nombre de points de controle."""
+        pts = np.array([[0, 0], [100, 200], [300, 200], [400, 0]],
+                       dtype=float)
+        left, right = _de_casteljau_split(pts, 0.5)
+        self.assertEqual(left.shape, pts.shape)
+        self.assertEqual(right.shape, pts.shape)
+
+    def test_split_junction(self):
+        u"""Le dernier point gauche = premier point droit."""
+        pts = np.array([[0, 0], [100, 200], [300, 200], [400, 0]],
+                       dtype=float)
+        left, right = _de_casteljau_split(pts, 0.4)
+        np.testing.assert_allclose(left[-1], right[0], atol=1e-12)
+
+    def test_split_endpoints(self):
+        u"""left[0] = P0, right[-1] = Pn."""
+        pts = np.array([[0, 0], [100, 200], [300, 200], [400, 0]],
+                       dtype=float)
+        left, right = _de_casteljau_split(pts, 0.7)
+        np.testing.assert_allclose(left[0], pts[0], atol=1e-12)
+        np.testing.assert_allclose(right[-1], pts[-1], atol=1e-12)
+
+    def test_split_line_midpoint(self):
+        u"""Degre 1, t=0.5 : milieu."""
+        pts = np.array([[0, 0], [100, 0]], dtype=float)
+        left, right = _de_casteljau_split(pts, 0.5)
+        np.testing.assert_allclose(left, [[0, 0], [50, 0]])
+        np.testing.assert_allclose(right, [[50, 0], [100, 0]])
+
+
+class TestBezierSplit(unittest.TestCase):
+    u"""Tests de la methode Bezier.split."""
+
+    def setUp(self):
+        self.cubic = Bezier(
+            [[0, 0], [100, 200], [300, 200], [400, 0]])
+
+    def test_split_returns_bezier_spline(self):
+        u"""split retourne un BezierSpline."""
+        result = self.cubic.split(0.5)
+        self.assertIsInstance(result, BezierSpline)
+
+    def test_split_two_segments(self):
+        u"""Le resultat a 2 segments."""
+        result = self.cubic.split(0.5)
+        self.assertEqual(result.n_segments, 2)
+
+    def test_split_same_degree(self):
+        u"""Les deux segments ont le meme degre que l'original."""
+        result = self.cubic.split(0.5)
+        self.assertEqual(result.segments[0].degree, 3)
+        self.assertEqual(result.segments[1].degree, 3)
+
+    def test_split_continuity_c2(self):
+        u"""La continuite a la jonction est C2."""
+        result = self.cubic.split(0.5)
+        self.assertEqual(result.continuities, ['C2'])
+
+    def test_split_junction_point(self):
+        u"""Le point de jonction = B(t) de l'original."""
+        t = 0.4
+        expected = self.cubic.evaluate(t)
+        result = self.cubic.split(t)
+        junction = result.segments[0].end_cpoint
+        np.testing.assert_allclose(junction, expected, atol=1e-10)
+
+    def test_split_exact_geometry(self):
+        u"""La geometrie des sous-courbes correspond a l'original."""
+        t_split = 0.4
+        spline = self.cubic.split(t_split)
+        # Verifier 200 points sur la courbe originale
+        for t_orig in np.linspace(0, 1, 200):
+            pt_orig = self.cubic.evaluate(t_orig)
+            if t_orig <= t_split:
+                t_local = t_orig / t_split
+                pt_split = spline.segments[0].evaluate(t_local)
+            else:
+                t_local = (t_orig - t_split) / (1.0 - t_split)
+                pt_split = spline.segments[1].evaluate(t_local)
+            np.testing.assert_allclose(
+                pt_split, pt_orig, atol=1e-10,
+                err_msg="Ecart a t=%.4f" % t_orig)
+
+    def test_split_tangent_continuous(self):
+        u"""La tangente est continue a la jonction."""
+        spline = self.cubic.split(0.5)
+        tg_left = spline.segments[0].tangent(1.0)
+        tg_right = spline.segments[1].tangent(0.0)
+        np.testing.assert_allclose(tg_left, tg_right, atol=1e-10)
+
+    def test_split_curvature_continuous(self):
+        u"""La courbure est continue a la jonction."""
+        spline = self.cubic.split(0.5)
+        k_left = spline.segments[0].curvature(1.0)
+        k_right = spline.segments[1].curvature(0.0)
+        self.assertAlmostEqual(k_left, k_right, places=8)
+
+    def test_split_t_zero_raises(self):
+        u"""split(0) leve ValueError."""
+        with self.assertRaises(ValueError):
+            self.cubic.split(0.0)
+
+    def test_split_t_one_raises(self):
+        u"""split(1) leve ValueError."""
+        with self.assertRaises(ValueError):
+            self.cubic.split(1.0)
+
+    def test_split_t_negative_raises(self):
+        u"""split(-0.1) leve ValueError."""
+        with self.assertRaises(ValueError):
+            self.cubic.split(-0.1)
+
+    def test_split_high_degree(self):
+        u"""Split d'une courbe de degre 5."""
+        pts = [[0, 0], [50, 100], [150, 150],
+               [250, 100], [350, 50], [400, 0]]
+        b = Bezier(pts)
+        spline = b.split(0.3)
+        self.assertEqual(spline.segments[0].degree, 5)
+        # Verifier la geometrie
+        for t_orig in np.linspace(0, 1, 100):
+            pt_orig = b.evaluate(t_orig)
+            if t_orig <= 0.3:
+                pt = spline.segments[0].evaluate(t_orig / 0.3)
+            else:
+                pt = spline.segments[1].evaluate(
+                    (t_orig - 0.3) / 0.7)
+            np.testing.assert_allclose(pt, pt_orig, atol=1e-9)
 
 
 if __name__ == '__main__':

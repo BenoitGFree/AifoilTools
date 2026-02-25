@@ -18,7 +18,9 @@ Usage::
 """
 
 from .bezier import Bezier
+from .bezier_spline import BezierSpline
 from .profil import Profil
+from .profil_spline import ProfilSpline
 from .simulation import Simulation, SimulationResults
 from .analyse import Analyse
 from .pipeline import FoilAnalysisPipeline, register_solver

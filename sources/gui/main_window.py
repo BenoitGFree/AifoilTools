@@ -75,10 +75,21 @@ class MainWindow(QMainWindow):
 
         edit_menu.addSeparator()
 
-        act_to_bezier = QAction(u"Convertir en B\u00e9zier", self)
-        act_to_bezier.setShortcut("Ctrl+B")
-        act_to_bezier.triggered.connect(self._on_convert_to_bezier)
-        edit_menu.addAction(act_to_bezier)
+        act_to_spline = QAction("Convertir en Spline", self)
+        act_to_spline.setShortcut("Ctrl+B")
+        act_to_spline.triggered.connect(self._on_convert_to_spline)
+        edit_menu.addAction(act_to_spline)
+
+        edit_menu.addSeparator()
+
+        sample_menu = edit_menu.addMenu(u"\u00c9chantillonnage")
+        act_sample_cur = sample_menu.addAction("Profil &courant...")
+        act_sample_cur.triggered.connect(
+            lambda: self._on_change_sampling('current'))
+        act_sample_ref = sample_menu.addAction(
+            u"Profil r\u00e9f\u00e9rence...")
+        act_sample_ref.triggered.connect(
+            lambda: self._on_change_sampling('reference'))
 
         # --- Affichage ---
         view_menu = menubar.addMenu("&Affichage")
@@ -148,7 +159,8 @@ class MainWindow(QMainWindow):
             self,
             "Ouvrir profil %s" % label,
             "",
-            u"Profils (*.dat);;B\u00e9zier (*.bez);;CSV (*.csv);;Tous (*)"
+            u"Profils (*.dat);;Spline (*.bspl);;B\u00e9zier (*.bez)"
+            u";;CSV (*.csv);;Tous (*)"
         )
         if not filepath:
             return
@@ -181,18 +193,32 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Erreur de sauvegarde", info)
             self.statusBar().showMessage("Echec de la sauvegarde")
 
-    def _on_convert_to_bezier(self):
-        """Convertit le profil courant en mode Bezier."""
-        ok, info = self._tab_profils.convert_current_to_bezier()
+    def _on_change_sampling(self, role):
+        """Change le nombre de points d'echantillonnage d'un profil Bezier."""
+        ok, info = self._tab_profils.change_sampling(role)
         if ok is None:
-            self.statusBar().showMessage(
-                u"Pas de profil ou d\u00e9j\u00e0 en mode B\u00e9zier")
+            self.statusBar().showMessage(info or "")
         elif ok:
             self.statusBar().showMessage(
-                u"Profil '%s' converti en B\u00e9zier" % info)
+                u"\u00c9chantillonnage : %s" % info)
         else:
             from PySide6.QtWidgets import QMessageBox
-            QMessageBox.warning(self, "Erreur de conversion", info)
+            QMessageBox.warning(
+                self, u"\u00c9chantillonnage", info)
+
+    def _on_convert_to_spline(self):
+        """Convertit le profil courant en mode Spline."""
+        ok, info = self._tab_profils.convert_current_to_spline()
+        if ok is None:
+            self.statusBar().showMessage(
+                u"Pas de profil ou d\u00e9j\u00e0 en mode Spline")
+        elif ok:
+            self.statusBar().showMessage(
+                "Profil '%s' converti en Spline" % info)
+        else:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(
+                self, "Erreur de conversion", info)
 
     # ------------------------------------------------------------------
     # Simulation
