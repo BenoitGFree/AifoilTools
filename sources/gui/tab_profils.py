@@ -36,20 +36,33 @@ class TabProfils(QWidget):
         # Checkbox profil courant
         self._chk_current = QCheckBox("Profil courant")
         self._chk_current.setChecked(True)
+        self._chk_current.setToolTip(
+            u"Affiche / masque le profil courant (bleu) sur le graphique.")
         self._chk_current.stateChanged.connect(self._on_toggle_current)
         ctrl_layout.addWidget(self._chk_current)
 
         self._lbl_current = QLabel("NACA 2412")
         self._lbl_current.setStyleSheet("color: #1f77b4; font-weight: bold;")
+        self._lbl_current.setToolTip(
+            u"Nom du profil courant.\n"
+            u"Modifiable via Fichier \u203a Charger profil courant.")
         ctrl_layout.addWidget(self._lbl_current)
 
         self._chk_porc_current = QCheckBox("Courbure")
         self._chk_porc_current.setChecked(False)
+        self._chk_porc_current.setToolTip(
+            u"Affiche les porcupines de courbure (segments perpendiculaires"
+            u" de longueur proportionnelle a la courbure locale).\n"
+            u"Necessite que le profil courant soit en mode Spline.")
         self._chk_porc_current.stateChanged.connect(self._on_toggle_porc_current)
         ctrl_layout.addWidget(self._chk_porc_current)
 
         self._chk_sample_pts = QCheckBox("Pts")
         self._chk_sample_pts.setChecked(False)
+        self._chk_sample_pts.setToolTip(
+            u"Affiche les points effectivement echantillonnes sur les"
+            u" splines (marqueurs x).\n"
+            u"Utile pour controler la densite et la repartition.")
         self._chk_sample_pts.stateChanged.connect(
             self._on_toggle_sample_pts)
         ctrl_layout.addWidget(self._chk_sample_pts)
@@ -59,15 +72,24 @@ class TabProfils(QWidget):
         # Checkbox profil reference
         self._chk_reference = QCheckBox(u"Profil r\u00e9f\u00e9rence")
         self._chk_reference.setChecked(True)
+        self._chk_reference.setToolTip(
+            u"Affiche / masque le profil de reference (rouge) sur le"
+            u" graphique.")
         self._chk_reference.stateChanged.connect(self._on_toggle_reference)
         ctrl_layout.addWidget(self._chk_reference)
 
         self._lbl_reference = QLabel("NACA 0012")
         self._lbl_reference.setStyleSheet("color: #d62728; font-weight: bold;")
+        self._lbl_reference.setToolTip(
+            u"Nom du profil de reference.\n"
+            u"Modifiable via Fichier \u203a Charger profil reference.")
         ctrl_layout.addWidget(self._lbl_reference)
 
         self._chk_porc_reference = QCheckBox("Courbure")
         self._chk_porc_reference.setChecked(False)
+        self._chk_porc_reference.setToolTip(
+            u"Affiche les porcupines de courbure du profil de reference.\n"
+            u"Necessite que le profil de reference soit en mode Spline.")
         self._chk_porc_reference.stateChanged.connect(
             self._on_toggle_porc_reference)
         ctrl_layout.addWidget(self._chk_porc_reference)
@@ -76,6 +98,11 @@ class TabProfils(QWidget):
 
         self._chk_deviation = QCheckBox(u"D\u00e9viation")
         self._chk_deviation.setChecked(False)
+        self._chk_deviation.setToolTip(
+            u"Affiche les porcupines de deviation entre profil courant"
+            u" et reference (segments noirs verticaux + enveloppe).\n"
+            u"Echelle et densite reglables via le menu contextuel"
+            u" (clic droit sur le canvas).")
         self._chk_deviation.stateChanged.connect(
             self._on_toggle_deviation)
         ctrl_layout.addWidget(self._chk_deviation)

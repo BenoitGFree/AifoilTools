@@ -52,11 +52,18 @@ class TabResults(QWidget):
         self._stale_label.setStyleSheet(_STALE_STYLE)
         self._stale_label.setWordWrap(True)
         self._stale_label.setVisible(False)
+        self._stale_label.setToolTip(
+            u"Indique que les resultats affiches ne correspondent plus"
+            u" au profil courant. Relancez la simulation pour les"
+            u" mettre a jour.")
         self._main_layout.addWidget(self._stale_label)
 
         # Label resume
         self._label = QLabel("Aucun resultat. Lancez une simulation.")
         self._label.setAlignment(Qt.AlignCenter)
+        self._label.setToolTip(
+            u"Resume du nombre de Reynolds simules et de points alpha"
+            u" converges, par profil.")
         self._main_layout.addWidget(self._label)
 
         # Conteneur pour la grille

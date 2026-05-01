@@ -40,11 +40,16 @@ class MainWindow(QMainWindow):
 
         act_open_current = QAction("Ouvrir profil &courant...", self)
         act_open_current.setShortcut("Ctrl+O")
+        act_open_current.setStatusTip(
+            u"Charger un profil (.dat / .bspl / .bez / .csv) comme profil"
+            u" courant (bleu)")
         act_open_current.triggered.connect(self._on_open_current)
         file_menu.addAction(act_open_current)
 
         act_open_ref = QAction(u"Ouvrir profil r\u00e9f\u00e9rence...", self)
         act_open_ref.setShortcut("Ctrl+Shift+O")
+        act_open_ref.setStatusTip(
+            u"Charger un profil comme profil de reference (rouge)")
         act_open_ref.triggered.connect(self._on_open_reference)
         file_menu.addAction(act_open_ref)
 
@@ -52,6 +57,9 @@ class MainWindow(QMainWindow):
 
         act_save = QAction("&Sauvegarder profil...", self)
         act_save.setShortcut("Ctrl+S")
+        act_save.setStatusTip(
+            u"Sauvegarder le profil courant (formats : Selig .dat,"
+            u" Lednicer .dat, Spline .bspl, CSV)")
         act_save.triggered.connect(self._on_save)
         file_menu.addAction(act_save)
 
@@ -59,6 +67,7 @@ class MainWindow(QMainWindow):
 
         act_quit = QAction("&Quitter", self)
         act_quit.setShortcut("Ctrl+Q")
+        act_quit.setStatusTip(u"Fermer l'application")
         act_quit.triggered.connect(self.close)
         file_menu.addAction(act_quit)
 
@@ -67,27 +76,41 @@ class MainWindow(QMainWindow):
 
         act_undo = QAction("&Annuler", self)
         act_undo.setShortcut("Ctrl+Z")
+        act_undo.setStatusTip(u"Annuler la derniere action (non implemente)")
         edit_menu.addAction(act_undo)
 
         act_redo = QAction("&Refaire", self)
         act_redo.setShortcut("Ctrl+Y")
+        act_redo.setStatusTip(
+            u"Refaire l'action annulee (non implemente)")
         edit_menu.addAction(act_redo)
 
         edit_menu.addSeparator()
 
         act_to_spline = QAction("Convertir en Spline", self)
         act_to_spline.setShortcut("Ctrl+B")
+        act_to_spline.setStatusTip(
+            u"Convertit le profil courant (mode points discrets) en"
+            u" splines de Bezier multi-segment editables")
         act_to_spline.triggered.connect(self._on_convert_to_spline)
         edit_menu.addAction(act_to_spline)
 
         edit_menu.addSeparator()
 
         sample_menu = edit_menu.addMenu(u"\u00c9chantillonnage")
+        sample_menu.setStatusTip(
+            u"Modifier le nombre de points d'echantillonnage des splines")
         act_sample_cur = sample_menu.addAction("Profil &courant...")
+        act_sample_cur.setStatusTip(
+            u"Choisir le nombre de points pour le profil courant"
+            u" (necessite mode Spline)")
         act_sample_cur.triggered.connect(
             lambda: self._on_change_sampling('current'))
         act_sample_ref = sample_menu.addAction(
             u"Profil r\u00e9f\u00e9rence...")
+        act_sample_ref.setStatusTip(
+            u"Choisir le nombre de points pour le profil de reference"
+            u" (necessite mode Spline)")
         act_sample_ref.triggered.connect(
             lambda: self._on_change_sampling('reference'))
 
@@ -96,16 +119,23 @@ class MainWindow(QMainWindow):
 
         act_zoom_fit = QAction("Zoom &adapte", self)
         act_zoom_fit.setShortcut("Ctrl+0")
+        act_zoom_fit.setStatusTip(
+            u"Recadrer la vue sur l'ensemble des profils visibles")
         act_zoom_fit.triggered.connect(self._on_zoom_fit)
         view_menu.addAction(act_zoom_fit)
 
         # Sous-menu Disposition
         disp_menu = view_menu.addMenu("&Disposition")
+        disp_menu.setStatusTip(
+            u"Choisir la grille (lignes x colonnes) de l'onglet Resultats")
         self._disp_actions = []
         for rows, cols in [(1, 1), (1, 2), (2, 2), (2, 3), (3, 3)]:
             label = "%d \u00d7 %d" % (rows, cols)
             act = QAction(label, self)
             act.setCheckable(True)
+            act.setStatusTip(
+                u"Disposer les analyses en grille %d ligne(s) x %d"
+                u" colonne(s)" % (rows, cols))
             if rows == 2 and cols == 2:
                 act.setChecked(True)
             act.triggered.connect(
@@ -117,6 +147,7 @@ class MainWindow(QMainWindow):
         help_menu = menubar.addMenu("&Aide")
 
         act_about = QAction("A &propos...", self)
+        act_about.setStatusTip(u"Informations sur AifoilTools")
         act_about.triggered.connect(self._on_about)
         help_menu.addAction(act_about)
 
@@ -225,11 +256,19 @@ class MainWindow(QMainWindow):
         spn_ext = QSpinBox()
         spn_ext.setRange(2, 30)
         spn_ext.setValue(11)
+        spn_ext.setToolTip(
+            u"Degre des courbes de Bezier de l'extrados.\n"
+            u"  Petit (3-5) : forme tres lissee, peu d'inflexions\n"
+            u"  Moyen (6-12) : compromis precision/lissage (defaut)\n"
+            u"  Grand (>15) : forme tres precise, risque d'oscillations")
         form.addRow(u"Degr\u00e9 extrados :", spn_ext)
 
         spn_int = QSpinBox()
         spn_int.setRange(2, 30)
         spn_int.setValue(11)
+        spn_int.setToolTip(
+            u"Degre des courbes de Bezier de l'intrados.\n"
+            u"Voir l'aide du degre extrados.")
         form.addRow(u"Degr\u00e9 intrados :", spn_int)
 
         spn_tol = QDoubleSpinBox()

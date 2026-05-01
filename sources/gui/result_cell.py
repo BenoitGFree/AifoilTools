@@ -387,12 +387,18 @@ class ResultCell(QWidget):
 
         self._combo = QComboBox()
         self._combo.addItems(ANALYSIS_NAMES)
+        self._combo.setToolTip(
+            u"Type d'analyse affiche dans cette cellule.\n"
+            u"Polaires : CL(alpha), CD(alpha), CL/CD, Cm(alpha)...\n"
+            u"Distributions : -Cp(x), Profil + CL\n"
+            u"Couche limite : Ue, Dstar, Theta, Cf, H (vs s ou x)")
         self._combo.currentTextChanged.connect(self._on_analysis_changed)
         ctrl.addWidget(self._combo)
 
         self._chk_current = QCheckBox("C")
         self._chk_current.setChecked(True)
-        self._chk_current.setToolTip("Afficher le profil courant")
+        self._chk_current.setToolTip(
+            u"Afficher les courbes du profil courant (bleu)")
         self._chk_current.setStyleSheet("color: %s;" % COLOR_CURRENT)
         self._chk_current.stateChanged.connect(self._on_toggle_current)
         ctrl.addWidget(self._chk_current)
@@ -400,7 +406,7 @@ class ResultCell(QWidget):
         self._chk_reference = QCheckBox("R")
         self._chk_reference.setChecked(True)
         self._chk_reference.setToolTip(
-            u"Afficher le profil r\u00e9f\u00e9rence")
+            u"Afficher les courbes du profil de reference (rouge)")
         self._chk_reference.setStyleSheet(
             "color: %s;" % COLOR_REFERENCE)
         self._chk_reference.stateChanged.connect(
@@ -409,7 +415,9 @@ class ResultCell(QWidget):
 
         # Combo Reynolds (visible pour -Cp(x) et Profil + CL)
         self._combo_re = QComboBox()
-        self._combo_re.setToolTip("Reynolds")
+        self._combo_re.setToolTip(
+            u"Choix du Reynolds pour les analyses dependant d'un seul"
+            u" Reynolds (-Cp(x), Profil+CL, couche limite).")
         self._combo_re.setMinimumWidth(90)
         self._combo_re.currentTextChanged.connect(
             self._on_re_changed)
@@ -418,7 +426,9 @@ class ResultCell(QWidget):
 
         # Combo Alpha (visible pour Profil + CL)
         self._combo_alpha = QComboBox()
-        self._combo_alpha.setToolTip("Incidence")
+        self._combo_alpha.setToolTip(
+            u"Choix de l'angle d'incidence (alpha) pour les analyses"
+            u" point-par-point (-Cp, Profil+CL, couche limite).")
         self._combo_alpha.setMinimumWidth(70)
         self._combo_alpha.currentTextChanged.connect(
             self._on_alpha_changed)
@@ -427,6 +437,8 @@ class ResultCell(QWidget):
 
         self._lbl_cursor = QLabel("")
         self._lbl_cursor.setStyleSheet("font-size: 9px; color: #666;")
+        self._lbl_cursor.setToolTip(
+            u"Coordonnees du curseur souris dans le repere du graphique.")
         ctrl.addWidget(self._lbl_cursor)
 
         ctrl.addStretch()

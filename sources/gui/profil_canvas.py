@@ -49,6 +49,16 @@ class ProfilCanvas(FigureCanvasQTAgg):
         self._ax.grid(True, alpha=0.3)
         self._fig.tight_layout()
 
+        self.setToolTip(
+            u"Interactions souris :\n"
+            u"  - Clic gauche + drag : zoom rectangle (selection d'une"
+            u" zone)\n"
+            u"  - Clic gauche sur un point de controle : deplacement\n"
+            u"  - Molette : zoom centre sur le curseur\n"
+            u"  - Clic milieu / Shift+clic gauche : pan (translation)\n"
+            u"  - Clic droit : menu contextuel (split, echelle"
+            u" porcupines, deviation...)")
+
         # Donnees modele
         self._profil_current = None
         self._profil_reference = None
