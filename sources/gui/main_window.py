@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Fenetre principale AifoilTools."""
+"""Fenetre principale AirfoilTools."""
 
 import sys
 
@@ -20,7 +20,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("AifoilTools")
+        self.setWindowTitle("AirfoilTools")
         self.resize(1200, 700)
 
         self._build_menus()
@@ -147,7 +147,7 @@ class MainWindow(QMainWindow):
         help_menu = menubar.addMenu("&Aide")
 
         act_about = QAction("A &propos...", self)
-        act_about.setStatusTip(u"Informations sur AifoilTools")
+        act_about.setStatusTip(u"Informations sur AirfoilTools")
         act_about.triggered.connect(self._on_about)
         help_menu.addAction(act_about)
 
@@ -413,8 +413,8 @@ class MainWindow(QMainWindow):
         """Affiche la boite A propos."""
         from PySide6.QtWidgets import QMessageBox
         QMessageBox.about(
-            self, "AifoilTools",
-            u"AifoilTools - Analyse a\u00e9rodynamique 2D\n"
+            self, "AirfoilTools",
+            u"AirfoilTools - Analyse a\u00e9rodynamique 2D\n"
             u"Courbes de B\u00e9zier, profils, XFoil\n\n"
             u"Version 2.0\n"
             u"Premi\u00e8re version : 2022\n\n"

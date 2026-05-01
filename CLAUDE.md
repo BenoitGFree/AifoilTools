@@ -2,9 +2,9 @@
 
 ## Project Overview
 
-**AifoilTools** est une bibliothèque Python d'outils d'analyse aérodynamique 2D de profils d'aile, extraite du projet Axile (logiciel de conception de parapentes par Nervures).
+**AirfoilTools** est une bibliothèque Python d'outils d'analyse aérodynamique 2D de profils d'aile, extraite du projet Axile (logiciel de conception de parapentes par Nervures).
 
-- **Repository** : https://github.com/BenoitGFree/AifoilTools
+- **Repository** : https://github.com/BenoitGFree/AirfoilTools
 - **Licence** : LGPL-3.0
 - **Origine** : `sources/model/aerodynamique/foil2d/` du projet Axile
 
@@ -18,7 +18,7 @@
 ## Architecture
 
 ```
-AifoilTools/
+AirfoilTools/
 ├── sources/
 │   ├── __init__.py
 │   ├── model/                    # Package calcul (pip: airfoiltools)
@@ -140,4 +140,4 @@ def _invalidate(self, geometry=True):
 
 ## Projet parent Axile
 
-Le code d'AifoilTools est aussi présent dans Axile sous `sources/model/aerodynamique/foil2d/`. Les deux copies évoluent indépendamment pour l'instant. Le worktree Axile est dans `C:\Liclipse\workspace\Axile_worktrees\57-integration-xfoil`.
+Le code d'AirfoilTools est aussi présent dans Axile sous `sources/model/aerodynamique/foil2d/`. Les deux copies évoluent indépendamment pour l'instant. Le worktree Axile est dans `C:\Liclipse\workspace\Axile_worktrees\57-integration-xfoil`.

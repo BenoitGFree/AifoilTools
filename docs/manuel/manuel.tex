@@ -16,26 +16,25 @@
 \begin{titlepage}
     \begin{tikzpicture}[remember picture, overlay]
         % Bandeau supérieur
-        \fill[aifoilprimary] (current page.north west)
-            rectangle ([yshift=-4cm]current page.north east);
+        \fill[airfoilprimary] (current page.north west)
+            rectangle ([yshift=-5cm]current page.north east);
         % Bandeau inférieur
-        \fill[aifoilrule] (current page.south west)
+        \fill[airfoilrule] (current page.south west)
             rectangle ([yshift=2cm]current page.south east);
+        % Titre dans le bandeau
+        \node[anchor=east, text=white,
+              font=\fontfamily{phv}\selectfont\bfseries\fontsize{50}{55}\selectfont]
+            at ([xshift=-2cm,yshift=-2cm]current page.north east) {AirfoilTools};
+        \node[anchor=east, text=white,
+              font=\fontfamily{phv}\selectfont\fontsize{18}{22}\selectfont]
+            at ([xshift=-2cm,yshift=-3.4cm]current page.north east)
+            {Analyse aérodynamique 2D de profils d'aile};
     \end{tikzpicture}
 
-    \vspace*{1cm}
-    \begin{flushright}
-        \color{white}
-        \fontfamily{phv}\selectfont
-        \textbf{\fontsize{42}{50}\selectfont AifoilTools}\\[6pt]
-        {\fontsize{18}{22}\selectfont Analyse aérodynamique 2D}\\
-        {\fontsize{18}{22}\selectfont de profils d'aile}
-    \end{flushright}
-
-    \vfill
+    \vfill\vfill
 
     \begin{center}
-        \color{aifoilprimary}
+        \color{airfoilprimary}
         \fontfamily{phv}\selectfont
         \textbf{\Huge Manuel utilisateur}\\[1em]
         {\Large Version \manuelversion{} --- \manueldate}
@@ -45,7 +44,7 @@
 
     \vspace{1.5cm}
     \begin{flushleft}
-        \color{aifoilprimary}
+        \color{airfoilprimary}
         \fontfamily{phv}\selectfont
         \Large
         \textbf{\manuelauteur}\\[2pt]
@@ -63,19 +62,19 @@
 \vfill
 \begin{flushleft}
     \small
-    \textbf{AifoilTools --- Manuel utilisateur, version \manuelversion}\\
+    \textbf{AirfoilTools --- Manuel utilisateur, version \manuelversion}\\
     Édition de \manueldate.\\[0.5em]
     Auteur : \manuelauteur.\\
     Première version du logiciel : \manuelpremieredition.\\[1em]
 
     Ce document décrit l'utilisation de la bibliothèque
-    \textbf{AifoilTools} et de son interface graphique pour
+    \textbf{AirfoilTools} et de son interface graphique pour
     l'analyse aérodynamique 2D de profils d'aile par couplage avec
     le solveur \emph{XFoil}.\\[0.5em]
 
-    AifoilTools est distribué sous licence \textbf{LGPL-3.0}.
+    AirfoilTools est distribué sous licence \textbf{LGPL-3.0}.
     Le code source est disponible à l'adresse :\\
-    \url{https://github.com/BenoitGFree/AifoilTools}\\[0.5em]
+    \url{https://github.com/BenoitGFree/AirfoilTools}\\[0.5em]
 
     \emph{XFoil} est un logiciel développé par Mark Drela (MIT) et
     distribué sous licence GPL.\\[0.5em]

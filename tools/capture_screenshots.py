@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Capture des screenshots pour le manuel utilisateur AifoilTools.
+"""Capture des screenshots pour le manuel utilisateur AirfoilTools.
 
 Lance la GUI et capture les ecrans cles via QWidget.grab() (capture
 native Qt, ne necessite pas que la fenetre soit visible a l'ecran).
@@ -181,7 +181,7 @@ def capture_tab_results(app, win):
 
 def main():
     print("=" * 60)
-    print("Capture screenshots manuel utilisateur AifoilTools")
+    print("Capture screenshots manuel utilisateur AirfoilTools")
     print("Sortie : %s" % OUT_DIR)
     print("=" * 60)
 

@@ -1499,7 +1499,7 @@ class Bezier(object):
         return ax
 
 def test_bezier_profil():
-    b = Bezier.from_file('C:/Liclipse/workspace/AifoilTools/naca0012_normalized_intrados.dat', degree=16, max_dev=5, sample_mode='adaptive', tolerance=15.0)
+    b = Bezier.from_file('C:/Liclipse/workspace/AirfoilTools/naca0012_normalized_intrados.dat', degree=16, max_dev=5, sample_mode='adaptive', tolerance=15.0)
     b.plot()
     return
 

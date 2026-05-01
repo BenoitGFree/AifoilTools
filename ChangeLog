@@ -112,7 +112,7 @@
 
 ### Added (Ajouté)
 - **Support PyInstaller** pour distribution en `.exe` :
-  - `AifoilTools.spec` : fichier de configuration PyInstaller (onedir, windowed)
+  - `AirfoilTools.spec` : fichier de configuration PyInstaller (onedir, windowed)
   - `run_gui.py` : détection mode frozen (`sys._MEIPASS`) pour le sys.path
   - `xfoil_simulator.py` : recherche `xfoil.exe` à côté de l'exe en mode frozen
 

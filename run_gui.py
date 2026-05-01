@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Lanceur de l'interface graphique AifoilTools."""
+"""Lanceur de l'interface graphique AirfoilTools."""
 
 import sys
 import os

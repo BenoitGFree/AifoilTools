@@ -1,6 +1,6 @@
-% Style pour le manuel utilisateur AifoilTools
+% Style pour le manuel utilisateur AirfoilTools
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{style/manuel_style}[2026/05/01 Style manuel AifoilTools]
+\ProvidesPackage{style/manuel_style}[2026/05/01 Style manuel AirfoilTools]
 
 % --- Encodage et langue ---
 \RequirePackage[utf8]{inputenc}
@@ -21,13 +21,13 @@
 \RequirePackage{float}
 
 % Palette de couleurs
-\definecolor{aifoilprimary}{HTML}{1F3A5F}
-\definecolor{aifoilsecondary}{HTML}{1F77B4}
-\definecolor{aifoilaccent}{HTML}{D62728}
-\definecolor{aifoilbg}{HTML}{F5F7FA}
-\definecolor{aifoilrule}{HTML}{8DA9C4}
-\definecolor{aifoilcode}{HTML}{2D2D2D}
-\definecolor{aifoilcodebg}{HTML}{F8F8F8}
+\definecolor{airfoilprimary}{HTML}{1F3A5F}
+\definecolor{airfoilsecondary}{HTML}{1F77B4}
+\definecolor{airfoilaccent}{HTML}{D62728}
+\definecolor{airfoilbg}{HTML}{F5F7FA}
+\definecolor{airfoilrule}{HTML}{8DA9C4}
+\definecolor{airfoilcode}{HTML}{2D2D2D}
+\definecolor{airfoilcodebg}{HTML}{F8F8F8}
 
 % --- Tableaux ---
 \RequirePackage{array}
@@ -38,14 +38,14 @@
 
 % --- Liens hypertexte ---
 \RequirePackage[
-    pdftitle={Manuel utilisateur AifoilTools},
+    pdftitle={Manuel utilisateur AirfoilTools},
     pdfauthor={Nervures},
     pdfsubject={Analyse aerodynamique 2D de profils},
     pdfkeywords={XFoil, Bezier, profil, aerodynamique, parapente},
     colorlinks=true,
-    linkcolor=aifoilprimary,
-    urlcolor=aifoilsecondary,
-    citecolor=aifoilprimary,
+    linkcolor=airfoilprimary,
+    urlcolor=airfoilsecondary,
+    citecolor=airfoilprimary,
     bookmarks=true,
     bookmarksnumbered=true,
     bookmarksopen=true
@@ -57,14 +57,14 @@
 \fancyhf{}
 \fancyhead[R]{\small\thepage}
 \fancyhead[L]{\small\itshape\nouppercase{\leftmark}}
-\fancyfoot[C]{\small\textcolor{aifoilprimary}{AifoilTools --- Manuel utilisateur}}
+\fancyfoot[C]{\small\textcolor{airfoilprimary}{AirfoilTools --- Manuel utilisateur}}
 \renewcommand{\headrulewidth}{0.4pt}
 \renewcommand{\footrulewidth}{0.2pt}
 
 % Style des chapitres
 \fancypagestyle{plain}{%
     \fancyhf{}
-    \fancyfoot[C]{\small\textcolor{aifoilprimary}{AifoilTools --- Manuel utilisateur}}
+    \fancyfoot[C]{\small\textcolor{airfoilprimary}{AirfoilTools --- Manuel utilisateur}}
     \renewcommand{\headrulewidth}{0pt}
     \renewcommand{\footrulewidth}{0.2pt}
 }
@@ -73,22 +73,22 @@
 \RequirePackage{titlesec}
 
 \titleformat{\chapter}[display]
-    {\normalfont\sffamily\huge\bfseries\color{aifoilprimary}}
-    {\filright\textcolor{aifoilrule}{\fontsize{60}{60}\selectfont\thechapter}}
+    {\normalfont\sffamily\huge\bfseries\color{airfoilprimary}}
+    {\filright\textcolor{airfoilrule}{\fontsize{60}{60}\selectfont\thechapter}}
     {1em}
     {\filright\Huge}
-    [\vspace{0.2em}{\color{aifoilrule}\titlerule[1pt]}]
+    [\vspace{0.2em}{\color{airfoilrule}\titlerule[1pt]}]
 
 \titleformat{\section}
-    {\normalfont\sffamily\Large\bfseries\color{aifoilprimary}}
+    {\normalfont\sffamily\Large\bfseries\color{airfoilprimary}}
     {\thesection}{1em}{}
 
 \titleformat{\subsection}
-    {\normalfont\sffamily\large\bfseries\color{aifoilsecondary}}
+    {\normalfont\sffamily\large\bfseries\color{airfoilsecondary}}
     {\thesubsection}{1em}{}
 
 \titleformat{\subsubsection}
-    {\normalfont\sffamily\bfseries\color{aifoilsecondary}}
+    {\normalfont\sffamily\bfseries\color{airfoilsecondary}}
     {}{0em}{}
 
 \titlespacing*{\chapter}{0pt}{-30pt}{30pt}
@@ -99,8 +99,8 @@
 \RequirePackage[most]{tcolorbox}
 
 \newtcolorbox{noteinfo}[1][]{%
-    colback=aifoilbg,
-    colframe=aifoilsecondary,
+    colback=airfoilbg,
+    colframe=airfoilsecondary,
     coltitle=white,
     fonttitle=\sffamily\bfseries,
     title=Note,
@@ -161,41 +161,41 @@
 % --- Code source (listings) ---
 \RequirePackage{listings}
 
-\lstdefinestyle{aifoilstyle}{
-    backgroundcolor=\color{aifoilcodebg},
-    basicstyle=\ttfamily\small\color{aifoilcode},
-    keywordstyle=\bfseries\color{aifoilprimary},
+\lstdefinestyle{airfoilstyle}{
+    backgroundcolor=\color{airfoilcodebg},
+    basicstyle=\ttfamily\small\color{airfoilcode},
+    keywordstyle=\bfseries\color{airfoilprimary},
     commentstyle=\itshape\color{gray},
-    stringstyle=\color{aifoilaccent},
+    stringstyle=\color{airfoilaccent},
     numberstyle=\tiny\color{gray},
     numbers=left,
     numbersep=8pt,
     frame=l,
     framesep=6pt,
-    rulecolor=\color{aifoilrule},
+    rulecolor=\color{airfoilrule},
     breaklines=true,
     captionpos=b,
     showstringspaces=false,
     tabsize=4,
 }
-\lstset{style=aifoilstyle}
+\lstset{style=airfoilstyle}
 
 % --- Commandes utilitaires ---
 % Touche clavier
 \newcommand{\touche}[1]{%
-    \tikz[baseline=(K.base)]\node[draw=aifoilrule,thick,rounded corners=2pt,
-        fill=aifoilbg,inner sep=2pt,minimum height=1.6em,
+    \tikz[baseline=(K.base)]\node[draw=airfoilrule,thick,rounded corners=2pt,
+        fill=airfoilbg,inner sep=2pt,minimum height=1.6em,
         font=\sffamily\small](K){\strut #1};}
 \RequirePackage{tikz}
 
 % Menu / chemin
-\newcommand{\menu}[1]{\textsf{\textcolor{aifoilprimary}{#1}}}
+\newcommand{\menu}[1]{\textsf{\textcolor{airfoilprimary}{#1}}}
 
 % Bouton
-\newcommand{\bouton}[1]{\textsf{\textbf{\textcolor{aifoilprimary}{[#1]}}}}
+\newcommand{\bouton}[1]{\textsf{\textbf{\textcolor{airfoilprimary}{[#1]}}}}
 
 % Chemin de fichier
-\newcommand{\chemin}[1]{\texttt{\textcolor{aifoilprimary}{#1}}}
+\newcommand{\chemin}[1]{\texttt{\textcolor{airfoilprimary}{#1}}}
 
 % Nom de fichier ou commande
 \newcommand{\code}[1]{\texttt{#1}}
