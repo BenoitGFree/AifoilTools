@@ -9,6 +9,8 @@ a = Analysis(
         ('sources/model/defaults_xfoil.cfg', 'model'),
         # Manuel utilisateur (accessible via menu Aide)
         ('docs/manuel/manuel.pdf', 'docs'),
+        # Executable XFoil (necessaire aux simulations)
+        ('externaltools/xfoil/xfoil.exe', 'externaltools/xfoil'),
     ],
     hiddenimports=[
         # model package

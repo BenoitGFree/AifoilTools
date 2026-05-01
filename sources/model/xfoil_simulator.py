@@ -58,9 +58,13 @@ class XFoilSimulator(AbstractSimulator):
         """
         # Chercher dans externaltools/
         if getattr(sys, 'frozen', False):
-            # Mode PyInstaller : chercher a cote de l'exe
+            # Mode PyInstaller :
+            # 1. Bundle interne (datas du spec) -> _MEIPASS/externaltools/
+            # 2. A cote de l'exe (deploiement manuel)
             exe_dir = os.path.dirname(sys.executable)
             candidates = [
+                os.path.join(getattr(sys, '_MEIPASS', exe_dir),
+                             'externaltools', 'xfoil', 'xfoil.exe'),
                 os.path.join(exe_dir, 'externaltools',
                              'xfoil', 'xfoil.exe'),
             ]
