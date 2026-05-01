@@ -3,8 +3,7 @@
 """Onglet Profils : affichage et edition interactive des profils."""
 
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QCheckBox, QComboBox, QLabel,
-    QGroupBox, QSpinBox
+    QWidget, QVBoxLayout, QHBoxLayout, QCheckBox, QLabel
 )
 from PySide6.QtCore import Qt, Signal
 
@@ -49,15 +48,11 @@ class TabProfils(QWidget):
         self._chk_porc_current.stateChanged.connect(self._on_toggle_porc_current)
         ctrl_layout.addWidget(self._chk_porc_current)
 
-        ctrl_layout.addSpacing(20)
-
-        # Degre Bezier
-        ctrl_layout.addWidget(QLabel(u"Degr\u00e9 B\u00e9zier:"))
-        self._spn_degree = QSpinBox()
-        self._spn_degree.setRange(2, 15)
-        self._spn_degree.setValue(6)
-        self._spn_degree.valueChanged.connect(self._on_degree_changed)
-        ctrl_layout.addWidget(self._spn_degree)
+        self._chk_sample_pts = QCheckBox("Pts")
+        self._chk_sample_pts.setChecked(False)
+        self._chk_sample_pts.stateChanged.connect(
+            self._on_toggle_sample_pts)
+        ctrl_layout.addWidget(self._chk_sample_pts)
 
         ctrl_layout.addSpacing(40)
 
@@ -121,6 +116,11 @@ class TabProfils(QWidget):
         """Affiche/masque les porcupines du profil courant."""
         self._canvas.set_show_porcupines_current(state == Qt.Checked.value)
 
+    def _on_toggle_sample_pts(self, state):
+        """Affiche/masque les points echantillonnes."""
+        self._canvas.set_show_sample_points(
+            state == Qt.Checked.value)
+
     def _on_toggle_porc_reference(self, state):
         """Affiche/masque les porcupines du profil de reference."""
         self._canvas.set_show_porcupines_reference(state == Qt.Checked.value)
@@ -129,16 +129,6 @@ class TabProfils(QWidget):
         """Affiche/masque la deviation entre profils."""
         self._canvas.set_show_deviation(
             state == Qt.Checked.value)
-
-    def _on_degree_changed(self, degree):
-        """Change le degre des Beziers du profil courant (si en mode Bezier)."""
-        if (self._profil_current is not None
-                and self._profil_current.has_splines):
-            self._profil_current.clear_splines()
-            self._profil_current.approximate_spline(
-                degree=degree, smoothing=0.1)
-            self._canvas.set_current_profil(self._profil_current)
-            self.profil_changed.emit('current')
 
     def load_profil_from_file(self, filepath, role="current"):
         """Charge un profil depuis un fichier.
@@ -169,11 +159,23 @@ class TabProfils(QWidget):
         self.profil_changed.emit(role)
         return True, profil.name
 
-    def convert_current_to_spline(self):
+    def convert_current_to_spline(self, degree_ext=6, degree_int=6,
+                                   max_dev=0.001, max_segments=8,
+                                   smoothing=0.0):
         """Convertit le profil courant en mode Spline.
 
+        :param degree_ext: degre pour l'extrados
+        :type degree_ext: int
+        :param degree_int: degre pour l'intrados
+        :type degree_int: int
+        :param max_dev: deviation max toleree (pour mode adaptatif)
+        :type max_dev: float
+        :param max_segments: nombre max de segments par cote
+        :type max_segments: int
+        :param smoothing: poids de regularisation
+        :type smoothing: float
         :returns: (True, nom) si ok, (False, message) si erreur,
-                  (None, None) si pas de profil ou deja en Bezier
+                  (None, None) si pas de profil ou deja en Spline
         :rtype: tuple
         """
         p = self._profil_current
@@ -183,8 +185,19 @@ class TabProfils(QWidget):
             return None, None
 
         try:
-            degree = self._spn_degree.value()
-            p.approximate_spline(degree=degree, smoothing=0.1)
+            # Extrados
+            p.approximate_spline(
+                degree=degree_ext, max_dev=max_dev,
+                smoothing=smoothing, max_segments=max_segments)
+            # Ajuster le degre intrados si different
+            if degree_int != degree_ext:
+                for seg in p.spline_intrados._segments:
+                    current_deg = seg.degree
+                    if degree_int > current_deg:
+                        seg.elevate(degree_int - current_deg)
+                    elif degree_int < current_deg:
+                        seg.reduce(current_deg - degree_int)
+                p.spline_intrados._invalidate(geometry=True)
         except Exception as e:
             return False, str(e)
 

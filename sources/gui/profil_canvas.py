@@ -17,6 +17,7 @@ import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.collections import LineCollection
+from matplotlib.patches import Rectangle
 
 from PySide6.QtCore import Signal
 
@@ -55,6 +56,7 @@ class ProfilCanvas(FigureCanvasQTAgg):
         self._show_reference = True
         self._show_porc_current = True
         self._show_porc_reference = True
+        self._show_sample_pts = False
 
         # --- Artists profil courant (bleu) ---
         self._line_current_ext, = self._ax.plot(
@@ -74,11 +76,23 @@ class ProfilCanvas(FigureCanvasQTAgg):
         self._line_ctrl_int, = self._ax.plot(
             [], [], '--', color=COLOR_CTRL_POLYGON, linewidth=0.8, alpha=0.6)
 
-        # --- Points de controle (draggables) ---
+        # --- Points de controle interieurs (carres) ---
         self._scatter_ctrl_ext, = self._ax.plot(
             [], [], 's', color=COLOR_CURRENT, markersize=6, picker=PICK_RADIUS)
         self._scatter_ctrl_int, = self._ax.plot(
             [], [], 's', color=COLOR_CURRENT, markersize=6, picker=PICK_RADIUS)
+
+        # --- Points de jonction (extremites de segments : point + cercle) ---
+        self._scatter_junc_ext, = self._ax.plot(
+            [], [], 'o', color=COLOR_CURRENT, markersize=4)
+        self._junc_ring_ext, = self._ax.plot(
+            [], [], 'o', markerfacecolor='none',
+            markeredgecolor=COLOR_CURRENT, markersize=10, markeredgewidth=1.5)
+        self._scatter_junc_int, = self._ax.plot(
+            [], [], 'o', color=COLOR_CURRENT, markersize=4)
+        self._junc_ring_int, = self._ax.plot(
+            [], [], 'o', markerfacecolor='none',
+            markeredgecolor=COLOR_CURRENT, markersize=10, markeredgewidth=1.5)
 
         # --- Porcupines (LineCollection) ---
         self._porc_current_ext = LineCollection(
@@ -110,6 +124,14 @@ class ProfilCanvas(FigureCanvasQTAgg):
         self._line_mean_ref, = self._ax.plot(
             [], [], '--', color=COLOR_REFERENCE, linewidth=0.6, alpha=0.3)
 
+        # --- Points echantillonnes (marqueurs x) ---
+        self._sample_pts_ext, = self._ax.plot(
+            [], [], 'x', color=COLOR_CURRENT, markersize=4, alpha=0.6)
+        self._sample_pts_int, = self._ax.plot(
+            [], [], 'x', color=COLOR_CURRENT, markersize=4, alpha=0.6)
+        self._sample_pts_ext.set_visible(False)
+        self._sample_pts_int.set_visible(False)
+
         # --- Echelle et densite porcupines ---
         self._porcupine_scale = 200.0
         self._porcupine_n_quills = 200  # nombre de quills par courbe
@@ -140,6 +162,11 @@ class ProfilCanvas(FigureCanvasQTAgg):
         # --- Pan state (bouton milieu) ---
         self._panning = False
         self._pan_start_xy = None    # position souris en pixels au debut du pan
+
+        # --- Zoom rectangle (clic gauche) ---
+        self._zoom_rect_active = False
+        self._zoom_rect_origin = None  # (xdata, ydata) du coin initial
+        self._zoom_rect_patch = None   # Rectangle matplotlib
 
         # --- Connecter les evenements souris ---
         self.mpl_connect('button_press_event', self._on_press)
@@ -199,6 +226,12 @@ class ProfilCanvas(FigureCanvasQTAgg):
         self._porc_ref_int.set_visible(visible)
         self.draw_idle()
 
+    def set_show_sample_points(self, visible):
+        """Affiche/masque les points echantillonnes."""
+        self._show_sample_pts = visible
+        self._update_current()
+        self.draw_idle()
+
     def set_show_deviation(self, visible):
         """Affiche/masque la deviation entre profils."""
         self._show_deviation = visible
@@ -232,11 +265,35 @@ class ProfilCanvas(FigureCanvasQTAgg):
             self._line_current_ext.set_data(pts_ext[:, 0], pts_ext[:, 1])
             self._line_current_int.set_data(pts_int[:, 0], pts_int[:, 1])
 
-            # Points de controle
+            # Points de controle : separer interieurs et jonctions
             cp_ext = s_ext.control_points
             cp_int = s_int.control_points
-            self._scatter_ctrl_ext.set_data(cp_ext[:, 0], cp_ext[:, 1])
-            self._scatter_ctrl_int.set_data(cp_int[:, 0], cp_int[:, 1])
+            junc_ext = self._junction_indices(s_ext)
+            junc_int = self._junction_indices(s_int)
+            int_ext = [i for i in range(len(cp_ext)) if i not in junc_ext]
+            int_int = [i for i in range(len(cp_int)) if i not in junc_int]
+            # Interieurs (carres)
+            if int_ext:
+                self._scatter_ctrl_ext.set_data(
+                    cp_ext[int_ext, 0], cp_ext[int_ext, 1])
+            else:
+                self._scatter_ctrl_ext.set_data([], [])
+            if int_int:
+                self._scatter_ctrl_int.set_data(
+                    cp_int[int_int, 0], cp_int[int_int, 1])
+            else:
+                self._scatter_ctrl_int.set_data([], [])
+            # Jonctions (point + cercle)
+            junc_ext_l = sorted(junc_ext)
+            junc_int_l = sorted(junc_int)
+            self._scatter_junc_ext.set_data(
+                cp_ext[junc_ext_l, 0], cp_ext[junc_ext_l, 1])
+            self._junc_ring_ext.set_data(
+                cp_ext[junc_ext_l, 0], cp_ext[junc_ext_l, 1])
+            self._scatter_junc_int.set_data(
+                cp_int[junc_int_l, 0], cp_int[junc_int_l, 1])
+            self._junc_ring_int.set_data(
+                cp_int[junc_int_l, 0], cp_int[junc_int_l, 1])
 
             # Polygone de controle
             self._line_ctrl_ext.set_data(cp_ext[:, 0], cp_ext[:, 1])
@@ -256,8 +313,20 @@ class ProfilCanvas(FigureCanvasQTAgg):
                 self._env_current_ext.set_data([], [])
                 self._env_current_int.set_data([], [])
 
-            # Ligne moyenne
-            self._update_mean_line(p, self._line_mean_current)
+            # Points echantillonnes
+            if self._show_sample_pts:
+                self._sample_pts_ext.set_data(
+                    pts_ext[:, 0], pts_ext[:, 1])
+                self._sample_pts_int.set_data(
+                    pts_int[:, 0], pts_int[:, 1])
+                self._sample_pts_ext.set_visible(True)
+                self._sample_pts_int.set_visible(True)
+            else:
+                self._sample_pts_ext.set_data([], [])
+                self._sample_pts_int.set_data([], [])
+                self._sample_pts_ext.set_visible(False)
+                self._sample_pts_int.set_visible(False)
+
         else:
             # Mode discret : juste la courbe
             ext = p.extrados
@@ -265,7 +334,11 @@ class ProfilCanvas(FigureCanvasQTAgg):
             self._line_current_ext.set_data(ext[:, 0], ext[:, 1])
             self._line_current_int.set_data(intr[:, 0], intr[:, 1])
             self._clear_ctrl_artists()
+            self._sample_pts_ext.set_data([], [])
+            self._sample_pts_int.set_data([], [])
 
+        # Ligne moyenne (fonctionne en mode discret et spline)
+        self._update_mean_line(p, self._line_mean_current)
         self._update_deviation()
 
     def _update_reference(self):
@@ -423,17 +496,30 @@ class ProfilCanvas(FigureCanvasQTAgg):
 
         if event.button != 1 or event.inaxes != self._ax:
             return
-        p = self._profil_current
-        if p is None or not p.has_splines:
+        if event.xdata is None or event.ydata is None:
             return
 
-        # Chercher le point de controle le plus proche
-        idx, side = self._find_nearest_cpoint(event)
-        if idx is not None:
-            self._dragging = True
-            self._drag_bezier = side
-            self._drag_index = idx
-            self._drag_start_xy = np.array([event.xdata, event.ydata])
+        p = self._profil_current
+        picked = False
+        if p is not None and p.has_splines:
+            # Chercher le point de controle le plus proche
+            idx, side = self._find_nearest_cpoint(event)
+            if idx is not None:
+                self._dragging = True
+                self._drag_bezier = side
+                self._drag_index = idx
+                self._drag_start_xy = np.array([event.xdata, event.ydata])
+                picked = True
+
+        if not picked:
+            # Demarrer le zoom rectangle
+            self._zoom_rect_active = True
+            self._zoom_rect_origin = (event.xdata, event.ydata)
+            self._zoom_rect_patch = Rectangle(
+                (event.xdata, event.ydata), 0, 0,
+                linewidth=1, edgecolor='#555555',
+                facecolor='#cccccc', alpha=0.3, linestyle='--')
+            self._ax.add_patch(self._zoom_rect_patch)
 
     def _on_motion(self, event):
         """Deplace le point de controle pendant le drag, ou pan la vue."""
@@ -456,6 +542,19 @@ class ProfilCanvas(FigureCanvasQTAgg):
             self._ax.set_xlim(xlim[0] + dx_data, xlim[1] + dx_data)
             self._ax.set_ylim(ylim[0] + dy_data, ylim[1] + dy_data)
             self.draw_idle()
+            return
+
+        # Zoom rectangle
+        if self._zoom_rect_active:
+            if event.xdata is not None and event.ydata is not None:
+                x0, y0 = self._zoom_rect_origin
+                self._zoom_rect_patch.set_xy(
+                    (min(x0, event.xdata), min(y0, event.ydata)))
+                self._zoom_rect_patch.set_width(
+                    abs(event.xdata - x0))
+                self._zoom_rect_patch.set_height(
+                    abs(event.ydata - y0))
+                self.draw_idle()
             return
 
         if not self._dragging or event.inaxes != self._ax:
@@ -483,11 +582,34 @@ class ProfilCanvas(FigureCanvasQTAgg):
         self.draw_idle()
 
     def _on_release(self, event):
-        """Finalise le drag ou le pan."""
+        """Finalise le drag, le pan ou le zoom rectangle."""
         if self._panning:
             self._panning = False
             self._pan_start_xy = None
             return
+
+        if self._zoom_rect_active:
+            self._zoom_rect_active = False
+            if self._zoom_rect_patch is not None:
+                self._zoom_rect_patch.remove()
+                self._zoom_rect_patch = None
+            if (self._zoom_rect_origin is not None
+                    and event.xdata is not None
+                    and event.ydata is not None):
+                x0, y0 = self._zoom_rect_origin
+                x1, y1 = event.xdata, event.ydata
+                # Seuil minimum (eviter un zoom sur un clic simple)
+                xlim = self._ax.get_xlim()
+                ylim = self._ax.get_ylim()
+                min_w = (xlim[1] - xlim[0]) * 0.02
+                min_h = (ylim[1] - ylim[0]) * 0.02
+                if abs(x1 - x0) > min_w and abs(y1 - y0) > min_h:
+                    self._ax.set_xlim(min(x0, x1), max(x0, x1))
+                    self._ax.set_ylim(min(y0, y1), max(y0, y1))
+            self._zoom_rect_origin = None
+            self.draw_idle()
+            return
+
         was_dragging = self._dragging
         self._dragging = False
         self._drag_bezier = None
@@ -577,6 +699,17 @@ class ProfilCanvas(FigureCanvasQTAgg):
 
         menu = QMenu(self)
 
+        # --- Info point ---
+        p = self._profil_current
+        if (p is not None and p.has_splines
+                and event.xdata is not None
+                and event.ydata is not None):
+            self._info_event_xy = np.array(
+                [event.xdata, event.ydata])
+            act_info = menu.addAction("Info point...")
+            act_info.triggered.connect(self._on_info_point)
+            menu.addSeparator()
+
         # --- Echelle courbure ---
         act_scale = menu.addAction(
             "Echelle courbure (%.2f)..." % self._porcupine_scale)
@@ -622,6 +755,82 @@ class ProfilCanvas(FigureCanvasQTAgg):
             act_split_int = menu.addAction("Split intrados")
             act_split_int.triggered.connect(
                 self._on_split_intrados)
+
+        # --- Parametres echantillonnage ---
+        p = self._profil_current
+        if (p is not None and p.has_splines
+                and event.xdata is not None
+                and event.ydata is not None):
+            menu.addSeparator()
+            click = np.array([event.xdata, event.ydata])
+            s_ext = p.spline_extrados
+            s_int = p.spline_intrados
+            t_ext, _, d_ext = s_ext.project(click)
+            t_int, _, d_int = s_int.project(click)
+            if d_ext <= d_int:
+                self._param_spline = s_ext
+                self._param_side = 'Extrados'
+                t_proj = t_ext
+            else:
+                self._param_spline = s_int
+                self._param_side = 'Intrados'
+                t_proj = t_int
+            spl = self._param_spline
+            k, _ = spl._resolve_t(t_proj)
+            self._param_seg_idx = k
+
+            # Sous-menu global (spline entiere)
+            param_menu = menu.addMenu(
+                u"Param\u00e8tres %s" % self._param_side)
+            act_npts = param_menu.addAction(
+                "Nombre de points (%d)..." % spl.n_points)
+            act_npts.triggered.connect(self._on_change_spline_npoints)
+            method_menu = param_menu.addMenu(
+                u"M\u00e9thode (%s)" % spl.sample_mode)
+            act_curvi = method_menu.addAction("Curviligne")
+            act_curvi.setCheckable(True)
+            act_curvi.setChecked(spl.sample_mode == 'curvilinear')
+            act_curvi.triggered.connect(
+                lambda: self._on_set_spline_method('curvilinear'))
+            act_adapt = method_menu.addAction("Adaptatif")
+            act_adapt.setCheckable(True)
+            act_adapt.setChecked(spl.sample_mode == 'adaptive')
+            act_adapt.triggered.connect(
+                lambda: self._on_set_spline_method('adaptive'))
+
+            # Sous-menu segment (per-segment)
+            seg_npts = spl.segment_n_points(k)
+            seg_mode = spl.segment_sample_mode(k)
+            seg_degree = spl._segments[k].degree
+            seg_label = "Segment %d/%d" % (k + 1, spl.n_segments)
+            seg_menu = menu.addMenu(
+                u"Param\u00e8tres %s \u2013 %s"
+                % (self._param_side, seg_label))
+            act_seg_degree = seg_menu.addAction(
+                u"Degr\u00e9 (%d)..." % seg_degree)
+            act_seg_degree.triggered.connect(
+                self._on_change_segment_degree)
+            act_seg_npts = seg_menu.addAction(
+                "Nombre de points (%d)..." % seg_npts)
+            act_seg_npts.triggered.connect(
+                self._on_change_segment_npoints)
+            seg_method_menu = seg_menu.addMenu(
+                u"M\u00e9thode (%s)" % seg_mode)
+            act_seg_curvi = seg_method_menu.addAction("Curviligne")
+            act_seg_curvi.setCheckable(True)
+            act_seg_curvi.setChecked(seg_mode == 'curvilinear')
+            act_seg_curvi.triggered.connect(
+                lambda: self._on_set_segment_method('curvilinear'))
+            act_seg_adapt = seg_method_menu.addAction("Adaptatif")
+            act_seg_adapt.setCheckable(True)
+            act_seg_adapt.setChecked(seg_mode == 'adaptive')
+            act_seg_adapt.triggered.connect(
+                lambda: self._on_set_segment_method('adaptive'))
+            seg_menu.addSeparator()
+            act_seg_reset = seg_menu.addAction(
+                u"R\u00e9initialiser le segment")
+            act_seg_reset.triggered.connect(
+                self._on_reset_segment_overrides)
 
         # Convertir position matplotlib -> position widget Qt
         # matplotlib: y=0 en bas ; Qt: y=0 en haut
@@ -687,6 +896,178 @@ class ProfilCanvas(FigureCanvasQTAgg):
         self.draw_idle()
 
     # ==================================================================
+    # Info point
+    # ==================================================================
+
+    def _on_info_point(self):
+        """Affiche les informations du point le plus proche du clic."""
+        from PySide6.QtWidgets import QMessageBox
+
+        p = self._profil_current
+        if p is None or not p.has_splines:
+            return
+
+        click = self._info_event_xy
+        s_ext = p.spline_extrados
+        s_int = p.spline_intrados
+
+        # Projeter sur les deux cotes
+        t_ext, pt_ext, d_ext = s_ext.project(click)
+        t_int, pt_int, d_int = s_int.project(click)
+
+        # Choisir le cote le plus proche
+        if d_ext <= d_int:
+            side_label = 'Extrados'
+            t, pt_curve, spl = t_ext, pt_ext, s_ext
+        else:
+            side_label = 'Intrados'
+            t, pt_curve, spl = t_int, pt_int, s_int
+
+        # Segment et parametre local
+        k, t_local = spl._resolve_t(t)
+        seg = spl._segments[k]
+        seg_npts = spl.segment_n_points(k)
+        seg_mode = spl.segment_sample_mode(k)
+
+        # Point d'echantillonnage le plus proche
+        pts_sample = spl.points
+        dists = np.linalg.norm(pts_sample - click, axis=1)
+        i_nearest = int(np.argmin(dists))
+        pt_sample = pts_sample[i_nearest]
+
+        # Totaux reels (apres overrides et dedup jonctions)
+        pts_ext = s_ext.points
+        pts_int = s_int.points
+
+        # Detail par segment (alloc effective)
+        seg_details = []
+        for i in range(spl.n_segments):
+            ni = spl.segment_n_points(i)
+            mi = spl.segment_sample_mode(i)
+            marker = " <<" if i == k else ""
+            seg_details.append(
+                u"  seg %d : %d pts  %s%s" % (i + 1, ni, mi, marker))
+
+        text = (
+            u"Profil : %s\n"
+            u"C\u00f4t\u00e9 : %s\n"
+            u"\n"
+            u"--- Point th\u00e9orique (BezierSpline) ---\n"
+            u"  x = %.6f    y = %.6f\n"
+            u"  t global = %.4f\n"
+            u"\n"
+            u"--- Point \u00e9chantillonn\u00e9 le plus proche ---\n"
+            u"  x = %.6f    y = %.6f\n"
+            u"  indice = %d / %d\n"
+            u"\n"
+            u"--- Segment B\u00e9zier ---\n"
+            u"  segment %d / %d    degr\u00e9 %d\n"
+            u"  t local = %.4f\n"
+            u"  pts allou\u00e9s = %d    mode = %s\n"
+            u"\n"
+            u"--- \u00c9chantillonnage %s ---\n"
+            u"%s\n"
+            u"  total r\u00e9el = %d  (nominal %d, %d jonctions d\u00e9duites)\n"
+            u"\n"
+            u"--- Totaux r\u00e9els ---\n"
+            u"  extrados : %d pts    intrados : %d pts\n"
+        ) % (
+            p.name, side_label,
+            pt_curve[0], pt_curve[1], t,
+            pt_sample[0], pt_sample[1],
+            i_nearest, len(pts_sample),
+            k + 1, spl.n_segments, seg.degree,
+            t_local, seg_npts, seg_mode,
+            side_label, '\n'.join(seg_details),
+            len(pts_sample), spl.n_points,
+            spl.n_segments - 1,
+            len(pts_ext), len(pts_int),
+        )
+
+        QMessageBox.information(self, "Info point", text)
+
+    # ==================================================================
+    # Parametres echantillonnage spline
+    # ==================================================================
+
+    def _on_change_spline_npoints(self):
+        """Ouvre un dialogue pour changer le nombre de points de la spline."""
+        from PySide6.QtWidgets import QInputDialog
+        spl = self._param_spline
+        value, ok = QInputDialog.getInt(
+            self,
+            u"\u00c9chantillonnage %s" % self._param_side,
+            "Nombre de points :",
+            spl.n_points, 10, 10000, 10)
+        if ok and value != spl.n_points:
+            spl.n_points = value
+            self._update_current()
+            self.draw_idle()
+
+    def _on_set_spline_method(self, mode):
+        """Change la methode d'echantillonnage de la spline."""
+        spl = self._param_spline
+        if mode != spl.sample_mode:
+            spl.sample_mode = mode
+            self._update_current()
+            self.draw_idle()
+
+    # --- Per-segment ---
+
+    def _on_change_segment_degree(self):
+        """Ouvre un dialogue pour changer le degre du segment."""
+        from PySide6.QtWidgets import QInputDialog
+        spl = self._param_spline
+        k = self._param_seg_idx
+        current = spl._segments[k].degree
+        value, ok = QInputDialog.getInt(
+            self,
+            u"Degr\u00e9 %s \u2013 Segment %d/%d"
+            % (self._param_side, k + 1, spl.n_segments),
+            u"Degr\u00e9 :",
+            current, 1, 30, 1)
+        if ok and value != current:
+            spl.set_segment_degree(k, value)
+            self._update_current()
+            self._update_axes()
+            self.draw_idle()
+            self.profil_edited.emit()
+
+    def _on_change_segment_npoints(self):
+        """Ouvre un dialogue pour changer le nombre de points du segment."""
+        from PySide6.QtWidgets import QInputDialog
+        spl = self._param_spline
+        k = self._param_seg_idx
+        current = spl.segment_n_points(k)
+        value, ok = QInputDialog.getInt(
+            self,
+            u"\u00c9chantillonnage %s \u2013 Segment %d/%d"
+            % (self._param_side, k + 1, spl.n_segments),
+            "Nombre de points :",
+            current, 2, 10000, 1)
+        if ok and value != current:
+            spl.set_segment_n_points(k, value)
+            self._update_current()
+            self.draw_idle()
+
+    def _on_set_segment_method(self, mode):
+        """Change la methode d'echantillonnage du segment."""
+        spl = self._param_spline
+        k = self._param_seg_idx
+        if mode != spl.segment_sample_mode(k):
+            spl.set_segment_sample_mode(k, mode)
+            self._update_current()
+            self.draw_idle()
+
+    def _on_reset_segment_overrides(self):
+        """Supprime les overrides du segment selectionne."""
+        spl = self._param_spline
+        k = self._param_seg_idx
+        spl.clear_segment_overrides(k)
+        self._update_current()
+        self.draw_idle()
+
+    # ==================================================================
     # Split spline
     # ==================================================================
 
@@ -739,14 +1120,35 @@ class ProfilCanvas(FigureCanvasQTAgg):
     # Utilitaires
     # ==================================================================
 
+    @staticmethod
+    def _junction_indices(spline):
+        """Retourne les indices globaux des points de jonction d'une spline.
+
+        Ce sont les extremites de chaque segment Bezier (indices 0, d1,
+        d1+d2, ...) dans le tableau ``control_points``.
+
+        :param spline: BezierSpline
+        :returns: set d'indices
+        :rtype: set
+        """
+        indices = {0}
+        offset = 0
+        for seg in spline._segments:
+            offset += seg.degree
+            indices.add(offset)
+        return indices
+
     def _current_artists(self):
         """Retourne la liste des artists du profil courant."""
         return [
             self._line_current_ext, self._line_current_int,
             self._line_ctrl_ext, self._line_ctrl_int,
             self._scatter_ctrl_ext, self._scatter_ctrl_int,
+            self._scatter_junc_ext, self._junc_ring_ext,
+            self._scatter_junc_int, self._junc_ring_int,
             self._porc_current_ext, self._porc_current_int,
             self._env_current_ext, self._env_current_int,
+            self._sample_pts_ext, self._sample_pts_int,
             self._line_mean_current,
         ]
 
@@ -773,15 +1175,21 @@ class ProfilCanvas(FigureCanvasQTAgg):
         self._porc_current_int.set_segments([])
         self._env_current_ext.set_data([], [])
         self._env_current_int.set_data([], [])
+        self._sample_pts_ext.set_data([], [])
+        self._sample_pts_int.set_data([], [])
         self._line_mean_current.set_data([], [])
         self._clear_deviation_artists()
 
     def _clear_ctrl_artists(self):
-        """Vide les artists de controle (polygone + points)."""
+        """Vide les artists de controle (polygone + points + jonctions)."""
         self._line_ctrl_ext.set_data([], [])
         self._line_ctrl_int.set_data([], [])
         self._scatter_ctrl_ext.set_data([], [])
         self._scatter_ctrl_int.set_data([], [])
+        self._scatter_junc_ext.set_data([], [])
+        self._junc_ring_ext.set_data([], [])
+        self._scatter_junc_int.set_data([], [])
+        self._junc_ring_int.set_data([], [])
         self._porc_current_ext.set_segments([])
         self._porc_current_int.set_segments([])
         self._env_current_ext.set_data([], [])

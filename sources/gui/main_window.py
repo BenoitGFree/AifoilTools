@@ -208,7 +208,73 @@ class MainWindow(QMainWindow):
 
     def _on_convert_to_spline(self):
         """Convertit le profil courant en mode Spline."""
-        ok, info = self._tab_profils.convert_current_to_spline()
+        p = self._tab_profils.profil_current
+        if p is None or p.has_splines:
+            self.statusBar().showMessage(
+                u"Pas de profil ou d\u00e9j\u00e0 en mode Spline")
+            return
+
+        from PySide6.QtWidgets import (
+            QDialog, QDialogButtonBox, QFormLayout, QSpinBox,
+            QDoubleSpinBox
+        )
+        dlg = QDialog(self)
+        dlg.setWindowTitle("Convertir en Spline")
+        form = QFormLayout(dlg)
+
+        spn_ext = QSpinBox()
+        spn_ext.setRange(2, 30)
+        spn_ext.setValue(11)
+        form.addRow(u"Degr\u00e9 extrados :", spn_ext)
+
+        spn_int = QSpinBox()
+        spn_int.setRange(2, 30)
+        spn_int.setValue(11)
+        form.addRow(u"Degr\u00e9 intrados :", spn_int)
+
+        spn_tol = QDoubleSpinBox()
+        spn_tol.setRange(0.0001, 0.1)
+        spn_tol.setDecimals(4)
+        spn_tol.setSingleStep(0.0005)
+        spn_tol.setValue(0.001)
+        spn_tol.setToolTip(
+            u"D\u00e9viation max acceptable (corde = 1).\n"
+            u"Plus petit = plus de segments.")
+        form.addRow(u"Tol\u00e9rance :", spn_tol)
+
+        spn_max_seg = QSpinBox()
+        spn_max_seg.setRange(1, 20)
+        spn_max_seg.setValue(1)
+        spn_max_seg.setToolTip(
+            u"Nombre max de segments B\u00e9zier par c\u00f4t\u00e9.\n"
+            u"1 = un seul segment (ancien comportement).")
+        form.addRow("Max segments :", spn_max_seg)
+
+        spn_smooth = QDoubleSpinBox()
+        spn_smooth.setRange(0.0, 1.0)
+        spn_smooth.setDecimals(2)
+        spn_smooth.setSingleStep(0.01)
+        spn_smooth.setValue(0.1)
+        spn_smooth.setToolTip(
+            u"R\u00e9gularisation (0 = pas de lissage).\n"
+            u"Valeurs > 0 lissent le polygone de contr\u00f4le.")
+        form.addRow("Lissage :", spn_smooth)
+
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(dlg.accept)
+        buttons.rejected.connect(dlg.reject)
+        form.addRow(buttons)
+
+        if dlg.exec() != QDialog.Accepted:
+            return
+
+        ok, info = self._tab_profils.convert_current_to_spline(
+            degree_ext=spn_ext.value(),
+            degree_int=spn_int.value(),
+            max_dev=spn_tol.value(),
+            max_segments=spn_max_seg.value(),
+            smoothing=spn_smooth.value())
         if ok is None:
             self.statusBar().showMessage(
                 u"Pas de profil ou d\u00e9j\u00e0 en mode Spline")

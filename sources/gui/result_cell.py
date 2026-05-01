@@ -17,6 +17,7 @@ from PySide6.QtCore import Qt
 
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
+from matplotlib.patches import Rectangle
 
 
 # Couleurs (coherentes avec profil_canvas et tab_results)
@@ -356,8 +357,20 @@ class ResultCell(QWidget):
         self._panning = False
         self._pan_start_xy = None
 
+        # Zoom rectangle state
+        self._zoom_rect_active = False
+        self._zoom_rect_origin = None
+        self._zoom_rect_patch = None
+
         # Mapping legende -> ligne pour toggle visibilite
         self._legend_map = {}  # {legend_line: original_line}
+        self._hidden_labels = set()  # labels des courbes masquees
+
+        # Defilement legende (quand beaucoup d'entrees)
+        self._legend_offset = 0
+        self._legend_max_visible = 15
+        self._all_handles = []
+        self._all_labels = []
 
         self._build_ui()
         self._set_combo_value(analysis_name)
@@ -468,12 +481,6 @@ class ResultCell(QWidget):
 
     def _replot(self):
         u"""Retrace le graphique avec l'analyse et les resultats courants."""
-        # Sauvegarder les labels masques avant le clear
-        hidden_labels = set()
-        for leg_line, orig_line in self._legend_map.items():
-            if not orig_line.get_visible():
-                hidden_labels.add(orig_line.get_label())
-
         self._ax.clear()
         self._ax.grid(True, alpha=0.3)
 
@@ -531,20 +538,69 @@ class ResultCell(QWidget):
         self._ax.set_title(title, fontsize=9)
         self._ax.tick_params(labelsize=7)
 
-        # Legende interactive (clic pour masquer/afficher une courbe)
-        self._legend_map = {}
-        handles, labels = self._ax.get_legend_handles_labels()
-        if labels:
-            legend = self._ax.legend(fontsize=6)
-            for leg_line, orig_line in zip(legend.get_lines(), handles):
-                leg_line.set_picker(5)  # tolerance en pixels
-                self._legend_map[leg_line] = orig_line
-                # Restaurer l'etat masque
-                if orig_line.get_label() in hidden_labels:
-                    orig_line.set_visible(False)
-                    leg_line.set_alpha(0.2)
+        # Legende interactive avec defilement
+        self._all_handles, self._all_labels = \
+            self._ax.get_legend_handles_labels()
+        if self._all_labels:
+            n = len(self._all_labels)
+            if n <= self._legend_max_visible:
+                self._legend_offset = 0
+            else:
+                self._legend_offset = max(
+                    0, min(self._legend_offset,
+                           n - self._legend_max_visible))
+            # Appliquer l'etat masque aux lignes
+            for handle in self._all_handles:
+                if handle.get_label() in self._hidden_labels:
+                    handle.set_visible(False)
+            self._build_legend()
+        else:
+            self._legend_map = {}
 
         self._canvas.draw_idle()
+
+    def _build_legend(self):
+        u"""Construit la legende avec fenetre de defilement."""
+        leg = self._ax.get_legend()
+        if leg is not None:
+            leg.remove()
+
+        n = len(self._all_labels)
+        if n == 0:
+            self._legend_map = {}
+            return
+
+        max_vis = self._legend_max_visible
+        offset = self._legend_offset
+
+        if n <= max_vis:
+            vis_handles = self._all_handles
+            vis_labels = self._all_labels
+            title = None
+        else:
+            end = min(offset + max_vis, n)
+            vis_handles = self._all_handles[offset:end]
+            vis_labels = self._all_labels[offset:end]
+            parts = []
+            if offset > 0:
+                parts.append(u'\u25b2 %d' % offset)
+            if end < n:
+                parts.append(u'\u25bc %d' % (n - end))
+            title = '   '.join(parts) if parts else None
+
+        legend = self._ax.legend(
+            vis_handles, vis_labels, fontsize=6,
+            title=title, title_fontsize=7)
+
+        self._legend_map = {}
+        for leg_line, orig_handle in zip(
+                legend.get_lines(), vis_handles):
+            leg_line.set_visible(True)  # toujours cliquable
+            leg_line.set_picker(5)
+            self._legend_map[leg_line] = orig_handle
+            if orig_handle.get_label() \
+                    in self._hidden_labels:
+                leg_line.set_alpha(0.2)
 
     # ------------------------------------------------------------------
     # Slots controles
@@ -553,6 +609,7 @@ class ResultCell(QWidget):
     def _on_analysis_changed(self, name):
         u"""Appele quand le combo d'analyse change."""
         self._analysis_name = name
+        self._legend_offset = 0
         needs_re = name in ('-Cp(x)', 'Profil + CL')
         self._combo_re.setVisible(needs_re)
         self._combo_alpha.setVisible(name == 'Profil + CL')
@@ -584,8 +641,12 @@ class ResultCell(QWidget):
         orig_line = self._legend_map[leg_line]
         visible = not orig_line.get_visible()
         orig_line.set_visible(visible)
-        # Attenuer la ligne de legende si la courbe est masquee
         leg_line.set_alpha(1.0 if visible else 0.2)
+        label = orig_line.get_label()
+        if visible:
+            self._hidden_labels.discard(label)
+        else:
+            self._hidden_labels.add(label)
         self._canvas.draw_idle()
 
     def _show_context_menu(self, event):
@@ -609,15 +670,19 @@ class ResultCell(QWidget):
 
     def _on_show_all_curves(self):
         u"""Affiche toutes les courbes."""
-        for leg_line, orig_line in self._legend_map.items():
-            orig_line.set_visible(True)
+        self._hidden_labels.clear()
+        for handle in self._all_handles:
+            handle.set_visible(True)
+        for leg_line in self._legend_map:
             leg_line.set_alpha(1.0)
         self._canvas.draw_idle()
 
     def _on_hide_all_curves(self):
         u"""Masque toutes les courbes."""
-        for leg_line, orig_line in self._legend_map.items():
-            orig_line.set_visible(False)
+        self._hidden_labels = set(self._all_labels)
+        for handle in self._all_handles:
+            handle.set_visible(False)
+        for leg_line in self._legend_map:
             leg_line.set_alpha(0.2)
         self._canvas.draw_idle()
 
@@ -693,7 +758,29 @@ class ResultCell(QWidget):
     # ------------------------------------------------------------------
 
     def _on_scroll(self, event):
-        u"""Zoom avant/arriere centre sur la position du curseur."""
+        u"""Zoom ou defilement legende."""
+        # Defilement legende si survol et necessaire
+        if len(self._all_labels) > self._legend_max_visible:
+            legend = self._ax.get_legend()
+            if legend is not None:
+                try:
+                    renderer = self._canvas.get_renderer()
+                    bb = legend.get_window_extent(renderer)
+                    if bb.contains(event.x, event.y):
+                        n = len(self._all_labels)
+                        mx = n - self._legend_max_visible
+                        if event.button == 'up':
+                            self._legend_offset = max(
+                                0, self._legend_offset - 3)
+                        elif event.button == 'down':
+                            self._legend_offset = min(
+                                mx, self._legend_offset + 3)
+                        self._build_legend()
+                        self._canvas.draw_idle()
+                        return
+                except Exception:
+                    pass
+
         if event.inaxes != self._ax:
             return
 
@@ -727,13 +814,24 @@ class ResultCell(QWidget):
     # ------------------------------------------------------------------
 
     def _on_press(self, event):
-        u"""Demarre le pan (bouton milieu) ou menu contextuel (bouton droit)."""
+        u"""Demarre le pan, zoom rectangle ou menu contextuel."""
         if event.button == 3 and event.inaxes == self._ax:
             self._show_context_menu(event)
             return
         if event.button == 2:
             self._panning = True
             self._pan_start_xy = (event.x, event.y)
+            return
+        if (event.button == 1 and event.inaxes == self._ax
+                and event.xdata is not None
+                and event.ydata is not None):
+            self._zoom_rect_active = True
+            self._zoom_rect_origin = (event.xdata, event.ydata)
+            self._zoom_rect_patch = Rectangle(
+                (event.xdata, event.ydata), 0, 0,
+                linewidth=1, edgecolor='#555555',
+                facecolor='#cccccc', alpha=0.3, linestyle='--')
+            self._ax.add_patch(self._zoom_rect_patch)
 
     def _on_motion(self, event):
         u"""Deplace la vue pendant le pan, affiche les coordonnees."""
@@ -743,6 +841,19 @@ class ResultCell(QWidget):
                 "x=%.4g  y=%.4g" % (event.xdata, event.ydata))
         else:
             self._lbl_cursor.setText("")
+
+        # Zoom rectangle
+        if self._zoom_rect_active:
+            if event.xdata is not None and event.ydata is not None:
+                x0, y0 = self._zoom_rect_origin
+                self._zoom_rect_patch.set_xy(
+                    (min(x0, event.xdata), min(y0, event.ydata)))
+                self._zoom_rect_patch.set_width(
+                    abs(event.xdata - x0))
+                self._zoom_rect_patch.set_height(
+                    abs(event.ydata - y0))
+                self._canvas.draw_idle()
+            return
 
         # Pan
         if not self._panning or self._pan_start_xy is None:
@@ -763,7 +874,28 @@ class ResultCell(QWidget):
         self._canvas.draw_idle()
 
     def _on_release(self, event):
-        u"""Arrete le pan."""
+        u"""Arrete le pan ou applique le zoom rectangle."""
         if self._panning:
             self._panning = False
             self._pan_start_xy = None
+            return
+
+        if self._zoom_rect_active:
+            self._zoom_rect_active = False
+            if self._zoom_rect_patch is not None:
+                self._zoom_rect_patch.remove()
+                self._zoom_rect_patch = None
+            if (self._zoom_rect_origin is not None
+                    and event.xdata is not None
+                    and event.ydata is not None):
+                x0, y0 = self._zoom_rect_origin
+                x1, y1 = event.xdata, event.ydata
+                xlim = self._ax.get_xlim()
+                ylim = self._ax.get_ylim()
+                min_w = (xlim[1] - xlim[0]) * 0.02
+                min_h = (ylim[1] - ylim[0]) * 0.02
+                if abs(x1 - x0) > min_w and abs(y1 - y0) > min_h:
+                    self._ax.set_xlim(min(x0, x1), max(x0, x1))
+                    self._ax.set_ylim(min(y0, y1), max(y0, y1))
+            self._zoom_rect_origin = None
+            self._canvas.draw_idle()

@@ -1,5 +1,46 @@
 # Changelog
 
+## [Non publié] - 2026-05-01
+
+### Added (Ajouté)
+- **Approximation adaptative multi-segment** dans `profil_spline.py` :
+  - Paramètre `max_segments` dans `approximate_spline()` (défaut 1 = comportement historique)
+  - `_adaptive_fit_side()` : découpe récursivement au point de déviation maximale jusqu'à atteindre la tolérance ou `max_segments`
+  - Concentration automatique des segments dans les zones de forte courbure (typiquement le bord d'attaque)
+  - Continuité C1 propagée par tangente entre segments adjacents
+- **Overrides per-segment** dans `bezier_spline.py` :
+  - `set_segment_n_points(k, n)` / `clear_segment_n_points(k)` : nombre de points par segment
+  - `set_segment_sample_mode(k, mode)` : mode d'échantillonnage par segment
+  - `set_segment_degree(k, target)` : élévation/réduction de degré par segment
+  - `clear_segment_overrides(k)` : remise à zéro
+  - Report automatique des overrides après `delete_segment()`
+- **Dialogue "Convertir en Spline" enrichi** dans `main_window.py` :
+  - Saisie séparée des degrés extrados/intrados
+  - Tolérance de déviation (en fraction de la corde)
+  - Nombre max de segments par côté
+  - Coefficient de lissage (régularisation)
+- **Jonctions de spline distinctes** dans `profil_canvas.py` :
+  - Points de jonction affichés avec point + cercle (au lieu de carrés simples)
+  - Points de contrôle intérieurs en carrés
+  - Visuellement clair de distinguer les extrémités de segments
+- **Affichage des points échantillonnés** dans `profil_canvas.py` :
+  - Checkbox "Pts" dans `tab_profils.py` pour activer/désactiver
+  - Marqueurs `x` aux positions effectivement échantillonnées
+- **Zoom rectangle** au clic gauche dans `profil_canvas.py` et `result_cell.py` :
+  - Tracé d'un rectangle de sélection
+  - Zoom sur la zone à la fin du drag
+- **Mode ALFA bidirectionnel** (style airfoiltools) dans `xfoil_preprocessor.py` :
+  - Checkbox "ASEQ" dans `tab_xfoil.py` (paramètre `USE_ASEQ`)
+  - Décoché : ALFA individuel depuis α=0, branches positive et négative séparées (plus robuste à la convergence)
+  - Coché : ASEQ (comportement historique, rapide)
+- **Tri des polaires par alpha croissant** dans `xfoil_postprocessor.py` (nécessaire pour le mode ALFA bidirectionnel)
+- **Légende défilable** dans `result_cell.py` :
+  - Limite à 15 entrées visibles, défilement quand plus de courbes
+  - Persistance robuste de l'état masqué (set de labels au lieu de mapping fragile)
+
+### Changed (Modifié)
+- `tab_profils.py` : suppression du SpinBox "Degré Bézier" (remplacé par le dialogue de conversion)
+
 ## [Non publié] - 2026-02-25 18:00
 
 ### Added (Ajouté)
