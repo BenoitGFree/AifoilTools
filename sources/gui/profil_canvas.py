@@ -217,6 +217,7 @@ class ProfilCanvas(FigureCanvasQTAgg):
         self._show_porc_current = visible
         self._porc_current_ext.set_visible(visible)
         self._porc_current_int.set_visible(visible)
+        self._update_current()
         self.draw_idle()
 
     def set_show_porcupines_reference(self, visible):
@@ -224,6 +225,7 @@ class ProfilCanvas(FigureCanvasQTAgg):
         self._show_porc_reference = visible
         self._porc_ref_ext.set_visible(visible)
         self._porc_ref_int.set_visible(visible)
+        self._update_reference()
         self.draw_idle()
 
     def set_show_sample_points(self, visible):
