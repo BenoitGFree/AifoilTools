@@ -3,7 +3,7 @@
 """Onglet Profils : affichage et edition interactive des profils."""
 
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QCheckBox, QLabel
+    QWidget, QVBoxLayout, QHBoxLayout, QCheckBox, QLabel, QMessageBox
 )
 from PySide6.QtCore import Qt, Signal
 
@@ -44,7 +44,7 @@ class TabProfils(QWidget):
         ctrl_layout.addWidget(self._lbl_current)
 
         self._chk_porc_current = QCheckBox("Courbure")
-        self._chk_porc_current.setChecked(True)
+        self._chk_porc_current.setChecked(False)
         self._chk_porc_current.stateChanged.connect(self._on_toggle_porc_current)
         ctrl_layout.addWidget(self._chk_porc_current)
 
@@ -67,7 +67,7 @@ class TabProfils(QWidget):
         ctrl_layout.addWidget(self._lbl_reference)
 
         self._chk_porc_reference = QCheckBox("Courbure")
-        self._chk_porc_reference.setChecked(True)
+        self._chk_porc_reference.setChecked(False)
         self._chk_porc_reference.stateChanged.connect(
             self._on_toggle_porc_reference)
         ctrl_layout.addWidget(self._chk_porc_reference)
@@ -114,7 +114,14 @@ class TabProfils(QWidget):
 
     def _on_toggle_porc_current(self, state):
         """Affiche/masque les porcupines du profil courant."""
-        self._canvas.set_show_porcupines_current(state == Qt.Checked.value)
+        checked = state == Qt.Checked.value
+        if checked and not self._has_splines(self._profil_current):
+            self._warn_curvature_requires_spline()
+            self._chk_porc_current.blockSignals(True)
+            self._chk_porc_current.setChecked(False)
+            self._chk_porc_current.blockSignals(False)
+            return
+        self._canvas.set_show_porcupines_current(checked)
 
     def _on_toggle_sample_pts(self, state):
         """Affiche/masque les points echantillonnes."""
@@ -123,7 +130,31 @@ class TabProfils(QWidget):
 
     def _on_toggle_porc_reference(self, state):
         """Affiche/masque les porcupines du profil de reference."""
-        self._canvas.set_show_porcupines_reference(state == Qt.Checked.value)
+        checked = state == Qt.Checked.value
+        if checked and not self._has_splines(self._profil_reference):
+            self._warn_curvature_requires_spline()
+            self._chk_porc_reference.blockSignals(True)
+            self._chk_porc_reference.setChecked(False)
+            self._chk_porc_reference.blockSignals(False)
+            return
+        self._canvas.set_show_porcupines_reference(checked)
+
+    @staticmethod
+    def _has_splines(profil):
+        """Retourne True si le profil est defini par des splines."""
+        return profil is not None and getattr(profil, 'has_splines', False)
+
+    def _warn_curvature_requires_spline(self):
+        """Affiche un avertissement : courbure necessite mode spline."""
+        QMessageBox.information(
+            self,
+            u"Courbure indisponible",
+            u"La courbure ne peut etre tracee que sur des profils "
+            u"definis par des Beziers (splines).\n\n"
+            u"Solutions :\n"
+            u"  - Convertir le profil courant via le menu "
+            u"« Edition › Convertir en Spline »\n"
+            u"  - Charger un profil au format .bspl ou .bez")
 
     def _on_toggle_deviation(self, state):
         """Affiche/masque la deviation entre profils."""

@@ -54,8 +54,8 @@ class ProfilCanvas(FigureCanvasQTAgg):
         self._profil_reference = None
         self._show_current = True
         self._show_reference = True
-        self._show_porc_current = True
-        self._show_porc_reference = True
+        self._show_porc_current = False
+        self._show_porc_reference = False
         self._show_sample_pts = False
 
         # --- Artists profil courant (bleu) ---
