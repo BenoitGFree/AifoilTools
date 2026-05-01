@@ -9,6 +9,9 @@ env_py3/
 .vscode/
 .claude/
 
+# Sortie Inno Setup
+installer/Output/
+
 # Fichiers de profils (exemples, exports, fichiers normalisés)
 *.bez
 *.bspl
