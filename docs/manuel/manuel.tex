@@ -3,8 +3,10 @@
 \usepackage{style/manuel_style}
 
 % --- Metadonnees ---
-\newcommand{\manuelversion}{1.0}
+\newcommand{\manuelversion}{2.0}
 \newcommand{\manueldate}{Mai 2026}
+\newcommand{\manuelauteur}{Beno\^{i}t Gagnaire}
+\newcommand{\manuelpremieredition}{2022}
 
 \begin{document}
 
@@ -41,12 +43,14 @@
 
     \vfill
 
+    \vspace{1.5cm}
     \begin{flushleft}
-        \color{white}
+        \color{aifoilprimary}
         \fontfamily{phv}\selectfont
-        \large
-        \textbf{Nervures}\\
-        Conception assistée par ordinateur de parapentes
+        \Large
+        \textbf{\manuelauteur}\\[2pt]
+        \normalsize
+        \textit{Première version du logiciel : \manuelpremieredition}
     \end{flushleft}
     \vspace{0.5cm}
 \end{titlepage}
@@ -60,7 +64,9 @@
 \begin{flushleft}
     \small
     \textbf{AifoilTools --- Manuel utilisateur, version \manuelversion}\\
-    Édition de \manueldate.\\[1em]
+    Édition de \manueldate.\\[0.5em]
+    Auteur : \manuelauteur.\\
+    Première version du logiciel : \manuelpremieredition.\\[1em]
 
     Ce document décrit l'utilisation de la bibliothèque
     \textbf{AifoilTools} et de son interface graphique pour

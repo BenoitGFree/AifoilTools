@@ -7,7 +7,6 @@ build/
 *.egg
 env_py3/
 .vscode/
-.claude/
 
 # Fichiers de profils (exemples, exports, fichiers normalisés)
 *.bez

@@ -252,8 +252,8 @@
 - **Restructuration** `airfoiltools/` → `sources/model/` + `sources/gui/`
   - `setup.py` : `package_dir` mapping explicite, Python >= 3.8, dépendances mises à jour
   - 6 fichiers de tests adaptés (`from model.xxx import Xxx`, sys.path vers `sources/`)
-  - `CLAUDE.md` mis à jour (architecture, commandes, imports)
-- `.gitignore` : ajout `env_py3/`, `.vscode/`, `.claude/`
+  - Documentation projet mise à jour (architecture, commandes, imports)
+- `.gitignore` : ajout `env_py3/`, `.vscode/`
 
 ### Removed (Supprimé)
 - Import fallback Python 2 dans `profil.py` (`try/except ImportError`)

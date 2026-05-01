@@ -414,9 +414,11 @@ class MainWindow(QMainWindow):
         from PySide6.QtWidgets import QMessageBox
         QMessageBox.about(
             self, "AifoilTools",
-            "AifoilTools - Analyse aerodynamique 2D\n\n"
-            "Courbes de Bezier, profils, XFoil\n"
-            u"\u00a9 Nervures"
+            u"AifoilTools - Analyse a\u00e9rodynamique 2D\n"
+            u"Courbes de B\u00e9zier, profils, XFoil\n\n"
+            u"Version 2.0\n"
+            u"Premi\u00e8re version : 2022\n\n"
+            u"Auteur : Beno\u00eet Gagnaire"
         )
 
 
