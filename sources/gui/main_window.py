@@ -234,10 +234,11 @@ class MainWindow(QMainWindow):
 
         :param role: 'current' ou 'reference'
         """
+        from PySide6.QtWidgets import QDialog
         from .dialog_uiuc import DialogUIUC
         label = u"courant" if role == "current" else u"référence"
         dlg = DialogUIUC(parent=self, role_label=label)
-        if dlg.exec() != dlg.Accepted or not dlg.selected_path:
+        if dlg.exec() != QDialog.Accepted or not dlg.selected_path:
             return
         ok, info = self._tab_profils.load_profil_from_file(
             dlg.selected_path, role)
