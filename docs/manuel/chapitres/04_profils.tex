@@ -1,0 +1,275 @@
+\chapter{Onglet Profils}
+\label{chap:profils}
+
+L'onglet \menu{Profils} est le cœur de l'application : il permet
+le chargement, la visualisation, l'édition et la comparaison des
+profils. Au démarrage, deux profils NACA sont chargés :
+\textbf{NACA~2412} comme profil courant (bleu) et \textbf{NACA~0012}
+comme profil de référence (rouge).
+
+\screenshot{02_tab_profils_default.png}{1.0}{%
+    Onglet \menu{Profils} dans son état par défaut.}
+
+\section{Barre de contrôle}
+
+La barre située sous le sélecteur d'onglets regroupe les options
+d'affichage. De gauche à droite :
+
+\begin{itemize}
+    \item \textbf{Profil courant} (case à cocher) : affiche ou
+        masque le profil courant. L'étiquette colorée indique
+        son nom (par défaut \og NACA~2412 \fg{}).
+    \item \textbf{Courbure} (à droite du nom) : affiche les
+        \emph{porcupines} de courbure du profil courant
+        (segments perpendiculaires à la courbe, longueur
+        proportionnelle à la courbure locale).
+    \item \textbf{Pts} : affiche les points effectivement
+        échantillonnés sur les splines (marqueurs $\times$).
+    \item \textbf{Profil référence} et \textbf{Courbure} :
+        idem pour le profil de référence.
+    \item \textbf{Déviation} : trace les écarts géométriques
+        entre profil courant et référence (segments noirs
+        verticaux + enveloppe).
+\end{itemize}
+
+\begin{important}
+Les options \textbf{Courbure} ne fonctionnent que sur des
+profils en \textbf{mode spline}. Si vous tentez de les activer
+sur un profil en mode points discrets, un message
+d'avertissement s'affiche et la case se décoche
+automatiquement (voir \figref{08_msg_courbure.png}).
+\end{important}
+
+\section{Visualisation des profils}
+
+\subsection{Mode points discrets}
+
+C'est le mode par défaut au chargement. Le profil est tracé sous
+forme de courbe lisse interpolée entre les points discrets. Aucun
+point de contrôle n'est visible.
+
+\subsection{Mode spline}
+
+Une fois le profil converti en spline (voir
+section~\ref{sec:convertspline}), de nombreux éléments
+apparaissent :
+
+\screenshot{03_tab_profils_spline.png}{1.0}{%
+    Profil en mode spline : les carrés bleus sont les points
+    de contrôle intérieurs des Béziers ; les points entourés
+    d'un cercle marquent les jonctions entre segments
+    consécutifs.}
+
+\begin{itemize}
+    \item \textbf{Carrés bleus} : points de contrôle intérieurs
+        des courbes de Bézier. Ils sont \textbf{déplaçables}
+        à la souris pour modifier la forme du profil.
+    \item \textbf{Cercles avec point central} : points de jonction
+        entre deux segments de Bézier consécutifs. Ils sont
+        également déplaçables ; leur déplacement préserve la
+        continuité C\textsuperscript{1} avec les segments voisins.
+    \item \textbf{Polygone de contrôle} (lignes pointillées
+        grises) : relie les points de contrôle dans l'ordre.
+    \item \textbf{Ligne moyenne} (pointillé bleu clair) :
+        trace la cambrure relative du profil (moyenne
+        extrados/intrados).
+\end{itemize}
+
+\subsection{Affichage de la courbure}
+
+L'activation de la case \textbf{Courbure} fait apparaître les
+\emph{porcupines} : segments perpendiculaires à la courbe, dont
+la longueur est proportionnelle à la courbure locale signée.
+
+\screenshot{04_tab_profils_courbure.png}{1.0}{%
+    Affichage des porcupines de courbure (segments oranges).
+    Une courbure forte au bord d'attaque est typique des
+    profils cambrés.}
+
+\begin{noteinfo}
+La courbure est l'inverse du rayon du cercle osculateur.
+Une courbure positive signale une courbe concave vers les
+$y$ croissants (sommet de l'extrados), négative concave vers
+les $y$ décroissants. Les discontinuités de courbure sont
+souvent visibles aux jonctions de segments en continuité C1
+mais non C2.
+\end{noteinfo}
+
+L'\textbf{échelle des porcupines} et leur \textbf{densité}
+(nombre de quills par courbe) sont réglables via le menu
+contextuel (clic droit sur le canvas).
+
+\subsection{Affichage des points échantillonnés}
+
+L'option \textbf{Pts} fait apparaître des marqueurs aux positions
+des points effectivement utilisés pour l'échantillonnage
+discret. C'est utile pour vérifier la densité et la répartition
+de l'échantillonnage avant export ou simulation.
+
+\screenshot{05_tab_profils_pts.png}{1.0}{%
+    Affichage des points d'échantillonnage. Le mode
+    \emph{curviligne} (par défaut) répartit les points
+    de manière uniforme le long de l'arc.}
+
+\subsection{Visualisation de la déviation}
+
+L'option \textbf{Déviation} mesure l'écart géométrique entre
+profil courant et profil de référence par interpolation sur
+une grille commune en $x$.
+
+\screenshot{06_tab_profils_deviation.png}{1.0}{%
+    Affichage de la déviation entre NACA~2412 (bleu) et
+    NACA~0012 (rouge) : les segments noirs verticaux
+    matérialisent l'écart en chaque point.}
+
+\begin{astuce}
+Lorsque les profils ont une déviation très petite à l'œil
+(par exemple lors d'une optimisation par petits déplacements
+des points de contrôle), il est utile d'\textbf{amplifier}
+l'affichage de la déviation. L'échelle est réglable via le
+menu contextuel : \menu{Échelle déviation\dots}.
+\end{astuce}
+
+\section{Conversion en spline}
+\label{sec:convertspline}
+
+Pour bénéficier de l'édition interactive, il faut convertir le
+profil en mode spline. Cela se fait via :
+
+\begin{itemize}
+    \item le menu \menu{Édition $\rightarrow$ Convertir en Spline} ;
+    \item le raccourci clavier \touche{Ctrl}+\touche{B}.
+\end{itemize}
+
+Un dialogue s'ouvre pour saisir les paramètres de conversion :
+
+\screenshot{07_dialog_convert.png}{0.45}{%
+    Dialogue de conversion en spline.}
+
+\begin{tabularx}{\linewidth}{l X}
+    \toprule
+    \textbf{Paramètre} & \textbf{Description} \\
+    \midrule
+    Degré extrados
+        & Degré des courbes de Bézier de l'extrados.
+          Petit (3--5) = forme très lissée ; moyen (6--12) =
+          compromis (recommandé) ; grand ($>$~15) = forme très
+          précise mais risque d'oscillations.\\
+    Degré intrados
+        & Idem pour l'intrados. Peut être différent du degré
+          extrados (typiquement intrados moins courbé).\\
+    Tolérance
+        & Déviation maximale acceptée entre la spline ajustée
+          et les points discrets, en fraction de la corde.
+          Valeur typique : $10^{-3}$ à $10^{-4}$.\\
+    Max segments
+        & Nombre maximal de segments de Bézier par côté.
+          Avec 1, on obtient un seul segment global (comportement
+          historique). Avec une valeur supérieure et une
+          tolérance fine, l'algorithme \emph{adaptatif} découpe
+          au point de plus grande erreur jusqu'à respecter la
+          tolérance, concentrant les segments dans les zones de
+          forte courbure (typiquement le bord d'attaque).\\
+    Lissage
+        & Coefficient de régularisation de l'ajustement
+          (Tikhonov). $0$ = ajustement par moindres carrés pur ;
+          $>0$ = lissage du polygone de contrôle.\\
+    \bottomrule
+\end{tabularx}
+
+\begin{astuce}
+Pour la plupart des profils, des paramètres de
+\textbf{degré 11}, \textbf{tolérance $10^{-3}$},
+\textbf{max segments 4}, \textbf{lissage 0{,}1} donnent un bon
+compromis entre précision et qualité géométrique. Réduisez
+la tolérance à $10^{-4}$ et augmentez \emph{Max segments} à
+8--10 pour une approximation très fidèle.
+\end{astuce}
+
+\section{Édition interactive}
+
+En mode spline, le canvas devient un \textbf{éditeur géométrique
+interactif}.
+
+\subsection{Interactions souris}
+
+\begin{tabularx}{\linewidth}{l X}
+    \toprule
+    \textbf{Action} & \textbf{Effet} \\
+    \midrule
+    Clic gauche + déplacement sur un point de contrôle
+        & Déplace le point de contrôle. La courbe est mise à
+          jour en temps réel.\\
+    Clic gauche + déplacement dans le vide
+        & Trace un \emph{rectangle de zoom}. La vue est recadrée
+          sur la zone à la fin du drag.\\
+    Molette
+        & Zoom centré sur la position du curseur.\\
+    Clic milieu (ou \touche{Maj}+clic gauche)
+        & Pan (translation de la vue).\\
+    Clic droit
+        & Ouvre le \textbf{menu contextuel}.\\
+    \bottomrule
+\end{tabularx}
+
+\subsection{Menu contextuel (clic droit)}
+
+Le menu contextuel offre plusieurs actions selon le contexte :
+
+\begin{itemize}
+    \item \menu{Info point\dots} (si clic sur un point de contrôle) :
+        affiche les coordonnées et les paramètres locaux du point.
+    \item \menu{Échelle porcupines\dots} : règle l'échelle
+        d'affichage de la courbure.
+    \item \menu{Densité porcupines / $\times 2$ ou $\div 2$} :
+        modifie le nombre de quills affichés.
+    \item \menu{Échelle déviation\dots} et \menu{Densité déviation} :
+        idem pour les porcupines de déviation.
+    \item \menu{Split extrados / Split intrados} (en mode spline) :
+        scinde la spline en deux au point cliqué le plus proche
+        (algorithme de De Casteljau, exact).
+    \item \menu{Paramètres globaux} : nombre de points
+        d'échantillonnage, méthode (curviligne ou adaptative).
+    \item \menu{Segment} (si clic dans un segment précis) :
+        permet de définir des \emph{overrides per-segment}
+        (degré, nombre de points, méthode différente du global).
+\end{itemize}
+
+\section{Avertissement \og Courbure indisponible \fg{}}
+
+Lorsque la case \menu{Courbure} est activée alors que le profil
+concerné est en mode points discrets (non converti en spline),
+un message d'information s'affiche :
+
+\screenshot{08_msg_courbure.png}{0.7}{%
+    Message d'avertissement \og Courbure indisponible \fg{}.}
+
+Comme indiqué dans le message, deux solutions sont possibles :
+
+\begin{enumerate}
+    \item convertir le profil en spline (menu
+        \menu{Édition $\rightarrow$ Convertir en Spline}) ;
+    \item charger un profil dans un format préservant la
+        géométrie spline (\chemin{.bspl} ou \chemin{.bez}).
+\end{enumerate}
+
+La case se décoche automatiquement après affichage du message.
+
+\section{Modification du nombre de points}
+
+En mode spline, le nombre de points d'échantillonnage discret
+des splines est modifiable via le menu \menu{Édition $\rightarrow$
+Échantillonnage $\rightarrow$ Profil courant\dots} (ou
+\menu{\dots Profil référence\dots}).
+
+Un dialogue demande le nouveau nombre de points (entre 10 et
+10\,000). Cela affecte uniquement la \emph{discrétisation
+d'export} et l'affichage : la géométrie spline sous-jacente
+n'est pas altérée.
+
+\begin{noteinfo}
+Pour les simulations XFoil, l'échantillonnage par défaut
+(150~points) est généralement suffisant. XFoil ré-échantillonne
+ensuite en interne via la commande \texttt{PANE} si l'option
+\emph{Repanel} est activée dans l'onglet \menu{Paramétrage XFoil}.
+\end{noteinfo}

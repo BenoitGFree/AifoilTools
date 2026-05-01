@@ -1,0 +1,99 @@
+\chapter{Installation et lancement}
+\label{chap:installation}
+
+\section{Prérequis}
+
+\begin{itemize}
+    \item \textbf{Système d'exploitation} : Windows 10 ou 11
+        (testé), Linux et macOS (compatibilité a priori, non
+        testée par les développeurs).
+    \item \textbf{Python} : version 3.10 ou supérieure
+        (recommandation : 3.13).
+    \item \textbf{Solveur XFoil} : nécessaire uniquement pour
+        l'exécution des simulations. Sous Windows, l'exécutable
+        \chemin{xfoil.exe} est fourni dans le dossier
+        \chemin{externaltools/xfoil/} de la distribution.
+\end{itemize}
+
+\section{Distribution exécutable Windows}
+
+Pour les utilisateurs Windows ne souhaitant pas installer Python,
+une distribution \chemin{.exe} autonome est disponible. Elle
+intègre l'interpréteur Python, l'ensemble des dépendances et le
+binaire XFoil.
+
+L'application se lance en double-cliquant sur
+\chemin{AifoilTools.exe}.
+
+\begin{noteinfo}
+Au premier lancement, Windows peut afficher un avertissement
+\emph{SmartScreen} car l'exécutable n'est pas signé. Cliquez
+sur \og Informations complémentaires \fg{} puis \og Exécuter
+quand même \fg{} pour autoriser le lancement.
+\end{noteinfo}
+
+\section{Installation depuis les sources}
+
+\subsection{Récupération du dépôt}
+
+\begin{lstlisting}[language=bash,caption={Clonage du dépôt}]
+git clone https://github.com/BenoitGFree/AifoilTools.git
+cd AifoilTools
+\end{lstlisting}
+
+\subsection{Création de l'environnement Python}
+
+\begin{lstlisting}[language=bash,caption={Création du venv et installation
+des dépendances (Windows)}]
+py -3 -m venv env_py3
+env_py3\Scripts\activate
+pip install -r requirements.txt
+\end{lstlisting}
+
+Le fichier \chemin{requirements.txt} liste les dépendances :
+
+\begin{itemize}
+    \item \code{numpy} --- calcul vectoriel ;
+    \item \code{scipy} --- algorithmes numériques (interpolation,
+        optimisation) ;
+    \item \code{matplotlib} --- tracé graphique 2D ;
+    \item \code{PySide6} --- interface graphique Qt for Python.
+\end{itemize}
+
+\subsection{Lancement de l'application}
+
+\begin{lstlisting}[language=bash,caption={Démarrage de la GUI}]
+env_py3\Scripts\python.exe run_gui.py
+\end{lstlisting}
+
+L'application s'ouvre sur la fenêtre principale présentée à la
+\figref{01_main_window.png}.
+
+\section{Vérification de l'installation}
+
+Pour vérifier que l'environnement est correctement configuré, il
+est possible d'exécuter la suite de tests unitaires :
+
+\begin{lstlisting}[language=bash,caption={Exécution des tests}]
+env_py3\Scripts\python.exe -c "import unittest; import sys; ^
+sys.path.insert(0, 'sources'); sys.path.insert(0, 'tests'); ^
+from test_bezier import *; ^
+unittest.main(module='test_bezier', exit=False, verbosity=2)"
+\end{lstlisting}
+
+La suite complète comporte plus de 240 tests qui doivent tous
+passer avec succès.
+
+\begin{attention}
+La détection automatique de l'exécutable XFoil dépend de
+l'emplacement de \chemin{xfoil.exe}. L'application le cherche
+dans cet ordre :
+\begin{enumerate}
+    \item à côté de l'exécutable de l'application (mode
+        \emph{frozen} PyInstaller) ;
+    \item dans le dossier \chemin{externaltools/xfoil/} ;
+    \item dans le PATH système.
+\end{enumerate}
+Si XFoil n'est pas trouvé, l'onglet \menu{Paramétrage XFoil}
+fonctionne mais le lancement d'une simulation échouera.
+\end{attention}

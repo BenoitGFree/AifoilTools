@@ -1,0 +1,214 @@
+% Style pour le manuel utilisateur AifoilTools
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{style/manuel_style}[2026/05/01 Style manuel AifoilTools]
+
+% --- Encodage et langue ---
+\RequirePackage[utf8]{inputenc}
+\RequirePackage[T1]{fontenc}
+\RequirePackage[french]{babel}
+\RequirePackage{lmodern}
+\RequirePackage{textcomp}
+
+% --- Mise en page ---
+\RequirePackage[a4paper,margin=2.5cm,headheight=15pt]{geometry}
+\RequirePackage{microtype}
+\RequirePackage{setspace}
+\setstretch{1.05}
+
+% --- Graphiques et couleurs ---
+\RequirePackage{graphicx}
+\RequirePackage{xcolor}
+\RequirePackage{float}
+
+% Palette de couleurs
+\definecolor{aifoilprimary}{HTML}{1F3A5F}
+\definecolor{aifoilsecondary}{HTML}{1F77B4}
+\definecolor{aifoilaccent}{HTML}{D62728}
+\definecolor{aifoilbg}{HTML}{F5F7FA}
+\definecolor{aifoilrule}{HTML}{8DA9C4}
+\definecolor{aifoilcode}{HTML}{2D2D2D}
+\definecolor{aifoilcodebg}{HTML}{F8F8F8}
+
+% --- Tableaux ---
+\RequirePackage{array}
+\RequirePackage{booktabs}
+\RequirePackage{tabularx}
+\RequirePackage{longtable}
+\RequirePackage{multirow}
+
+% --- Liens hypertexte ---
+\RequirePackage[
+    pdftitle={Manuel utilisateur AifoilTools},
+    pdfauthor={Nervures},
+    pdfsubject={Analyse aerodynamique 2D de profils},
+    pdfkeywords={XFoil, Bezier, profil, aerodynamique, parapente},
+    colorlinks=true,
+    linkcolor=aifoilprimary,
+    urlcolor=aifoilsecondary,
+    citecolor=aifoilprimary,
+    bookmarks=true,
+    bookmarksnumbered=true,
+    bookmarksopen=true
+]{hyperref}
+
+% --- En-tetes et pieds de page ---
+\RequirePackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[R]{\small\thepage}
+\fancyhead[L]{\small\itshape\nouppercase{\leftmark}}
+\fancyfoot[C]{\small\textcolor{aifoilprimary}{AifoilTools --- Manuel utilisateur}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.2pt}
+
+% Style des chapitres
+\fancypagestyle{plain}{%
+    \fancyhf{}
+    \fancyfoot[C]{\small\textcolor{aifoilprimary}{AifoilTools --- Manuel utilisateur}}
+    \renewcommand{\headrulewidth}{0pt}
+    \renewcommand{\footrulewidth}{0.2pt}
+}
+
+% --- Style des titres ---
+\RequirePackage{titlesec}
+
+\titleformat{\chapter}[display]
+    {\normalfont\sffamily\huge\bfseries\color{aifoilprimary}}
+    {\filright\textcolor{aifoilrule}{\fontsize{60}{60}\selectfont\thechapter}}
+    {1em}
+    {\filright\Huge}
+    [\vspace{0.2em}{\color{aifoilrule}\titlerule[1pt]}]
+
+\titleformat{\section}
+    {\normalfont\sffamily\Large\bfseries\color{aifoilprimary}}
+    {\thesection}{1em}{}
+
+\titleformat{\subsection}
+    {\normalfont\sffamily\large\bfseries\color{aifoilsecondary}}
+    {\thesubsection}{1em}{}
+
+\titleformat{\subsubsection}
+    {\normalfont\sffamily\bfseries\color{aifoilsecondary}}
+    {}{0em}{}
+
+\titlespacing*{\chapter}{0pt}{-30pt}{30pt}
+\titlespacing*{\section}{0pt}{20pt}{8pt}
+\titlespacing*{\subsection}{0pt}{14pt}{6pt}
+
+% --- Boites d'information (tcolorbox) ---
+\RequirePackage[most]{tcolorbox}
+
+\newtcolorbox{noteinfo}[1][]{%
+    colback=aifoilbg,
+    colframe=aifoilsecondary,
+    coltitle=white,
+    fonttitle=\sffamily\bfseries,
+    title=Note,
+    sharp corners=south,
+    arc=2pt,
+    boxrule=0.6pt,
+    leftrule=4pt,
+    left=8pt,right=8pt,top=4pt,bottom=4pt,
+    breakable,
+    #1
+}
+
+\newtcolorbox{astuce}[1][]{%
+    colback=green!5!white,
+    colframe=green!50!black,
+    coltitle=white,
+    fonttitle=\sffamily\bfseries,
+    title=Astuce,
+    sharp corners=south,
+    arc=2pt,
+    boxrule=0.6pt,
+    leftrule=4pt,
+    left=8pt,right=8pt,top=4pt,bottom=4pt,
+    breakable,
+    #1
+}
+
+\newtcolorbox{attention}[1][]{%
+    colback=orange!5!white,
+    colframe=orange!75!black,
+    coltitle=white,
+    fonttitle=\sffamily\bfseries,
+    title=Attention,
+    sharp corners=south,
+    arc=2pt,
+    boxrule=0.6pt,
+    leftrule=4pt,
+    left=8pt,right=8pt,top=4pt,bottom=4pt,
+    breakable,
+    #1
+}
+
+\newtcolorbox{important}[1][]{%
+    colback=red!5!white,
+    colframe=red!75!black,
+    coltitle=white,
+    fonttitle=\sffamily\bfseries,
+    title=Important,
+    sharp corners=south,
+    arc=2pt,
+    boxrule=0.6pt,
+    leftrule=4pt,
+    left=8pt,right=8pt,top=4pt,bottom=4pt,
+    breakable,
+    #1
+}
+
+% --- Code source (listings) ---
+\RequirePackage{listings}
+
+\lstdefinestyle{aifoilstyle}{
+    backgroundcolor=\color{aifoilcodebg},
+    basicstyle=\ttfamily\small\color{aifoilcode},
+    keywordstyle=\bfseries\color{aifoilprimary},
+    commentstyle=\itshape\color{gray},
+    stringstyle=\color{aifoilaccent},
+    numberstyle=\tiny\color{gray},
+    numbers=left,
+    numbersep=8pt,
+    frame=l,
+    framesep=6pt,
+    rulecolor=\color{aifoilrule},
+    breaklines=true,
+    captionpos=b,
+    showstringspaces=false,
+    tabsize=4,
+}
+\lstset{style=aifoilstyle}
+
+% --- Commandes utilitaires ---
+% Touche clavier
+\newcommand{\touche}[1]{%
+    \tikz[baseline=(K.base)]\node[draw=aifoilrule,thick,rounded corners=2pt,
+        fill=aifoilbg,inner sep=2pt,minimum height=1.6em,
+        font=\sffamily\small](K){\strut #1};}
+\RequirePackage{tikz}
+
+% Menu / chemin
+\newcommand{\menu}[1]{\textsf{\textcolor{aifoilprimary}{#1}}}
+
+% Bouton
+\newcommand{\bouton}[1]{\textsf{\textbf{\textcolor{aifoilprimary}{[#1]}}}}
+
+% Chemin de fichier
+\newcommand{\chemin}[1]{\texttt{\textcolor{aifoilprimary}{#1}}}
+
+% Nom de fichier ou commande
+\newcommand{\code}[1]{\texttt{#1}}
+
+% Figure pleine largeur avec cadre
+\newcommand{\screenshot}[3]{%
+    \begin{figure}[H]
+        \centering
+        \fbox{\includegraphics[width=#2\textwidth]{images/#1}}
+        \caption{#3}
+        \label{fig:#1}
+    \end{figure}
+}
+
+% Reference figure
+\newcommand{\figref}[1]{figure~\ref{fig:#1}}

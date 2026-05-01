@@ -1,0 +1,170 @@
+\chapter{Annexes}
+\label{chap:annexes}
+
+\section{Raccourcis clavier}
+
+\begin{tabularx}{\linewidth}{l X}
+    \toprule
+    \textbf{Raccourci} & \textbf{Action} \\
+    \midrule
+    \touche{Ctrl}+\touche{O}            & Ouvrir profil courant \\
+    \touche{Ctrl}+\touche{Maj}+\touche{O} & Ouvrir profil de référence \\
+    \touche{Ctrl}+\touche{S}            & Sauvegarder profil courant \\
+    \touche{Ctrl}+\touche{Q}            & Quitter \\
+    \touche{Ctrl}+\touche{Z}            & Annuler (réservé, non actif) \\
+    \touche{Ctrl}+\touche{Y}            & Refaire (réservé, non actif) \\
+    \touche{Ctrl}+\touche{B}            & Convertir en spline \\
+    \touche{Ctrl}+\touche{0}            & Zoom adapté (canvas profils) \\
+    \bottomrule
+\end{tabularx}
+
+\section{Glossaire}
+
+\begin{description}
+    \item[BA / BF] Bord d'attaque ($x=0$) / Bord de fuite ($x=c$).
+    \item[Cambrure] Hauteur maximale de la ligne moyenne du profil,
+        exprimée en pourcentage de la corde.
+    \item[$C_D$] Coefficient de traînée. Force de traînée
+        normalisée par la pression dynamique et la corde.
+    \item[$C_f$] Coefficient de frottement local pariétal.
+    \item[$C_L$] Coefficient de portance.
+    \item[$C_M$] Coefficient de moment de tangage, généralement
+        référencé au quart de corde.
+    \item[$C_p$] Coefficient de pression : $(p - p_\infty) /
+        (\frac{1}{2}\rho V_\infty^2)$.
+    \item[Continuité C\textsuperscript{0}, C\textsuperscript{1},
+        C\textsuperscript{2}] Au point de raccord de deux courbes :
+        identité de position (C\textsuperscript{0}), de tangente
+        (C\textsuperscript{1}), de courbure (C\textsuperscript{2}).
+    \item[Corde] Distance entre le BA et le BF, sert de longueur
+        de référence.
+    \item[Courbe de Bézier] Courbe paramétrique définie par un
+        polygone de contrôle. Le degré est égal au nombre de
+        points de contrôle moins un.
+    \item[$\delta^*$] Épaisseur de déplacement de la couche limite.
+    \item[De Casteljau] Algorithme récursif d'évaluation et de
+        subdivision d'une courbe de Bézier. La subdivision est
+        \emph{exacte} (pas d'approximation).
+    \item[Décrochage] Perte de portance brutale au-delà d'une
+        incidence critique, due à un décollement de la couche
+        limite.
+    \item[Extrados / Intrados] Surface supérieure / inférieure du
+        profil.
+    \item[Finesse] Rapport $C_L/C_D$. Plus la finesse est élevée,
+        plus le rendement aérodynamique est bon.
+    \item[$H$] Facteur de forme de la couche limite,
+        $H = \delta^*/\theta$.
+    \item[NCRIT] Critère de transition par méthode $e^N$ ;
+        amplitude maximale acceptée des perturbations avant
+        déclenchement de la turbulence.
+    \item[Polaire] Tracé d'une grandeur aérodynamique en
+        fonction d'une autre, à un Reynolds donné. Plusieurs
+        polaires forment une famille indexée par le Reynolds.
+    \item[Reynolds] Nombre adimensionnel
+        $\mathrm{Re} = \rho V c / \mu$, caractérisant le régime
+        d'écoulement (laminaire, transitionnel, turbulent).
+    \item[Selig] Convention de stockage des points d'un profil :
+        BF $\to$ extrados $\to$ BA $\to$ intrados $\to$ BF.
+    \item[Spline] Courbe par morceaux composée de plusieurs
+        segments de Bézier raccordés selon un niveau de continuité
+        donné.
+    \item[$\theta$] Épaisseur de quantité de mouvement de la
+        couche limite.
+    \item[Trip / Turbulator] Élément (rugosité, fil tendu) forçant
+        la transition laminaire-turbulent à une position donnée.
+    \item[$U_e$] Vitesse au bord externe de la couche limite.
+    \item[XFoil] Solveur aérodynamique 2D développé par Mark Drela
+        (MIT) couplant méthode des panneaux et équations intégrales
+        de couche limite.
+    \item[XTR] Position de transition de couche limite ($x_{tr}/c$).
+\end{description}
+
+\section{Dépannage (FAQ)}
+
+\subsection*{La GUI ne se lance pas}
+
+Vérifiez que :
+
+\begin{enumerate}
+    \item l'environnement virtuel est activé (\chemin{env\_py3}) ;
+    \item les dépendances sont installées (\code{pip install -r
+        requirements.txt}) ;
+    \item Python est en version 3.10 ou supérieure
+        (\code{python --version}).
+\end{enumerate}
+
+\subsection*{XFoil ne s'exécute pas}
+
+\begin{itemize}
+    \item Vérifiez la présence de \chemin{externaltools/xfoil/xfoil.exe}.
+    \item Sur Windows, certains antivirus peuvent bloquer
+        l'exécution. Ajoutez une exception pour le dossier
+        \chemin{externaltools}.
+    \item Les commandes envoyées à XFoil sont visibles dans la
+        console (en mode développement) ; consultez la sortie
+        pour diagnostiquer une éventuelle erreur de syntaxe.
+\end{itemize}
+
+\subsection*{XFoil ne converge pas pour certains angles}
+
+\begin{itemize}
+    \item Désactivez \menu{ASEQ} pour passer en mode ALFA
+        bidirectionnel.
+    \item Réduisez le pas en $\alpha$ (par exemple de 0{,}5\textdegree{} à
+        0{,}25\textdegree{}) pour faciliter le suivi de continuation.
+    \item Augmentez \menu{Timeout} si le calcul est long.
+    \item Vérifiez que le profil ne présente pas de singularités
+        géométriques (points dupliqués, croisement extrados/intrados,
+        BA dégénéré).
+\end{itemize}
+
+\subsection*{La courbure ne s'affiche pas}
+
+\begin{itemize}
+    \item Convertissez le profil en mode spline
+        (\menu{Édition $\rightarrow$ Convertir en Spline}).
+    \item Augmentez l'échelle des porcupines (clic droit sur le
+        canvas $\rightarrow$ \menu{Échelle porcupines\dots}) si
+        elles sont trop courtes pour être visibles.
+\end{itemize}
+
+\subsection*{Je perds mes splines en sauvegardant}
+
+Le format \chemin{.dat} (Selig/Lednicer) ne préserve pas la
+représentation spline : seuls les points discrets sont
+sauvegardés. Pour conserver la spline, utilisez le format
+\chemin{.bspl}.
+
+\section{Pour aller plus loin}
+
+\begin{itemize}
+    \item \textbf{Documentation technique} : voir le fichier
+        \chemin{CLAUDE.md} à la racine du dépôt et les
+        docstrings du code source (format Sphinx reST).
+    \item \textbf{Tests unitaires} : voir le dossier
+        \chemin{tests/} qui contient plus de 240 tests
+        (Bezier, Profil, BezierSpline, ProfilSpline,
+        Simulation).
+    \item \textbf{Article de référence sur XFoil} :
+        Drela, M. \emph{XFOIL: An Analysis and Design System for
+        Low Reynolds Number Airfoils}, in \emph{Low Reynolds
+        Number Aerodynamics}, Springer Lecture Notes in Engineering,
+        Vol.~54, 1989.
+    \item \textbf{Bibliothèque de profils} :
+        \chemin{https://airfoiltools.com/} (large catalogue
+        au format \chemin{.dat}).
+    \item \textbf{Site Nervures} :
+        \chemin{https://www.nervures.com/}.
+\end{itemize}
+
+\bigskip
+\hrule
+\bigskip
+
+\begin{center}
+    \itshape
+    Fin du manuel utilisateur.\\
+    Pour signaler une coquille, suggérer une amélioration ou
+    poser une question, ouvrez une \emph{issue} sur
+    \chemin{https://github.com/BenoitGFree/AifoilTools}.
+\end{center}

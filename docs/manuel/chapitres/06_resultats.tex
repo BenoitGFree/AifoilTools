@@ -1,0 +1,176 @@
+\chapter{Onglet Résultats}
+\label{chap:resultats}
+
+L'onglet \menu{Résultats} présente les résultats de simulation
+sous forme d'une \textbf{grille configurable de cellules
+d'analyse}. Chaque cellule affiche un type de tracé indépendant
+(polaire, distribution de pression, profil de couche limite,
+etc.).
+
+\screenshot{10_tab_results_empty.png}{1.0}{%
+    Onglet \menu{Résultats} avant toute simulation. La grille
+    est par défaut en disposition $2\times2$, soit
+    quatre cellules vides.}
+
+\section{Configuration de la grille}
+
+La grille est configurable via le menu
+\menu{Affichage $\rightarrow$ Disposition}. Cinq dispositions
+préconfigurées sont disponibles : $1\times1$, $1\times2$,
+$2\times2$ (par défaut), $2\times3$, $3\times3$.
+
+\begin{noteinfo}
+Lors d'un changement de disposition, les analyses déjà
+sélectionnées dans les cellules existantes sont conservées.
+Les nouvelles cellules sont initialisées avec les analyses
+par défaut.
+\end{noteinfo}
+
+\section{Cellule d'analyse}
+
+Chaque cellule comporte une \textbf{barre de contrôle} et un
+\textbf{canvas matplotlib}.
+
+\subsection{Barre de contrôle}
+
+\begin{tabularx}{\linewidth}{l X}
+    \toprule
+    \textbf{Élément} & \textbf{Rôle} \\
+    \midrule
+    Liste déroulante (analyse)
+        & Choix du type d'analyse à afficher dans la cellule
+          (voir \emph{Types d'analyse}, ci-après). \\
+    Case \menu{C}
+        & Affiche / masque les courbes du profil courant (bleu). \\
+    Case \menu{R}
+        & Affiche / masque les courbes du profil de référence (rouge). \\
+    Liste \menu{Reynolds}
+        & Pour les analyses dépendant d'un Reynolds particulier
+          ($-C_p(x)$, profil~+~CL, couche limite), choisit le
+          Reynolds à afficher. Masquée si non pertinente. \\
+    Liste \menu{Alpha}
+        & Pour les analyses point-par-point, choisit l'incidence
+          $\alpha$ à afficher. Masquée si non pertinente. \\
+    Coordonnées
+        & Affichage en temps réel des coordonnées du curseur
+          dans le repère du graphique. \\
+    \bottomrule
+\end{tabularx}
+
+\subsection{Interactions souris}
+
+Les interactions disponibles sur le canvas matplotlib sont
+identiques à celles de l'onglet \menu{Profils} :
+
+\begin{itemize}
+    \item Clic gauche + drag : zoom rectangle ;
+    \item Molette : zoom centré sur le curseur ;
+    \item Clic milieu : pan ;
+    \item Clic gauche sur la légende : masque / réaffiche la
+        courbe correspondante.
+\end{itemize}
+
+\subsection{Légende interactive et défilante}
+
+Lorsqu'une cellule contient de nombreuses courbes (par exemple
+plusieurs Reynolds combinés à plusieurs profils), la légende peut
+devenir trop longue pour s'afficher entièrement. Une \textbf{barre
+de défilement} apparaît automatiquement au-delà de 15~entrées.
+
+\begin{astuce}
+Pour comparer rapidement deux courbes, il est plus efficace
+de \textbf{masquer} les courbes parasites en cliquant sur leur
+entrée dans la légende, plutôt que de zoomer ou d'ajouter
+une cellule supplémentaire.
+\end{astuce}
+
+\section{Types d'analyse disponibles}
+
+\subsection{Polaires (en fonction d'Alpha)}
+
+\begin{tabularx}{\linewidth}{l X}
+    \toprule
+    \textbf{Analyse} & \textbf{Description} \\
+    \midrule
+    $C_L(\alpha)$  & Coefficient de portance en fonction de
+                     l'incidence. Une courbe par Reynolds.\\
+    $C_D(\alpha)$  & Coefficient de traînée en fonction de
+                     l'incidence.\\
+    $C_M(\alpha)$  & Coefficient de moment de tangage
+                     (référence quart de corde).\\
+    $C_L/C_D$~$(\alpha)$ & \emph{Finesse} en fonction de
+                     l'incidence. Permet de déterminer
+                     l'incidence de finesse maximale.\\
+    $C_D(C_L)$ \emph{(polaire de Lilienthal)}
+                   & Polaire classique : traînée en abscisse
+                     vs portance en ordonnée. La tangente
+                     depuis l'origine donne la finesse maximale.\\
+    Transition top, bot
+                   & Position $x/c$ de la transition de couche
+                     limite sur extrados / intrados, en fonction
+                     de $\alpha$. Renseigne sur la rugosité
+                     effective et le décrochage laminaire.\\
+    \bottomrule
+\end{tabularx}
+
+\subsection{Distributions le long du profil}
+
+\begin{tabularx}{\linewidth}{l X}
+    \toprule
+    \textbf{Analyse} & \textbf{Description} \\
+    \midrule
+    $-C_p(x)$ & Distribution du coefficient de pression le long
+               de la corde, à un Reynolds et une incidence donnés.
+               Convention : $-C_p$ vers le haut (extrados au-dessus). \\
+    Profil + CL & Visualisation combinée : profil tourné par
+               l'incidence + tracé de la frontière de couche
+               limite (épaisseur de déplacement $\delta^*$).\\
+    \bottomrule
+\end{tabularx}
+
+\subsection{Couche limite}
+
+Six grandeurs de couche limite peuvent être tracées en fonction
+de l'abscisse curviligne $s$ ou de l'abscisse cartésienne $x$ :
+
+\begin{tabularx}{\linewidth}{l X}
+    \toprule
+    \textbf{Grandeur} & \textbf{Description} \\
+    \midrule
+    $U_e(s)$, $U_e(x)$
+        & Vitesse au bord de la couche limite,
+          normalisée par la vitesse infinie amont.\\
+    $\delta^*(s)$, $\delta^*(x)$
+        & Épaisseur de déplacement.\\
+    $\theta(s)$, $\theta(x)$
+        & Épaisseur de quantité de mouvement.\\
+    $C_f(s)$, $C_f(x)$
+        & Coefficient de frottement local.\\
+    $H(s)$, $H(x)$
+        & Facteur de forme $H = \delta^*/\theta$ ($H \approx 2{,}6$
+          au point de transition, $H \approx 4$ au décollement).\\
+    \bottomrule
+\end{tabularx}
+
+\section{Bandeau de résultats obsolètes}
+
+Lorsque l'utilisateur revient à l'onglet \menu{Profils} et modifie
+un profil après simulation (déplacement d'un point de contrôle,
+changement de degré, conversion\dots), un bandeau jaune apparaît
+en haut de l'onglet \menu{Résultats} :
+
+\begin{quote}
+\textcolor{orange!75!black}{$\triangle$
+\emph{Le profil courant a été modifié depuis la dernière
+simulation. Relancez pour mettre à jour.}}
+\end{quote}
+
+Ce bandeau disparaît automatiquement à la prochaine simulation.
+
+\begin{important}
+Les résultats affichés dans les cellules \emph{ne sont pas}
+recalculés automatiquement après modification d'un profil.
+Le bandeau est un simple indicateur visuel : il appartient
+à l'utilisateur de relancer la simulation depuis l'onglet
+\menu{Paramétrage XFoil}.
+\end{important}

@@ -3,6 +3,29 @@
 ## [Non publié] - 2026-05-01
 
 ### Added (Ajouté)
+- **Manuel utilisateur LaTeX** dans `docs/manuel/` :
+  - 33 pages, structure en 8 chapitres (Présentation, Installation,
+    Interface, onglet Profils, onglet Paramétrage XFoil, onglet
+    Résultats, Formats de fichiers, Annexes)
+  - 10 captures d'écran générées automatiquement via `tools/capture_screenshots.py`
+    (utilise `QWidget.grab()`, ne nécessite pas de display visible)
+  - Style typographique professionnel : page de garde stylisée (TikZ),
+    boîtes d'aide colorées (note/astuce/attention/important via tcolorbox),
+    touches clavier rendues (TikZ), listings de code colorés, palette
+    cohérente avec la GUI (bleu courant, rouge référence)
+  - Compilation par `pdflatex` (testé avec MiKTeX), résultat dans
+    `docs/manuel/manuel.pdf`
+- **Tooltips et statusTips** sur l'ensemble de l'interface graphique :
+  - Tous les contrôles (cases à cocher, spinboxes, comboboxes,
+    boutons) disposent d'une bulle d'aide au survol
+  - Les actions de menu disposent d'un statusTip affiché dans la
+    barre de statut
+  - Le canvas profils a un tooltip global expliquant les
+    interactions souris (zoom rect, drag, molette, menu contextuel)
+- **Avertissement Courbure indisponible** :
+  - Cocher "Courbure" sur un profil non-spline affiche un message
+    d'information expliquant qu'il faut convertir le profil ou
+    charger un format `.bspl`/`.bez`, et la case se décoche
 - **Approximation adaptative multi-segment** dans `profil_spline.py` :
   - Paramètre `max_segments` dans `approximate_spline()` (défaut 1 = comportement historique)
   - `_adaptive_fit_side()` : découpe récursivement au point de déviation maximale jusqu'à atteindre la tolérance ou `max_segments`

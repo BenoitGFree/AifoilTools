@@ -1,0 +1,118 @@
+\chapter{Interface générale}
+\label{chap:interface}
+
+\section{Vue d'ensemble}
+
+La fenêtre principale d'AifoilTools est structurée en quatre
+zones (\figref{01_main_window.png}) :
+
+\begin{enumerate}
+    \item la \textbf{barre de menus} (\menu{Fichier}, \menu{Édition},
+        \menu{Affichage}, \menu{Aide}) ;
+    \item le \textbf{sélecteur d'onglets} (\menu{Profils},
+        \menu{Paramétrage XFoil}, \menu{Résultats}) ;
+    \item la \textbf{zone de travail} qui change selon l'onglet
+        sélectionné ;
+    \item la \textbf{barre de statut}, en bas de la fenêtre, où
+        s'affichent les messages d'information et la progression
+        des simulations.
+\end{enumerate}
+
+\section{Bulles d'aide}
+
+Chaque contrôle (case à cocher, champ de saisie, bouton, action
+de menu) dispose d'une \textbf{bulle d'aide} qui s'affiche au
+survol prolongé du curseur souris. Ces bulles décrivent le rôle
+du contrôle et les valeurs typiques.
+
+\begin{astuce}
+Survolez un contrôle dont la fonction n'est pas évidente :
+la bulle d'aide apparaît au bout d'environ une seconde.
+Pour les actions de menu, l'aide s'affiche en bas de
+fenêtre dans la barre de statut au moment où l'on survole
+l'entrée de menu.
+\end{astuce}
+
+\section{Menu \menu{Fichier}}
+
+\begin{tabularx}{\linewidth}{l l X}
+    \toprule
+    \textbf{Entrée} & \textbf{Raccourci} & \textbf{Action} \\
+    \midrule
+    Ouvrir profil courant\dots
+        & \touche{Ctrl}+\touche{O}
+        & Charge un profil dans la position courante (bleu).
+          Formats acceptés : \chemin{.dat} (Selig/Lednicer),
+          \chemin{.bspl} (spline AifoilTools), \chemin{.bez}
+          (Bézier AifoilTools), \chemin{.csv}.\\
+    Ouvrir profil référence\dots
+        & \touche{Ctrl}+\touche{Maj}+\touche{O}
+        & Charge un profil dans la position de référence (rouge).\\
+    Sauvegarder profil\dots
+        & \touche{Ctrl}+\touche{S}
+        & Sauvegarde le profil courant. Le format est sélectionné
+          dans le filtre du dialogue.\\
+    Quitter
+        & \touche{Ctrl}+\touche{Q}
+        & Ferme l'application.\\
+    \bottomrule
+\end{tabularx}
+
+\section{Menu \menu{Édition}}
+
+\begin{tabularx}{\linewidth}{l l X}
+    \toprule
+    \textbf{Entrée} & \textbf{Raccourci} & \textbf{Action} \\
+    \midrule
+    Convertir en Spline
+        & \touche{Ctrl}+\touche{B}
+        & Convertit le profil courant (mode points discrets)
+          en mode spline multi-segment. Voir la section
+          \emph{Conversion en spline}, page~\pageref{sec:convertspline}.\\
+    Échantillonnage / Profil courant\dots
+        & ---
+        & Modifie le nombre de points d'échantillonnage du
+          profil courant. Disponible uniquement en mode Spline.\\
+    Échantillonnage / Profil référence\dots
+        & ---
+        & Idem pour le profil de référence.\\
+    \bottomrule
+\end{tabularx}
+
+\section{Menu \menu{Affichage}}
+
+\begin{tabularx}{\linewidth}{l l X}
+    \toprule
+    \textbf{Entrée} & \textbf{Raccourci} & \textbf{Action} \\
+    \midrule
+    Zoom adapté
+        & \touche{Ctrl}+\touche{0}
+        & Recadre la vue du canvas \menu{Profils} sur l'ensemble
+          des profils visibles.\\
+    Disposition / 1$\times$1, 1$\times$2, \dots
+        & ---
+        & Configure la grille de l'onglet \menu{Résultats}
+          (lignes $\times$ colonnes).\\
+    \bottomrule
+\end{tabularx}
+
+\section{Onglets}
+
+Les trois onglets sont indépendants : changer d'onglet ne perd
+aucune donnée. La barre de statut peut afficher des messages
+contextuels selon l'onglet actif.
+
+\subsection*{Indicateur de résultats obsolètes}
+
+L'onglet \menu{Résultats} possède un mécanisme particulier :
+lorsqu'un profil est modifié après que la simulation a été lancée,
+un \textbf{bandeau jaune} apparaît en haut de l'onglet pour signaler
+que les résultats affichés ne correspondent plus aux profils
+courants. Il est alors recommandé de relancer la simulation.
+
+\begin{noteinfo}
+Le bandeau d'obsolescence ne bloque pas la consultation des
+résultats : il s'agit d'un simple indicateur visuel. La
+suppression du bandeau se fait automatiquement au lancement
+d'une nouvelle simulation.
+\end{noteinfo}

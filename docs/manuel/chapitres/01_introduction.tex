@@ -1,0 +1,113 @@
+\chapter{Présentation}
+\label{chap:introduction}
+
+\section{À propos d'AifoilTools}
+
+\textbf{AifoilTools} est une bibliothèque Python d'outils dédiés
+à l'analyse aérodynamique 2D de profils d'aile. Elle a été extraite
+du projet \emph{Axile} (logiciel de conception de parapentes
+développé par Nervures) afin de constituer une boîte à outils
+réutilisable pour des applications variées : voile, parapente,
+hélices, ailes d'avions modèles réduits, etc.
+
+L'application combine :
+
+\begin{itemize}
+    \item un \textbf{moteur géométrique} fondé sur les courbes de
+        Bézier de degré arbitraire et les splines multi-segment
+        (BezierSpline) avec continuités paramétrables (C\textsuperscript{0},
+        C\textsuperscript{1}, C\textsuperscript{2}) ;
+    \item un \textbf{couplage avec XFoil}, le solveur
+        aérodynamique de référence pour les écoulements 2D
+        subsoniques visqueux ;
+    \item une \textbf{interface graphique interactive} permettant
+        l'édition des profils, le pilotage des simulations et la
+        visualisation comparative des résultats.
+\end{itemize}
+
+\screenshot{01_main_window.png}{1.0}{%
+    Vue générale de l'application au démarrage : profils
+    NACA~2412 (courant, en bleu) et NACA~0012 (référence,
+    en rouge).}
+
+\section{À qui s'adresse ce manuel}
+
+Ce manuel s'adresse aux \textbf{utilisateurs} de l'application
+graphique. Il couvre l'ensemble des fonctionnalités accessibles
+depuis l'interface, depuis le chargement d'un profil jusqu'à
+l'analyse comparative des polaires aérodynamiques.
+
+Les développeurs intéressés par l'API Python de la bibliothèque
+trouveront la documentation technique dans le code source
+(docstrings au format Sphinx) et dans le fichier
+\chemin{CLAUDE.md} à la racine du dépôt.
+
+\begin{noteinfo}
+Aucune connaissance préalable en aérodynamique théorique
+n'est requise pour utiliser l'application. En revanche, une
+compréhension générale des grandeurs aérodynamiques (coefficient
+de portance $C_L$, de traînée $C_D$, finesse $C_L/C_D$,
+nombre de Reynolds, angle d'incidence $\alpha$) facilite
+l'interprétation des résultats.
+\end{noteinfo}
+
+\section{Architecture fonctionnelle}
+
+L'application est structurée autour de \textbf{trois onglets}
+correspondant à autant d'étapes logiques :
+
+\begin{enumerate}
+    \item \menu{Profils} --- chargement, édition et comparaison des
+        profils géométriques. Deux profils sont gérés simultanément :
+        un \emph{profil courant} (en bleu) modifiable, et un
+        \emph{profil de référence} (en rouge) qui sert de
+        comparaison.
+    \item \menu{Paramétrage XFoil} --- saisie des paramètres de
+        simulation : plage de Reynolds, balayage en incidence,
+        paramètres de couche limite, options de panneaux.
+    \item \menu{Résultats} --- présentation graphique des résultats
+        sous forme de \emph{grille configurable de cellules
+        d'analyse}, chacune affichant un tracé indépendant
+        (polaire $C_L(\alpha)$, $C_D(\alpha)$, finesse, distribution
+        de pression $-C_p(x)$, profil de couche limite, etc.).
+\end{enumerate}
+
+\section{Représentation des profils}
+
+AifoilTools propose deux modes de représentation des profils :
+
+\subsection*{Mode points discrets}
+
+Le profil est défini par une suite de points dans la convention
+\textbf{Selig} (parcours du bord de fuite vers l'extrados, puis
+le bord d'attaque, puis l'intrados, et retour au bord de fuite).
+C'est le format le plus courant des bibliothèques de profils
+(par exemple \chemin{airfoiltools.com}).
+
+\subsection*{Mode spline (Bézier multi-segment)}
+
+Le profil est défini par deux \textbf{BezierSpline} (extrados et
+intrados), composées chacune de plusieurs segments de Bézier
+raccordés en continuité C\textsuperscript{1}. Ce mode permet :
+
+\begin{itemize}
+    \item une \emph{édition interactive} par déplacement des
+        points de contrôle ;
+    \item un \emph{ré-échantillonnage à la demande} avec une
+        densité de points librement choisie ;
+    \item le \emph{calcul exact de la courbure et des tangentes}
+        en tout point ;
+    \item le \emph{split d'un segment} en deux à un point arbitraire
+        (algorithme de De Casteljau, mathématiquement exact).
+\end{itemize}
+
+Le passage d'un mode à l'autre se fait via le menu
+\menu{Édition $\rightarrow$ Convertir en Spline} ou par chargement
+d'un fichier au format \chemin{.bspl} ou \chemin{.bez}.
+
+\begin{astuce}
+Pour bénéficier pleinement des fonctionnalités d'édition
+interactive et du tracé de la courbure, il est recommandé
+de \textbf{convertir vos profils en mode Spline} dès le
+chargement. Les chapitres suivants détaillent cette procédure.
+\end{astuce}

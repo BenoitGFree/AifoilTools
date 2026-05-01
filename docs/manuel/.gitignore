@@ -1,0 +1,13 @@
+# Fichiers auxiliaires LaTeX
+*.aux
+*.log
+*.toc
+*.lof
+*.lot
+*.out
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+*.bbl
+*.blg
+chapitres/*.aux

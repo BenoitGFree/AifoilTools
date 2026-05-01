@@ -1,0 +1,105 @@
+\documentclass[11pt,a4paper,oneside]{report}
+
+\usepackage{style/manuel_style}
+
+% --- Metadonnees ---
+\newcommand{\manuelversion}{1.0}
+\newcommand{\manueldate}{Mai 2026}
+
+\begin{document}
+
+% =====================================================================
+%  PAGE DE GARDE
+% =====================================================================
+\begin{titlepage}
+    \begin{tikzpicture}[remember picture, overlay]
+        % Bandeau supérieur
+        \fill[aifoilprimary] (current page.north west)
+            rectangle ([yshift=-4cm]current page.north east);
+        % Bandeau inférieur
+        \fill[aifoilrule] (current page.south west)
+            rectangle ([yshift=2cm]current page.south east);
+    \end{tikzpicture}
+
+    \vspace*{1cm}
+    \begin{flushright}
+        \color{white}
+        \fontfamily{phv}\selectfont
+        \textbf{\fontsize{42}{50}\selectfont AifoilTools}\\[6pt]
+        {\fontsize{18}{22}\selectfont Analyse aérodynamique 2D}\\
+        {\fontsize{18}{22}\selectfont de profils d'aile}
+    \end{flushright}
+
+    \vfill
+
+    \begin{center}
+        \color{aifoilprimary}
+        \fontfamily{phv}\selectfont
+        \textbf{\Huge Manuel utilisateur}\\[1em]
+        {\Large Version \manuelversion{} --- \manueldate}
+    \end{center}
+
+    \vfill
+
+    \begin{flushleft}
+        \color{white}
+        \fontfamily{phv}\selectfont
+        \large
+        \textbf{Nervures}\\
+        Conception assistée par ordinateur de parapentes
+    \end{flushleft}
+    \vspace{0.5cm}
+\end{titlepage}
+
+% =====================================================================
+%  CREDITS / LICENCE
+% =====================================================================
+\thispagestyle{empty}
+\null
+\vfill
+\begin{flushleft}
+    \small
+    \textbf{AifoilTools --- Manuel utilisateur, version \manuelversion}\\
+    Édition de \manueldate.\\[1em]
+
+    Ce document décrit l'utilisation de la bibliothèque
+    \textbf{AifoilTools} et de son interface graphique pour
+    l'analyse aérodynamique 2D de profils d'aile par couplage avec
+    le solveur \emph{XFoil}.\\[0.5em]
+
+    AifoilTools est distribué sous licence \textbf{LGPL-3.0}.
+    Le code source est disponible à l'adresse :\\
+    \url{https://github.com/BenoitGFree/AifoilTools}\\[0.5em]
+
+    \emph{XFoil} est un logiciel développé par Mark Drela (MIT) et
+    distribué sous licence GPL.\\[0.5em]
+
+    Toutes les marques citées sont la propriété de leurs détenteurs
+    respectifs.
+\end{flushleft}
+\clearpage
+
+% =====================================================================
+%  TABLE DES MATIERES
+% =====================================================================
+\pagenumbering{roman}
+\tableofcontents
+\clearpage
+\listoffigures
+\clearpage
+
+\pagenumbering{arabic}
+
+% =====================================================================
+%  CHAPITRES
+% =====================================================================
+\input{chapitres/01_introduction}
+\input{chapitres/02_installation}
+\input{chapitres/03_interface}
+\input{chapitres/04_profils}
+\input{chapitres/05_xfoil}
+\input{chapitres/06_resultats}
+\input{chapitres/07_formats}
+\input{chapitres/08_annexes}
+
+\end{document}

@@ -1,0 +1,177 @@
+\chapter{Onglet Paramétrage XFoil}
+\label{chap:xfoil}
+
+L'onglet \menu{Paramétrage XFoil} regroupe l'ensemble des paramètres
+de simulation transmis au solveur. Il est structuré en trois zones
+principales (Reynolds, Alpha, Paramètres XFoil) et une rangée de
+boutons de lancement.
+
+\screenshot{09_tab_xfoil.png}{1.0}{%
+    Onglet \menu{Paramétrage XFoil} avec ses trois zones de saisie
+    et la rangée des boutons de lancement.}
+
+\section{Plage de Reynolds}
+
+La zone \menu{Reynolds} permet de définir une \textbf{plage} de
+nombres de Reynolds pour le balayage. Pour chaque Reynolds, une
+polaire complète est calculée. Trois champs :
+
+\begin{tabularx}{\linewidth}{l X}
+    \toprule
+    \textbf{Champ} & \textbf{Description} \\
+    \midrule
+    Min  & Reynolds minimum du balayage. \\
+    Max  & Reynolds maximum du balayage. \\
+    Pas  & Incrément entre deux valeurs consécutives. Pour
+           ne calculer qu'un seul Reynolds, choisir
+           \texttt{Pas $\geq$ Max - Min}. \\
+    \bottomrule
+\end{tabularx}
+
+\begin{noteinfo}
+Les valeurs par défaut (Re=100\,000 à 200\,000 par pas de
+100\,000) correspondent à un balayage à deux Reynolds, typique
+pour le parapente et les ailes d'avions modèles réduits. Pour
+de l'aile classique de planeur, des Reynolds de l'ordre de
+$10^6$ sont plus représentatifs.
+\end{noteinfo}
+
+\section{Plage d'incidence (Alpha)}
+
+La zone \menu{Alpha (deg)} définit le balayage en angle d'incidence
+$\alpha$ pour chaque polaire :
+
+\begin{tabularx}{\linewidth}{l X}
+    \toprule
+    \textbf{Champ} & \textbf{Description} \\
+    \midrule
+    Min  & Incidence minimum (en degrés, peut être négative). \\
+    Max  & Incidence maximum. \\
+    Pas  & Incrément entre deux points de la polaire. Plus
+           petit~=~polaire plus fine, mais simulation plus longue.\\
+    \bottomrule
+\end{tabularx}
+
+\subsection*{Mode \menu{ASEQ}}
+
+La case à cocher \menu{ASEQ} contrôle la \textbf{stratégie de
+balayage} en incidence~:
+
+\begin{itemize}
+    \item \textbf{Cochée} (par défaut) : XFoil exécute la commande
+        \texttt{ASEQ} qui balaye automatiquement la plage en
+        partant du minimum. C'est le mode \emph{rapide} historique.
+    \item \textbf{Décochée} : AifoilTools envoie une succession de
+        commandes \texttt{ALFA} individuelles, en partant de
+        $\alpha=0$ vers le maximum, puis depuis $-\Delta$ vers le
+        minimum (avec une commande \texttt{INIT} entre les deux).
+        Ce mode est plus \emph{robuste} à la convergence aux
+        angles élevés ou pour des profils difficiles.
+\end{itemize}
+
+\begin{astuce}
+Si XFoil ne converge pas pour certains angles élevés, désactivez
+\menu{ASEQ} pour tenter le balayage bidirectionnel. Cela
+améliore souvent la convergence en initialisant chaque branche
+à partir de la solution à $\alpha=0$.
+\end{astuce}
+
+\section{Paramètres XFoil avancés}
+
+La zone \menu{Paramètres XFoil} regroupe les options du solveur
+proprement dit.
+
+\subsection{Viscosité}
+
+\begin{itemize}
+    \item Cochée (\menu{Avec}) : analyse \textbf{visqueuse}
+        (commande \texttt{VISC} de XFoil), avec couche limite.
+        \textbf{Recommandé pour toute polaire réaliste.}
+    \item Décochée : analyse non-visqueuse (potentielle, sans
+        frottement). Utile uniquement pour des comparaisons
+        géométriques rapides.
+\end{itemize}
+
+\subsection{NCRIT}
+
+Critère de transition de couche limite par la méthode $e^N$
+(amplification des ondes de Tollmien-Schlichting).
+
+\begin{tabularx}{\linewidth}{c X}
+    \toprule
+    \textbf{NCRIT} & \textbf{Type d'écoulement} \\
+    \midrule
+    9       & Écoulement libre standard (valeur par défaut). \\
+    4--7    & Écoulement très turbulent (souffleries fermées,
+              forte turbulence ambiante). \\
+    12--14  & Écoulement très calme (vol planeur en air
+              parfaitement laminaire). \\
+    \bottomrule
+\end{tabularx}
+
+\subsection{XTR Top et XTR Bot}
+
+Position de \textbf{transition forcée} de la couche limite,
+respectivement sur l'extrados (\emph{top}) et l'intrados
+(\emph{bottom}), exprimée en fraction de corde ($x/c$).
+
+\begin{itemize}
+    \item Valeur 1{,}0 : transition libre, calculée par le critère
+        NCRIT. C'est le mode standard.
+    \item Valeur $<1{,}0$ : transition forcée à la position indiquée
+        (simule un \emph{trip} turbulent : turbulateur, rugosité,
+        impact d'insectes\dots).
+\end{itemize}
+
+\subsection{Repanel et NPanel}
+
+\begin{itemize}
+    \item \menu{Repanel} : si cochée, XFoil exécute la commande
+        \texttt{PANE} qui ré-échantillonne le profil avec un
+        critère adaptatif basé sur la courbure. Recommandé pour
+        les profils à échantillonnage non-uniforme ou pour des
+        profils de très haute résolution.
+    \item \menu{NPanel} : nombre de panneaux après ré-échantillonnage
+        (par défaut 200). Plus = plus précis mais plus lent.
+\end{itemize}
+
+\subsection{Timeout}
+
+Durée maximale d'exécution de XFoil pour le calcul d'une polaire,
+en secondes (par défaut 30~s). Au-delà, le processus est tué.
+Cela évite à l'application de rester bloquée si XFoil entre dans
+une boucle de non-convergence.
+
+\begin{attention}
+Augmenter le timeout (par exemple à 120~s) si vous balayez une
+plage très large d'incidences ($\Delta \alpha > 30^\circ$) ou si
+vos profils convergent lentement (profils minces, transitions
+brutales\dots).
+\end{attention}
+
+\section{Boutons de lancement}
+
+Trois boutons en bas de la fenêtre permettent de lancer la
+simulation :
+
+\begin{itemize}
+    \item \bouton{Lancer les 2} : simule simultanément le profil
+        courant et le profil de référence avec les paramètres
+        ci-dessus.
+    \item \bouton{Courant seul} : ne simule que le profil courant
+        (bleu).
+    \item \bouton{Référence seul} : ne simule que le profil de
+        référence (rouge).
+\end{itemize}
+
+Pendant la simulation, les contrôles de l'onglet sont désactivés,
+et la barre de statut affiche la progression. À la fin, l'onglet
+\menu{Résultats} se sélectionne automatiquement.
+
+\begin{important}
+Si vous relancez une simulation pour \textbf{un seul} des deux
+profils, les résultats antérieurs de l'autre profil sont
+\emph{conservés} (merge). Cela permet par exemple d'itérer
+rapidement sur le profil courant tout en gardant la référence
+fixe pour comparaison.
+\end{important}

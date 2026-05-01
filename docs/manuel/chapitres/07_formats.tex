@@ -1,0 +1,141 @@
+\chapter{Formats de fichiers}
+\label{chap:formats}
+
+AifoilTools sait lire et écrire plusieurs formats de profil, qui
+se répartissent en deux familles : les formats \emph{points
+discrets} (issus du milieu aéronautique) et les formats
+\emph{splines} propres à AifoilTools.
+
+\section{Formats points discrets}
+
+\subsection{Format Selig (\chemin{.dat})}
+
+Format historique le plus répandu, popularisé par la base de
+données de l'Université de l'Illinois (UIUC). C'est le format
+par défaut sur \chemin{airfoiltools.com}.
+
+\begin{itemize}
+    \item Première ligne : nom du profil (libre).
+    \item Lignes suivantes : couples \texttt{x y} séparés par
+        des espaces.
+    \item Parcours en \emph{convention Selig} : du bord de fuite
+        ($x=1$) vers l'extrados (x décroissant), au bord
+        d'attaque ($x=0$), puis vers l'intrados (x croissant)
+        et retour au bord de fuite.
+\end{itemize}
+
+\begin{lstlisting}[caption={Exemple de fichier Selig (NACA~2412)}]
+NACA 2412
+   1.000000   0.001260
+   0.985700   0.003930
+   0.971440   0.006580
+   ...
+   0.014300   0.018780
+   0.000000   0.000000
+   0.014300  -0.014050
+   ...
+   0.985700  -0.001280
+   1.000000  -0.001260
+\end{lstlisting}
+
+\subsection{Format Lednicer (\chemin{.dat})}
+
+Variante du Selig où extrados et intrados sont stockés
+séparément, chacun parcouru du bord d'attaque vers le bord de
+fuite. Une ligne d'en-tête indique le nombre de points de chaque
+côté.
+
+\begin{lstlisting}[caption={Exemple de fichier Lednicer}]
+NACA 2412
+65.0   65.0
+
+   0.000000   0.000000
+   0.001425   0.005700
+   ...
+   1.000000   0.001260
+
+   0.000000   0.000000
+   0.001425  -0.005720
+   ...
+   1.000000  -0.001260
+\end{lstlisting}
+
+\subsection{Format CSV (\chemin{.csv})}
+
+Format tabulaire avec en-tête \chemin{x,y}. Pratique pour
+l'import dans des feuilles de calcul ou pour le partage avec des
+outils non-aéronautiques.
+
+\begin{lstlisting}[caption={Exemple de fichier CSV}]
+x,y
+1.000000,0.001260
+0.985700,0.003930
+...
+\end{lstlisting}
+
+\section{Formats splines AifoilTools}
+
+\subsection{Format \chemin{.bspl}}
+
+Sauvegarde complète d'un profil en mode \textbf{spline
+multi-segment}. Préserve l'intégralité de la définition Bézier :
+points de contrôle, degrés, continuités aux jonctions, paramètres
+d'échantillonnage.
+
+C'est le format \textbf{recommandé} pour conserver le travail
+d'édition d'un profil et le ré-ouvrir sans perte d'information.
+
+\begin{noteinfo}
+Le format \chemin{.bspl} est un format texte structuré (JSON
+ou similaire) propre à AifoilTools. Il n'est pas
+interopérable avec d'autres logiciels de CAO ou
+d'aérodynamique. Pour une diffusion externe, ré-exportez en
+\chemin{.dat} (Selig) après avoir ajusté l'échantillonnage.
+\end{noteinfo}
+
+\subsection{Format \chemin{.bez}}
+
+Variante simplifiée du \chemin{.bspl} pour les profils définis
+par une seule courbe de Bézier par côté (mode mono-segment).
+Conservé pour compatibilité avec les versions antérieures.
+
+\section{Génération NACA}
+
+L'application sait générer à la volée des profils NACA à partir
+de leur désignation, sans passer par un fichier :
+
+\begin{itemize}
+    \item NACA 4 chiffres (ex. \texttt{2412}, \texttt{0012}) :
+        cambrure maximale (\%), position de la cambrure max
+        (dixièmes), épaisseur relative (\%).
+    \item NACA 5 chiffres (ex. \texttt{23012}) : profil cambré
+        avec ligne moyenne réflexe.
+\end{itemize}
+
+Cette génération se fait automatiquement au démarrage de
+l'application (NACA~2412 et NACA~0012 par défaut). Pour générer
+d'autres NACA en cours de session, utilisez l'API Python ou
+préchargez un fichier \chemin{.dat} obtenu ailleurs.
+
+\section{Tableau récapitulatif}
+
+\begin{tabularx}{\linewidth}{l c c X}
+    \toprule
+    \textbf{Format} & \textbf{Lecture} & \textbf{Écriture}
+        & \textbf{Préserve la spline ?} \\
+    \midrule
+    Selig (\chemin{.dat})    & oui & oui & non \\
+    Lednicer (\chemin{.dat}) & oui & oui & non \\
+    CSV (\chemin{.csv})      & oui & oui & non \\
+    Spline (\chemin{.bspl})  & oui & oui & \textbf{oui} \\
+    Bézier (\chemin{.bez})   & oui & oui & \textbf{oui} (mono-segment) \\
+    \bottomrule
+\end{tabularx}
+
+\begin{important}
+Lorsque vous sauvegardez un profil au format \chemin{.dat} ou
+\chemin{.csv}, \textbf{l'information de spline est perdue}~:
+seule la liste des points discrets échantillonnés est écrite.
+Pour préserver intégralement votre travail, sauvegardez
+toujours en \chemin{.bspl}.
+\end{important}
