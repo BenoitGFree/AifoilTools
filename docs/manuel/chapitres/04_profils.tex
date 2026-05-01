@@ -130,6 +130,78 @@ l'affichage de la déviation. L'échelle est réglable via le
 menu contextuel : \menu{Échelle déviation\dots}.
 \end{astuce}
 
+\section{Charger un profil depuis la base UIUC}
+\label{sec:uiuc}
+
+AirfoilTools intègre un \textbf{accès direct} à la base de données
+de profils de l'Université de l'Illinois (collection
+\textbf{Selig}, environ 1\,600 profils), accessible via les entrées
+\menu{Fichier $\rightarrow$ Depuis la base UIUC $\rightarrow$ Profil
+courant\dots} et \menu{\dots Profil référence\dots}.
+
+\screenshot{11_dialog_uiuc.png}{0.7}{%
+    Dialogue de chargement depuis la base UIUC. La recherche
+    \og naca \fg{} filtre 183~profils sur 1\,613. Le profil
+    sélectionné affiche sa description sous la liste.}
+
+\subsection{Utilisation}
+
+\begin{enumerate}
+    \item Au premier appel, l'index complet (~1\,600 profils) est
+        téléchargé depuis le serveur UIUC. Le téléchargement prend
+        quelques secondes selon la connexion.
+    \item Saisir tout ou partie du nom ou de la description du
+        profil dans le champ \menu{Recherche} : la liste se filtre
+        en temps réel (insensible à la casse).
+    \item Cliquer sur un profil pour voir sa description sous la
+        liste. Double-clic ou bouton \bouton{Charger} pour le
+        télécharger et l'ouvrir.
+    \item Le profil est chargé en \textbf{mode points discrets}
+        (format Selig). Pour bénéficier de l'édition interactive,
+        utiliser ensuite \menu{Édition $\rightarrow$ Convertir en
+        Spline} (voir section suivante).
+\end{enumerate}
+
+\subsection{Cache local}
+
+Pour éviter de surcharger inutilement le serveur UIUC et pour
+permettre l'utilisation hors ligne :
+
+\begin{itemize}
+    \item L'\textbf{index} (liste des profils + descriptions) est
+        mis en cache pour \textbf{7~jours}. Au-delà, il est
+        re-téléchargé automatiquement.
+    \item Les \textbf{fichiers \chemin{.dat}} téléchargés sont mis
+        en cache de manière \textbf{permanente} (les profils UIUC
+        sont stables dans le temps).
+\end{itemize}
+
+Le bouton \bouton{Rafraichir} force le re-téléchargement de
+l'index pour récupérer d'éventuels nouveaux profils.
+
+L'emplacement du cache est :
+
+\begin{itemize}
+    \item Windows : \chemin{C:\textbackslash{}Users\textbackslash{}<utilisateur>\textbackslash{}.airfoiltools\textbackslash{}cache\textbackslash{}uiuc\textbackslash{}}
+    \item Linux / macOS : \chemin{\textasciitilde/.airfoiltools/cache/uiuc/}
+\end{itemize}
+
+\begin{noteinfo}
+Les fichiers \chemin{.dat} de la base UIUC suivent la
+convention Selig (parcours BF $\rightarrow$ extrados $\rightarrow$
+BA $\rightarrow$ intrados $\rightarrow$ BF) avec une ligne
+d'en-tête contenant le nom du profil. Ils sont directement
+exploitables par AirfoilTools.
+\end{noteinfo}
+
+\begin{attention}
+Une connexion internet est requise pour le premier
+téléchargement de l'index et de chaque profil. En cas
+d'indisponibilité du serveur UIUC, le dialogue affiche un
+message d'erreur ; les profils déjà mis en cache restent
+toutefois utilisables.
+\end{attention}
+
 \section{Conversion en spline}
 \label{sec:convertspline}
 

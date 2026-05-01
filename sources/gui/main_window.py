@@ -53,6 +53,23 @@ class MainWindow(QMainWindow):
         act_open_ref.triggered.connect(self._on_open_reference)
         file_menu.addAction(act_open_ref)
 
+        # Sous-menu UIUC (base de profils en ligne)
+        uiuc_menu = file_menu.addMenu(u"Depuis la base &UIUC")
+        uiuc_menu.setStatusTip(
+            u"Charger un profil depuis la base de donnees UIUC (Selig)")
+        act_uiuc_current = uiuc_menu.addAction(
+            u"Profil courant\u2026")
+        act_uiuc_current.setStatusTip(
+            u"Telecharger un profil depuis UIUC comme profil courant")
+        act_uiuc_current.triggered.connect(
+            lambda: self._on_open_uiuc('current'))
+        act_uiuc_ref = uiuc_menu.addAction(
+            u"Profil r\u00e9f\u00e9rence\u2026")
+        act_uiuc_ref.setStatusTip(
+            u"Telecharger un profil depuis UIUC comme profil de reference")
+        act_uiuc_ref.triggered.connect(
+            lambda: self._on_open_uiuc('reference'))
+
         file_menu.addSeparator()
 
         act_save = QAction("&Sauvegarder profil...", self)
@@ -211,6 +228,27 @@ class MainWindow(QMainWindow):
     def _on_open_reference(self):
         """Ouvre un fichier comme profil de reference."""
         self._open_profil("reference")
+
+    def _on_open_uiuc(self, role):
+        """Ouvre le dialogue UIUC pour charger un profil depuis le serveur Selig.
+
+        :param role: 'current' ou 'reference'
+        """
+        from .dialog_uiuc import DialogUIUC
+        label = u"courant" if role == "current" else u"référence"
+        dlg = DialogUIUC(parent=self, role_label=label)
+        if dlg.exec() != dlg.Accepted or not dlg.selected_path:
+            return
+        ok, info = self._tab_profils.load_profil_from_file(
+            dlg.selected_path, role)
+        if ok:
+            self.statusBar().showMessage(
+                u"Profil %s charge depuis UIUC : %s" % (label, info))
+        else:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Erreur de chargement", info)
+            self.statusBar().showMessage(
+                u"Echec du chargement depuis UIUC")
 
     def _on_save(self):
         """Sauvegarde le profil courant dans un fichier."""

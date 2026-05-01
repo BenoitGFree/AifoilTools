@@ -3,6 +3,18 @@
 ## [Non publié] - 2026-05-01
 
 ### Added (Ajouté)
+- **Chargement de profils depuis la base UIUC (Selig)** :
+  - Module `sources/model/uiuc_loader.py` : parsing de l'index
+    HTML (~1600 profils), téléchargement de fichiers `.dat`,
+    mise en cache locale (index 7 jours, fichiers permanents)
+  - Dialogue Qt `sources/gui/dialog_uiuc.py` : recherche
+    filtrée temps réel (par nom et description), téléchargement
+    asynchrone via QThread, indicateurs de progression
+  - Intégration menu : Fichier → Depuis la base UIUC →
+    Profil courant... / Profil référence...
+  - Cache utilisateur : `~/.airfoiltools/cache/uiuc/`
+  - 15 tests unitaires `tests/test_uiuc_loader.py` (parsing,
+    cache, expiration, force, dat fetch)
 - **Manuel utilisateur LaTeX** dans `docs/manuel/` :
   - 33 pages, structure en 8 chapitres (Présentation, Installation,
     Interface, onglet Profils, onglet Paramétrage XFoil, onglet
