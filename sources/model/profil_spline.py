@@ -466,18 +466,27 @@ class ProfilSpline(object):
     # ------------------------------------------------------------------
 
     def approximate_spline(self, degree, max_dev=None, n_points=None,
-                           smoothing=0.0, ba_vertical=True):
+                           smoothing=0.0, ba_vertical=True,
+                           max_segments=1):
         u"""Approxime extrados et intrados par des BezierSpline.
-
-        Cree un Bezier par cote (meme logique que Profil.approximate_bezier),
-        puis l'encapsule dans un BezierSpline a 1 segment.
 
         Utilise les points discrets (``_points``) comme cibles.
         Les splines resultantes sont orientees du BA vers le BF.
 
+        Si ``max_segments > 1`` et ``max_dev`` est fourni, utilise un
+        algorithme adaptatif qui decoupe chaque cote en plusieurs
+        segments la ou l'erreur d'approximation est la plus grande.
+        Cela concentre les points de controle dans les zones de forte
+        courbure (typiquement le bord d'attaque).
+
+        Si ``max_segments == 1`` (defaut), cree un seul Bezier par cote
+        (comportement historique).
+
         :param degree: degre des Beziers, ou ``'find'`` pour recherche auto
         :type degree: int or str
-        :param max_dev: deviation max toleree (requis si degree='find')
+        :param max_dev: deviation max toleree, en fraction de la corde
+            (ex: 0.001 = 0.1% de la corde). Requis si degree='find'
+            ou si max_segments > 1.
         :type max_dev: float or None
         :param n_points: nombre de points d'echantillonnage des splines
             (defaut : nombre de points discrets de chaque cote)
@@ -489,6 +498,9 @@ class ProfilSpline(object):
             d'attaque (vers le haut pour extrados, vers le bas pour
             intrados). Defaut True.
         :type ba_vertical: bool
+        :param max_segments: nombre max de segments Bezier par cote.
+            1 = un seul segment (historique). > 1 = adaptatif.
+        :type max_segments: int
         :returns: self (pour chainage)
         :rtype: ProfilSpline
         """
@@ -503,20 +515,169 @@ class ProfilSpline(object):
         tan_ext = 90.0 if ba_vertical else None
         tan_int = -90.0 if ba_vertical else None
 
-        bez_ext = Bezier(
-            ext_pts, degree=degree, max_dev=max_dev, n_points=n_ext,
-            smoothing=smoothing, start_tangent=tan_ext)
-        bez_int = Bezier(
-            int_pts, degree=degree, max_dev=max_dev, n_points=n_int,
-            smoothing=smoothing, start_tangent=tan_int)
+        if max_segments > 1 and max_dev is not None:
+            # Mode adaptatif multi-segment
+            # max_dev est relatif a la corde -> convertir en absolu
+            chord = float(np.max(self._points[:, 0])
+                          - np.min(self._points[:, 0]))
+            abs_tol = max_dev * max(chord, 1.0)
 
-        self._spline_extrados = BezierSpline(
-            [bez_ext], name='%s extrados' % self._name,
-            n_points=n_ext)
-        self._spline_intrados = BezierSpline(
-            [bez_int], name='%s intrados' % self._name,
-            n_points=n_int)
+            beziers_ext, conts_ext = self._adaptive_fit_side(
+                ext_pts, degree, abs_tol, smoothing, tan_ext,
+                max_segments)
+            beziers_int, conts_int = self._adaptive_fit_side(
+                int_pts, degree, abs_tol, smoothing, tan_int,
+                max_segments)
+
+            self._spline_extrados = BezierSpline(
+                beziers_ext, continuities=conts_ext,
+                name='%s extrados' % self._name,
+                n_points=n_ext)
+            self._spline_intrados = BezierSpline(
+                beziers_int, continuities=conts_int,
+                name='%s intrados' % self._name,
+                n_points=n_int)
+
+            n_seg_ext = len(beziers_ext)
+            n_seg_int = len(beziers_int)
+            logger.info(
+                u"Approximation adaptative : extrados %d segments, "
+                u"intrados %d segments", n_seg_ext, n_seg_int)
+        else:
+            # Mode historique : un seul segment par cote
+            bez_ext = Bezier(
+                ext_pts, degree=degree, max_dev=max_dev, n_points=n_ext,
+                smoothing=smoothing, start_tangent=tan_ext)
+            bez_int = Bezier(
+                int_pts, degree=degree, max_dev=max_dev, n_points=n_int,
+                smoothing=smoothing, start_tangent=tan_int)
+
+            self._spline_extrados = BezierSpline(
+                [bez_ext], name='%s extrados' % self._name,
+                n_points=n_ext)
+            self._spline_intrados = BezierSpline(
+                [bez_int], name='%s intrados' % self._name,
+                n_points=n_int)
         return self
+
+    def _adaptive_fit_side(self, pts, degree, tolerance, smoothing,
+                           start_tangent, max_segments):
+        u"""Approximation adaptative d'un cote du profil.
+
+        Decoupe recursivement au point de deviation maximale jusqu'a
+        ce que la tolerance soit respectee ou que max_segments soit
+        atteint. Les segments se concentrent la ou l'erreur est la
+        plus grande (typiquement le bord d'attaque).
+
+        Continuite C1 assuree par propagation de tangente entre
+        segments adjacents.
+
+        :param pts: points cibles, ndarray(m, 2)
+        :type pts: numpy.ndarray
+        :param degree: degre des Beziers
+        :type degree: int
+        :param tolerance: deviation max acceptable
+        :type tolerance: float
+        :param smoothing: poids de regularisation
+        :type smoothing: float
+        :param start_tangent: contrainte de tangente au debut
+            (angle en degres, ou None)
+        :type start_tangent: float or None
+        :param max_segments: nombre max de segments
+        :type max_segments: int
+        :returns: (list[Bezier], list[str]) segments et continuites
+        :rtype: tuple
+        """
+        pieces = [pts]
+        min_pts = max(degree + 1, 4)
+
+        for _ in range(max_segments - 1):
+            # Fit sequentiel avec propagation tangente (C1)
+            beziers = self._fit_pieces(pieces, degree, smoothing,
+                                       start_tangent)
+
+            # Trouver le segment avec la pire deviation
+            worst_seg = -1
+            worst_dev = 0.0
+            worst_idx = 0
+
+            for i, (bez, piece_pts) in enumerate(
+                    zip(beziers, pieces)):
+                devs = self._deviations_per_point(bez, piece_pts)
+                j = int(np.argmax(devs))
+                if devs[j] > worst_dev:
+                    worst_dev = devs[j]
+                    worst_seg = i
+                    worst_idx = j
+
+            if worst_dev <= tolerance:
+                logger.debug(
+                    u"Tolerance atteinte (%.6f <= %.6f) avec %d "
+                    u"segments", worst_dev, tolerance, len(pieces))
+                return beziers, ['C1'] * (len(beziers) - 1)
+
+            # Couper le pire segment au point d'erreur max
+            seg_pts = pieces[worst_seg]
+            # Garde-fou : assez de points de chaque cote
+            split_idx = int(np.clip(worst_idx, min_pts,
+                                    len(seg_pts) - min_pts))
+            if split_idx < min_pts or \
+                    split_idx > len(seg_pts) - min_pts:
+                logger.debug(
+                    u"Impossible de couper le segment %d "
+                    u"(trop peu de points)", worst_seg)
+                break
+
+            left = seg_pts[:split_idx + 1]
+            right = seg_pts[split_idx:]  # point commun = jonction
+            pieces[worst_seg:worst_seg + 1] = [left, right]
+
+        # Fit final
+        beziers = self._fit_pieces(pieces, degree, smoothing,
+                                   start_tangent)
+        continuities = ['C1'] * (len(beziers) - 1)
+        return beziers, continuities
+
+    @staticmethod
+    def _fit_pieces(pieces, degree, smoothing, start_tangent):
+        u"""Ajuste chaque morceau avec propagation de tangente C1.
+
+        :param pieces: liste de ndarray(m_k, 2)
+        :param degree: degre des Beziers
+        :param smoothing: regularisation
+        :param start_tangent: tangente initiale (angle deg ou None)
+        :returns: liste de Bezier
+        :rtype: list[Bezier]
+        """
+        beziers = []
+        tan = start_tangent
+        for piece_pts in pieces:
+            bez = Bezier(piece_pts, degree=degree,
+                         smoothing=smoothing, start_tangent=tan)
+            beziers.append(bez)
+            # Tangente en fin de segment -> angle en degres
+            t_end = bez.tangent(1.0)
+            tan = float(np.degrees(
+                np.arctan2(t_end[1], t_end[0])))
+        return beziers
+
+    @staticmethod
+    def _deviations_per_point(bez, pts):
+        u"""Deviation de chaque point cible par rapport a la courbe.
+
+        :param bez: courbe de Bezier
+        :type bez: Bezier
+        :param pts: points cibles, ndarray(m, 2)
+        :type pts: numpy.ndarray
+        :returns: deviations, ndarray(m,)
+        :rtype: numpy.ndarray
+        """
+        n_fine = min(5000, max(1000, 10 * len(pts)))
+        t_fine = np.linspace(0, 1, n_fine)
+        curve = bez.evaluate(t_fine)
+        dx = pts[:, None, 0] - curve[None, :, 0]
+        dy = pts[:, None, 1] - curve[None, :, 1]
+        return np.sqrt(np.min(dx**2 + dy**2, axis=1))
 
     def clear_splines(self):
         u"""Supprime les splines, retour au mode points discrets.

@@ -90,6 +90,10 @@ class BezierSpline(object):
         self._tolerance = tolerance
         self._cache = {}
 
+        # Overrides per-segment (index -> valeur)
+        self._alloc_overrides = {}   # segment_index -> n_points
+        self._mode_overrides = {}    # segment_index -> sample_mode
+
         # Verifier les jonctions
         self._check_junctions()
 
@@ -241,6 +245,112 @@ class BezierSpline(object):
             self._tolerance = value
             self._invalidate(geometry=False)
 
+    # --- Overrides per-segment ---
+
+    def segment_n_points(self, k):
+        u"""Nombre de points effectif pour le segment k.
+
+        Retourne l'override si defini, sinon l'allocation calculee.
+
+        :param k: index du segment
+        :type k: int
+        :returns: nombre de points
+        :rtype: int
+        """
+        if k in self._alloc_overrides:
+            return self._alloc_overrides[k]
+        return self._allocate_points(self._n_points)[k]
+
+    def set_segment_n_points(self, k, n):
+        u"""Definit un override de nombre de points pour le segment k.
+
+        :param k: index du segment
+        :type k: int
+        :param n: nombre de points (>= 2)
+        :type n: int
+        """
+        n = int(n)
+        if n < 2:
+            raise ValueError(
+                u"n_points doit etre >= 2, recu %d" % n)
+        if self._alloc_overrides.get(k) != n:
+            self._alloc_overrides[k] = n
+            self._invalidate(geometry=False)
+
+    def clear_segment_n_points(self, k):
+        u"""Supprime l'override de nombre de points pour le segment k."""
+        if k in self._alloc_overrides:
+            del self._alloc_overrides[k]
+            self._invalidate(geometry=False)
+
+    def segment_sample_mode(self, k):
+        u"""Mode d'echantillonnage effectif pour le segment k.
+
+        Retourne l'override si defini, sinon le mode global.
+
+        :param k: index du segment
+        :type k: int
+        :returns: 'curvilinear' ou 'adaptive'
+        :rtype: str
+        """
+        return self._mode_overrides.get(k, self._sample_mode)
+
+    def set_segment_sample_mode(self, k, mode):
+        u"""Definit un override de mode d'echantillonnage pour le segment k.
+
+        :param k: index du segment
+        :type k: int
+        :param mode: 'curvilinear' ou 'adaptive'
+        :type mode: str
+        """
+        if mode not in ('curvilinear', 'adaptive'):
+            raise ValueError(
+                u"Mode inconnu '%s'" % mode)
+        if self._mode_overrides.get(k) != mode:
+            self._mode_overrides[k] = mode
+            self._invalidate(geometry=False)
+
+    def set_segment_degree(self, k, target_degree):
+        u"""Change le degre du segment k par elevation ou reduction.
+
+        :param k: index du segment (0-indexed)
+        :type k: int
+        :param target_degree: degre cible (>= 1)
+        :type target_degree: int
+        :raises ValueError: si target_degree < 1
+        :raises IndexError: si k hors limites
+        """
+        if k < 0 or k >= self.n_segments:
+            raise IndexError(
+                u"Index %d hors limites pour %d segments"
+                % (k, self.n_segments))
+        target_degree = int(target_degree)
+        if target_degree < 1:
+            raise ValueError(
+                u"Le degre cible doit etre >= 1, recu %d"
+                % target_degree)
+        seg = self._segments[k]
+        current = seg.degree
+        if target_degree > current:
+            seg.elevate(target_degree - current)
+        elif target_degree < current:
+            seg.reduce(current - target_degree)
+        else:
+            return
+        self._invalidate(geometry=True)
+
+    def clear_segment_overrides(self, k):
+        u"""Supprime tous les overrides pour le segment k."""
+        changed = False
+        if k in self._alloc_overrides:
+            del self._alloc_overrides[k]
+            changed = True
+        if k in self._mode_overrides:
+            del self._mode_overrides[k]
+            changed = True
+        if changed:
+            self._invalidate(geometry=False)
+
     @property
     def points(self):
         u"""Points echantillonnes sur la spline, ndarray(n_points, 2)."""
@@ -303,6 +413,8 @@ class BezierSpline(object):
 
         Les points sont repartis entre les segments au prorata de
         leur longueur d'arc. Les jonctions ne sont pas dupliquees.
+        Les overrides per-segment (``_alloc_overrides``,
+        ``_mode_overrides``) sont appliques le cas echeant.
 
         :param n: nombre de points
         :type n: int
@@ -310,14 +422,23 @@ class BezierSpline(object):
         :type mode: str
         :param tolerance: tolerance pour le mode adaptive
         :type tolerance: float or None
-        :returns: points echantillonnes, ndarray(n, 2)
+        :returns: points echantillonnes, ndarray(m, 2)
         :rtype: numpy.ndarray
         """
         alloc = self._allocate_points(n)
+        # Appliquer les overrides de nombre de points
+        for k, nk in self._alloc_overrides.items():
+            if 0 <= k < len(alloc):
+                alloc[k] = nk
         parts = []
         for k, n_k in enumerate(alloc):
+            seg_mode = self._mode_overrides.get(k, mode)
+            seg_tol = tolerance
+            # Tolerance par defaut pour le mode adaptive
+            if seg_mode == 'adaptive' and seg_tol is None:
+                seg_tol = 1e-3
             seg_pts = self._segments[k].sample(
-                n_k, mode, tolerance)
+                n_k, seg_mode, seg_tol)
             # Supprimer le premier point sauf pour le premier segment
             if k > 0:
                 seg_pts = seg_pts[1:]
@@ -544,13 +665,27 @@ class BezierSpline(object):
                             + ['C2']
                             + self._continuities[k:])
 
-        return BezierSpline(
+        new_spline = BezierSpline(
             new_segments,
             continuities=new_continuities,
             name=self._name,
             n_points=self._n_points,
             sample_mode=self._sample_mode,
             tolerance=self._tolerance)
+
+        # Reporter les overrides (segment k supprime, segments > k decales)
+        for idx, val in self._alloc_overrides.items():
+            if idx < k:
+                new_spline._alloc_overrides[idx] = val
+            elif idx > k:
+                new_spline._alloc_overrides[idx + 1] = val
+        for idx, val in self._mode_overrides.items():
+            if idx < k:
+                new_spline._mode_overrides[idx] = val
+            elif idx > k:
+                new_spline._mode_overrides[idx + 1] = val
+
+        return new_spline
 
     # ------------------------------------------------------------------
     #  Transformations (retournent self)
