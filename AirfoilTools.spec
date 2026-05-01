@@ -7,13 +7,17 @@ a = Analysis(
     binaries=[],
     datas=[
         ('sources/model/defaults_xfoil.cfg', 'model'),
+        # Manuel utilisateur (accessible via menu Aide)
+        ('docs/manuel/manuel.pdf', 'docs'),
     ],
     hiddenimports=[
         # model package
         'model',
         'model.base',
         'model.bezier',
+        'model.bezier_spline',
         'model.profil',
+        'model.profil_spline',
         'model.analyse',
         'model.simulation',
         'model.pipeline',
@@ -21,6 +25,7 @@ a = Analysis(
         'model.xfoil_preprocessor',
         'model.xfoil_simulator',
         'model.xfoil_postprocessor',
+        'model.uiuc_loader',
         # gui package
         'gui',
         'gui.main_window',
@@ -30,6 +35,7 @@ a = Analysis(
         'gui.tab_results',
         'gui.result_cell',
         'gui.simulation_worker',
+        'gui.dialog_uiuc',
         # matplotlib backend pour PySide6
         'matplotlib.backends.backend_qtagg',
     ],

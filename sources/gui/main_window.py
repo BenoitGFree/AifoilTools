@@ -2,6 +2,9 @@
 # -*- coding: utf-8 -*-
 """Fenetre principale AirfoilTools."""
 
+import os
+import platform
+import subprocess
 import sys
 
 from PySide6.QtWidgets import (
@@ -13,6 +16,52 @@ from PySide6.QtGui import QAction
 from .tab_profils import TabProfils
 from .tab_xfoil import TabXfoil
 from .tab_results import TabResults
+
+
+def _find_manuel_pdf():
+    u"""Localise le fichier manuel.pdf (mode dev ou frozen).
+
+    En mode developpement, le manuel est dans
+    ``<racine>/docs/manuel/manuel.pdf``. En mode frozen (PyInstaller),
+    il est bundle dans ``<MEIPASS>/docs/manuel.pdf`` via le fichier
+    spec.
+
+    :returns: chemin absolu du PDF, ou None si introuvable
+    :rtype: str or None
+    """
+    if getattr(sys, 'frozen', False):
+        candidates = [
+            os.path.join(sys._MEIPASS, 'docs', 'manuel.pdf'),
+            os.path.join(os.path.dirname(sys.executable),
+                         'docs', 'manuel.pdf'),
+        ]
+    else:
+        # Mode dev : remonter de sources/gui/ vers la racine du projet
+        base = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.normpath(
+            os.path.join(base, '..', '..'))
+        candidates = [
+            os.path.join(project_root, 'docs', 'manuel', 'manuel.pdf'),
+        ]
+    for path in candidates:
+        if os.path.isfile(path):
+            return path
+    return None
+
+
+def _open_with_default_app(path):
+    u"""Ouvre un fichier avec le visualiseur par defaut du systeme.
+
+    :param path: chemin du fichier a ouvrir
+    :type path: str
+    """
+    system = platform.system()
+    if system == "Windows":
+        os.startfile(path)
+    elif system == "Darwin":
+        subprocess.Popen(["open", path])
+    else:
+        subprocess.Popen(["xdg-open", path])
 
 
 class MainWindow(QMainWindow):
@@ -162,6 +211,16 @@ class MainWindow(QMainWindow):
 
         # --- Aide ---
         help_menu = menubar.addMenu("&Aide")
+
+        act_manuel = QAction(u"&Manuel utilisateur", self)
+        act_manuel.setShortcut("F1")
+        act_manuel.setStatusTip(
+            u"Ouvrir le manuel utilisateur (PDF) avec le visualiseur"
+            u" par defaut du systeme")
+        act_manuel.triggered.connect(self._on_open_manuel)
+        help_menu.addAction(act_manuel)
+
+        help_menu.addSeparator()
 
         act_about = QAction("A &propos...", self)
         act_about.setStatusTip(u"Informations sur AirfoilTools")
@@ -447,6 +506,27 @@ class MainWindow(QMainWindow):
     def _on_zoom_fit(self):
         """Zoom adapte sur le canvas."""
         self._tab_profils.zoom_fit()
+
+    def _on_open_manuel(self):
+        """Ouvre le manuel utilisateur PDF avec le visualiseur par defaut."""
+        path = _find_manuel_pdf()
+        if path is None:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(
+                self, u"Manuel introuvable",
+                u"Le fichier manuel.pdf n'a pas ete trouve.\n\n"
+                u"Verifiez que le fichier docs/manuel/manuel.pdf "
+                u"existe a cote de l'application.")
+            return
+        try:
+            _open_with_default_app(path)
+            self.statusBar().showMessage(
+                u"Manuel ouvert : %s" % path)
+        except OSError as exc:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(
+                self, u"Impossible d'ouvrir le manuel",
+                u"Erreur lors de l'ouverture du PDF :\n\n%s" % exc)
 
     def _on_about(self):
         """Affiche la boite A propos."""

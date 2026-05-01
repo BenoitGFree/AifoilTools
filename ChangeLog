@@ -3,6 +3,13 @@
 ## [Non publié] - 2026-05-01
 
 ### Added (Ajouté)
+- **Manuel utilisateur accessible depuis la GUI** :
+  - Nouvelle entrée `Aide → Manuel utilisateur` (raccourci F1)
+  - Ouverture du PDF avec le visualiseur par défaut du système
+    (`os.startfile` sur Windows, `xdg-open` sur Linux, `open` sur macOS)
+  - PDF embarqué dans la distribution PyInstaller via le fichier
+    spec (datas `docs/manuel/manuel.pdf` → `docs/manuel.pdf`)
+  - Détection automatique du chemin selon le mode (dev / frozen)
 - **Chargement de profils depuis la base UIUC (Selig)** :
   - Module `sources/model/uiuc_loader.py` : parsing de l'index
     HTML (~1600 profils), téléchargement de fichiers `.dat`,

@@ -104,6 +104,32 @@ l'entrée de menu.
     \bottomrule
 \end{tabularx}
 
+\section{Menu \menu{Aide}}
+
+\begin{tabularx}{\linewidth}{l l X}
+    \toprule
+    \textbf{Entrée} & \textbf{Raccourci} & \textbf{Action} \\
+    \midrule
+    Manuel utilisateur
+        & \touche{F1}
+        & Ouvre le présent manuel (fichier PDF) avec le visualiseur
+          par défaut du système. Le PDF est embarqué dans la
+          distribution \chemin{.exe} et reste accessible même hors
+          ligne.\\
+    À propos\dots
+        & ---
+        & Affiche les informations de version et l'auteur.\\
+    \bottomrule
+\end{tabularx}
+
+\begin{noteinfo}
+En mode développement (lancement via \chemin{run\_gui.py}), le
+manuel est lu depuis \chemin{docs/manuel/manuel.pdf} dans
+l'arborescence du projet. En mode exécutable PyInstaller, il est
+extrait depuis le bundle interne (dossier
+\chemin{\_internal/docs/manuel.pdf} à côté de l'exe).
+\end{noteinfo}
+
 \section{Onglets}
 
 Les trois onglets sont indépendants : changer d'onglet ne perd
