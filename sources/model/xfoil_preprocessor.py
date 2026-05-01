@@ -161,19 +161,46 @@ class XFoilPreprocessor(AbstractPreprocessor):
             lines.append(polar_file)
             lines.append('')  # pas de dump file
 
-            # Balayage alpha (polaire)
-            lines.append('ASEQ %g %g %g' % (alpha_min, alpha_max, alpha_step))
+            use_aseq = p.get('USE_ASEQ', True)
 
-            # Desactiver l'accumulation polaire
-            lines.append('PACC')
+            if use_aseq:
+                # Mode ASEQ : balayage sequentiel automatique
+                lines.append('ASEQ %g %g %g'
+                             % (alpha_min, alpha_max, alpha_step))
+                lines.append('PACC')
 
-            # Sauvegarde Cp pour chaque alpha
-            alpha = alpha_min
-            while alpha <= alpha_max + 1e-9:
-                lines.append('ALFA %g' % alpha)
-                cp_file = 'cp_Re%s_a%g.dat' % (re_tag, alpha)
-                lines.append('CPWR %s' % cp_file)
-                alpha += alpha_step
+                # Sauvegarde Cp pour chaque alpha
+                alpha = alpha_min
+                while alpha <= alpha_max + 1e-9:
+                    lines.append('ALFA %g' % alpha)
+                    cp_file = 'cp_Re%s_a%g.dat' % (re_tag, alpha)
+                    lines.append('CPWR %s' % cp_file)
+                    alpha += alpha_step
+            else:
+                # Mode ALFA individuel (airfoiltools-style)
+                # Balayage bidirectionnel depuis alpha=0
+                alphas_pos = []
+                a = 0.0
+                while a <= alpha_max + 1e-9:
+                    alphas_pos.append(round(a, 6))
+                    a += alpha_step
+                alphas_neg = []
+                a = -alpha_step
+                while a >= alpha_min - 1e-9:
+                    alphas_neg.append(round(a, 6))
+                    a -= alpha_step
+
+                for a in alphas_pos:
+                    lines.append('ALFA %g' % a)
+                    cp_file = 'cp_Re%s_a%g.dat' % (re_tag, a)
+                    lines.append('CPWR %s' % cp_file)
+                if alphas_neg:
+                    lines.append('INIT')
+                    for a in alphas_neg:
+                        lines.append('ALFA %g' % a)
+                        cp_file = 'cp_Re%s_a%g.dat' % (re_tag, a)
+                        lines.append('CPWR %s' % cp_file)
+                lines.append('PACC')
 
             # Sauvegarde couche limite pour le dernier alpha
             lines.append('DUMP bl_Re%s.dat' % re_tag)

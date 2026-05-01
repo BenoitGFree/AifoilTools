@@ -83,6 +83,13 @@ class TabXfoil(QWidget):
         self._spn_alpha_step.setValue(0.5)
         grid_alpha.addWidget(self._spn_alpha_step, 0, 5)
 
+        self._chk_aseq = QCheckBox("ASEQ")
+        self._chk_aseq.setChecked(True)
+        self._chk_aseq.setToolTip(
+            u"Coch\u00e9 : balayage ASEQ (rapide)\n"
+            u"D\u00e9coch\u00e9 : ALFA individuel (plus robuste)")
+        grid_alpha.addWidget(self._chk_aseq, 0, 6)
+
         layout.addWidget(grp_alpha)
 
         # --- Parametres XFoil ---
@@ -208,6 +215,7 @@ class TabXfoil(QWidget):
             'REPANEL': self._chk_repanel.isChecked(),
             'NPANEL': self._spn_npanel.value(),
             'TIMEOUT': self._spn_timeout.value(),
+            'USE_ASEQ': self._chk_aseq.isChecked(),
         }
 
     def set_enabled(self, enabled):

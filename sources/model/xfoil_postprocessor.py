@@ -224,6 +224,9 @@ class XFoilPostprocessor(AbstractPostprocessor):
             return None
 
         data = np.array(data_lines)
+        # Trier par alpha croissant (necessaire en mode ALFA bidirectionnel)
+        order = np.argsort(data[:, 0])
+        data = data[order]
         return {
             'alpha': data[:, 0],
             'CL': data[:, 1],
