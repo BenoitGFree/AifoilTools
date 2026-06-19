@@ -90,6 +90,11 @@ class BezierSpline(object):
         self._tolerance = tolerance
         self._cache = {}
 
+        # Contrainte de tangente verticale au bord d'attaque (P1 aligne
+        # verticalement avec P0). True par defaut ; peut etre liberee par
+        # l'utilisateur pour permettre un deplacement libre du noeud P1.
+        self._ba_vertical = True
+
         # Overrides per-segment (index -> valeur)
         self._alloc_overrides = {}   # segment_index -> n_points
         self._mode_overrides = {}    # segment_index -> sample_mode
@@ -173,6 +178,21 @@ class BezierSpline(object):
     @name.setter
     def name(self, value):
         self._name = value
+
+    @property
+    def ba_vertical(self):
+        u"""Contrainte de tangente verticale au bord d'attaque.
+
+        Si True (defaut), le premier point de controle interieur (P1,
+        adjacent au BA) reste aligne verticalement avec le BA (P0), ce
+        qui garantit une tangente verticale au bord d'attaque. Si False,
+        le noeud P1 peut etre deplace librement (contrainte liberee).
+        """
+        return self._ba_vertical
+
+    @ba_vertical.setter
+    def ba_vertical(self, value):
+        self._ba_vertical = bool(value)
 
     @property
     def degree(self):

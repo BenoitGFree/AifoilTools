@@ -582,8 +582,9 @@ class ProfilCanvas(FigureCanvasQTAgg):
         delta = current_xy - self._drag_start_xy
         self._drag_start_xy = current_xy
 
-        # P1 (a cote du BA) : deplacement vertical uniquement
-        if self._drag_index == 1:
+        # P1 (a cote du BA) : deplacement vertical uniquement si la
+        # contrainte de tangente verticale au BA est active sur ce cote
+        if self._drag_index == 1 and getattr(spl, 'ba_vertical', True):
             delta[0] = 0.0
 
         # Deplacer le point de controle
@@ -661,6 +662,36 @@ class ProfilCanvas(FigureCanvasQTAgg):
 
         return best_idx, best_side
 
+    def _find_ba_node(self, event):
+        u"""Indique si le clic est sur le noeud P1 (adjacent au BA).
+
+        Le noeud P1 est le premier point de controle interieur de chaque
+        cote ; sa position en x conditionne la tangente au bord d'attaque.
+
+        :param event: evenement souris matplotlib
+        :returns: 'ext', 'int' ou None
+        :rtype: str or None
+        """
+        p = self._profil_current
+        if p is None or not p.has_splines:
+            return None
+        if event.x is None or event.y is None:
+            return None
+
+        best_side = None
+        best_dist = PICK_RADIUS * 1.5  # un peu plus tolerant pour le clic droit
+        for side, spl in [('ext', p.spline_extrados),
+                          ('int', p.spline_intrados)]:
+            cp = spl.control_points
+            if len(cp) < 2:
+                continue
+            x_pix, y_pix = self._ax.transData.transform(cp[1])
+            dist = np.hypot(x_pix - event.x, y_pix - event.y)
+            if dist < best_dist:
+                best_dist = dist
+                best_side = side
+        return best_side
+
     # ==================================================================
     # Zoom molette
     # ==================================================================
@@ -721,6 +752,25 @@ class ProfilCanvas(FigureCanvasQTAgg):
             act_info = menu.addAction("Info point...")
             act_info.triggered.connect(self._on_info_point)
             menu.addSeparator()
+
+            # --- Contrainte de tangente verticale au BA ---
+            # Visible uniquement si le clic est sur le noeud P1 (adjacent
+            # au bord d'attaque) de l'extrados ou de l'intrados.
+            ba_side = self._find_ba_node(event)
+            if ba_side is not None:
+                self._ba_side = ba_side
+                spl_ba = (p.spline_extrados if ba_side == 'ext'
+                          else p.spline_intrados)
+                if getattr(spl_ba, 'ba_vertical', True):
+                    act_ba = menu.addAction(
+                        u"Libérer la contrainte de tangence "
+                        u"verticale au bord d'attaque")
+                else:
+                    act_ba = menu.addAction(
+                        u"Rétablir la tangence verticale "
+                        u"au bord d'attaque")
+                act_ba.triggered.connect(self._on_toggle_ba_vertical)
+                menu.addSeparator()
 
         # --- Echelle courbure ---
         act_scale = menu.addAction(
@@ -997,6 +1047,42 @@ class ProfilCanvas(FigureCanvasQTAgg):
         )
 
         QMessageBox.information(self, "Info point", text)
+
+    # ==================================================================
+    # Contrainte tangente verticale au bord d'attaque
+    # ==================================================================
+
+    def _on_toggle_ba_vertical(self):
+        u"""Libere ou retablit la tangente verticale au BA sur un cote.
+
+        Bascule l'etat ``ba_vertical`` de la spline du cote selectionne.
+        Lors du retablissement, le noeud P1 est ramene sur la verticale
+        du bord d'attaque (P1.x = P0.x) pour restaurer la tangente.
+        """
+        p = self._profil_current
+        if p is None or not p.has_splines:
+            return
+
+        side = getattr(self, '_ba_side', None)
+        if side is None:
+            return
+        spl = (p.spline_extrados if side == 'ext'
+               else p.spline_intrados)
+
+        new_state = not getattr(spl, 'ba_vertical', True)
+        spl.ba_vertical = new_state
+
+        if new_state:
+            # Retablir : aligner P1 verticalement avec le BA (P0)
+            cp = spl.control_points
+            if len(cp) >= 2:
+                dx = cp[0, 0] - cp[1, 0]
+                if abs(dx) > 1e-12:
+                    spl.translate_cpoint(1, np.array([dx, 0.0]))
+
+        self._update_current()
+        self.draw_idle()
+        self.profil_edited.emit()
 
     # ==================================================================
     # Parametres echantillonnage spline

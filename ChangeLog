@@ -1,5 +1,26 @@
 # Changelog
 
+## [Non publié] - 2026-06-19 15:39
+
+### Added (Ajouté)
+- **Libération de la contrainte de tangente verticale au bord
+  d'attaque** (édition interactive des profils Spline) :
+  - Nouvel état `ba_vertical` (défaut `True`) par côté sur
+    `BezierSpline` (`sources/model/bezier_spline.py`), avec property
+    documentée : extrados et intrados ont chacun leur propre contrainte
+  - Clic droit sur le nœud P1 (adjacent au BA) de l'extrados ou de
+    l'intrados : entrée de menu contextuel « Libérer la contrainte de
+    tangence verticale au bord d'attaque » / « Rétablir la tangence
+    verticale au bord d'attaque » (`sources/gui/profil_canvas.py`)
+  - Helper `_find_ba_node()` pour détecter le clic sur le nœud P1
+  - Handler `_on_toggle_ba_vertical()` : au rétablissement, réalignement
+    automatique de P1 sur la verticale du BA (`P1.x = P0.x`)
+
+### Changed (Modifié)
+- Le drag du nœud P1 ne verrouille le déplacement horizontal que si la
+  contrainte `ba_vertical` est active sur le côté concerné
+  (`ProfilCanvas._on_motion`)
+
 ## [Non publié] - 2026-05-01
 
 ### Added (Ajouté)
