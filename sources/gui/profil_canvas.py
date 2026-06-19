@@ -18,8 +18,10 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.collections import LineCollection
 from matplotlib.patches import Rectangle
+from matplotlib.image import AxesImage
+from matplotlib.transforms import Affine2D
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Signal, Qt
 
 
 # Couleurs
@@ -178,6 +180,28 @@ class ProfilCanvas(FigureCanvasQTAgg):
         self._zoom_rect_origin = None  # (xdata, ydata) du coin initial
         self._zoom_rect_patch = None   # Rectangle matplotlib
 
+        # --- Image de fond (calque a decalquer) ---
+        self._bg_array = None        # ndarray RGB(A) ou None
+        self._bg_artist = None       # AxesImage
+        self._bg_path = None         # chemin source d'origine
+        self._bg_filename = None     # nom de fichier d'origine
+        self._bg_visible = True
+        # Transformation du calque : centre (px, py) en coordonnees data
+        # (avant rotation), facteur d'echelle et angle (deg, autour de 0,0)
+        self._img_px = 500.0
+        self._img_py = 0.0
+        self._img_scale = 1.0
+        self._img_angle = 0.0
+
+        # Interaction image (touche 'i' maintenue)
+        self._image_mode = False     # True quand 'i' est enfoncee
+        self._img_action = None      # None | 'move' | 'rotate'
+        self._img_move_last = None   # derniere position souris (data)
+        self._rot_last = None        # dernier angle souris autour de (0,0)
+
+        # Capter la touche 'i' au clavier : focus au survol
+        self.setFocusPolicy(Qt.StrongFocus)
+
         # --- Connecter les evenements souris ---
         self.mpl_connect('button_press_event', self._on_press)
         self.mpl_connect('motion_notify_event', self._on_motion)
@@ -252,9 +276,198 @@ class ProfilCanvas(FigureCanvasQTAgg):
 
     def zoom_fit(self):
         """Ajuste le zoom pour voir tout le profil."""
+        self._autoscale_ignoring_image()
+        self.draw_idle()
+
+    # ==================================================================
+    # Image de fond (calque)
+    # ==================================================================
+
+    @property
+    def has_background_image(self):
+        u"""True si une image de calque est chargee."""
+        return self._bg_array is not None
+
+    @property
+    def background_source_path(self):
+        u"""Chemin source d'origine de l'image (ou None)."""
+        return self._bg_path
+
+    @property
+    def background_filename(self):
+        u"""Nom de fichier d'origine de l'image (ou None)."""
+        return self._bg_filename
+
+    @property
+    def background_array(self):
+        u"""Tableau numpy de l'image de calque (ou None)."""
+        return self._bg_array
+
+    def load_background_image(self, path):
+        u"""Charge une image de calque depuis un fichier.
+
+        Formats supportes : ceux lus par Pillow (jpg, png, tif, bmp...).
+        L'image est positionnee initialement pour couvrir la corde.
+
+        :param path: chemin du fichier image
+        :type path: str
+        :returns: (largeur, hauteur) en pixels
+        :rtype: tuple(int, int)
+        :raises Exception: si l'image ne peut etre lue
+        """
+        import os
+        from PIL import Image
+
+        with Image.open(path) as im:
+            arr = np.asarray(im.convert('RGBA'))
+
+        self._bg_array = arr
+        self._bg_path = path
+        self._bg_filename = os.path.basename(path)
+        self._reset_image_placement()
+        self._create_bg_artist()
+        self._bg_visible = True
+        self._update_bg_transform()
+        self.draw_idle()
+        h, w = arr.shape[:2]
+        return w, h
+
+    def set_background_array(self, arr, filename=None, path=None):
+        u"""Definit l'image de calque depuis un tableau deja decode.
+
+        Utilise lors du chargement d'un projet (image embarquee).
+
+        :param arr: image RGB(A), ndarray(h, w, 3|4)
+        :type arr: numpy.ndarray
+        :param filename: nom de fichier d'origine
+        :type filename: str or None
+        :param path: chemin source d'origine
+        :type path: str or None
+        """
+        self._bg_array = np.asarray(arr)
+        self._bg_filename = filename
+        self._bg_path = path
+        self._create_bg_artist()
+        self._update_bg_transform()
+        self.draw_idle()
+
+    def clear_background_image(self):
+        u"""Supprime l'image de calque."""
+        if self._bg_artist is not None:
+            self._bg_artist.remove()
+            self._bg_artist = None
+        self._bg_array = None
+        self._bg_path = None
+        self._bg_filename = None
+        self.draw_idle()
+
+    def set_background_visible(self, visible):
+        u"""Affiche ou masque l'image de calque."""
+        self._bg_visible = bool(visible)
+        if self._bg_artist is not None:
+            self._bg_artist.set_visible(self._bg_visible)
+        self.draw_idle()
+
+    def get_background_state(self):
+        u"""Retourne l'etat geometrique du calque pour la sauvegarde.
+
+        :returns: dict avec px, py, scale, angle, visible
+        :rtype: dict
+        """
+        return {
+            'px': self._img_px,
+            'py': self._img_py,
+            'scale': self._img_scale,
+            'angle': self._img_angle,
+            'visible': self._bg_visible,
+        }
+
+    def set_background_state(self, state):
+        u"""Applique un etat geometrique du calque (depuis un projet).
+
+        :param state: dict avec px, py, scale, angle, visible
+        :type state: dict
+        """
+        if not state:
+            return
+        self._img_px = float(state.get('px', self._img_px))
+        self._img_py = float(state.get('py', self._img_py))
+        self._img_scale = float(state.get('scale', self._img_scale))
+        self._img_angle = float(state.get('angle', self._img_angle))
+        self._bg_visible = bool(state.get('visible', True))
+        self._update_bg_transform()
+        if self._bg_artist is not None:
+            self._bg_artist.set_visible(self._bg_visible)
+        self.draw_idle()
+
+    def _reset_image_placement(self):
+        u"""Positionne le calque pour couvrir la corde (corde ~1000 mm)."""
+        if self._bg_array is None:
+            return
+        h, w = self._bg_array.shape[:2]
+        self._img_scale = 1000.0 / max(w, 1)
+        self._img_px = 500.0
+        self._img_py = 0.0
+        self._img_angle = 0.0
+
+    def _create_bg_artist(self):
+        u"""Cree (ou recree) l'artist AxesImage du calque.
+
+        Ajoute via ``add_artist`` ; l'autoscale est gere separement pour
+        ignorer le calque (voir ``_autoscale_ignoring_image``).
+        """
+        if self._bg_artist is not None:
+            self._bg_artist.remove()
+            self._bg_artist = None
+        if self._bg_array is None:
+            return
+        h, w = self._bg_array.shape[:2]
+        im = AxesImage(self._ax, origin='upper',
+                       interpolation='bilinear', zorder=-100)
+        im.set_data(self._bg_array)
+        im.set_extent([0, w, 0, h])
+        im.set_visible(self._bg_visible)
+        self._ax.add_artist(im)
+        self._bg_artist = im
+
+    def _update_bg_transform(self):
+        u"""Recalcule la transformation affine du calque.
+
+        Compose : centrage de l'image, mise a l'echelle (autour du
+        centre), positionnement du centre en (px, py), puis rotation
+        autour de l'origine (0, 0) des coordonnees data.
+        """
+        if self._bg_artist is None or self._bg_array is None:
+            return
+        h, w = self._bg_array.shape[:2]
+        cx, cy = w / 2.0, h / 2.0
+        trans = (Affine2D()
+                 .translate(-cx, -cy)
+                 .scale(self._img_scale)
+                 .translate(self._img_px, self._img_py)
+                 .rotate_deg(self._img_angle)
+                 + self._ax.transData)
+        self._bg_artist.set_transform(trans)
+
+    def _autoscale_ignoring_image(self):
+        u"""Recadre la vue en ignorant le calque.
+
+        Detache temporairement l'image avant relim/autoscale puis la
+        reattache, afin que son extent ne fausse pas les limites.
+        """
+        art = self._bg_artist
+        if art is not None:
+            art.remove()
         self._ax.relim()
         self._ax.autoscale_view()
-        self.draw_idle()
+        if art is not None:
+            self._ax.add_artist(art)
+            self._update_bg_transform()
+
+    def _shift_pressed(self):
+        u"""True si la touche Shift est enfoncee (deplacement fin)."""
+        from PySide6.QtWidgets import QApplication
+        return bool(QApplication.keyboardModifiers() & Qt.ShiftModifier)
 
     # ==================================================================
     # Mise a jour des artists
@@ -496,6 +709,24 @@ class ProfilCanvas(FigureCanvasQTAgg):
 
     def _on_press(self, event):
         """Detecte un clic sur un point de controle, pan ou menu contextuel."""
+        # Mode image (touche 'i' maintenue) : manipuler le calque
+        if self._image_mode and self._bg_array is not None:
+            if event.inaxes != self._ax or event.xdata is None:
+                return
+            if event.button == 1:
+                # Clic gauche : deplacer l'image
+                self._img_action = 'move'
+                self._img_move_last = np.array(
+                    [event.xdata, event.ydata])
+                return
+            if event.button == 3:
+                # Clic droit : tourner l'image autour de (0, 0)
+                self._img_action = 'rotate'
+                self._rot_last = float(
+                    np.arctan2(event.ydata, event.xdata))
+                return
+            return
+
         if event.button == 3 and event.inaxes == self._ax:
             self._show_context_menu(event)
             return
@@ -535,6 +766,36 @@ class ProfilCanvas(FigureCanvasQTAgg):
 
     def _on_motion(self, event):
         """Deplace le point de controle pendant le drag, ou pan la vue."""
+        # Manipulation de l'image de calque (touche 'i')
+        if self._img_action is not None and self._bg_array is not None:
+            if event.inaxes != self._ax or event.xdata is None:
+                return
+            fine = self._shift_pressed()
+            if self._img_action == 'move':
+                cur = np.array([event.xdata, event.ydata])
+                d = cur - self._img_move_last
+                self._img_move_last = cur
+                if fine:
+                    d = d / 10.0
+                # Ramener le deplacement dans le repere avant rotation
+                a = -np.radians(self._img_angle)
+                ca, sa = np.cos(a), np.sin(a)
+                self._img_px += d[0] * ca - d[1] * sa
+                self._img_py += d[0] * sa + d[1] * ca
+                self._update_bg_transform()
+                self.draw_idle()
+                return
+            if self._img_action == 'rotate':
+                cur = float(np.arctan2(event.ydata, event.xdata))
+                d_deg = np.degrees(cur - self._rot_last)
+                self._rot_last = cur
+                if fine:
+                    d_deg = d_deg / 10.0
+                self._img_angle += d_deg
+                self._update_bg_transform()
+                self.draw_idle()
+                return
+
         # Pan avec bouton milieu
         if self._panning:
             if self._pan_start_xy is None:
@@ -596,6 +857,13 @@ class ProfilCanvas(FigureCanvasQTAgg):
 
     def _on_release(self, event):
         """Finalise le drag, le pan ou le zoom rectangle."""
+        # Fin de manipulation de l'image de calque
+        if self._img_action is not None:
+            self._img_action = None
+            self._img_move_last = None
+            self._rot_last = None
+            return
+
         if self._panning:
             self._panning = False
             self._pan_start_xy = None
@@ -701,6 +969,20 @@ class ProfilCanvas(FigureCanvasQTAgg):
         if event.inaxes != self._ax:
             return
 
+        # Mode image (touche 'i') : la molette met l'image a l'echelle
+        if self._image_mode and self._bg_array is not None:
+            fine = self._shift_pressed()
+            step = 1.02 if fine else 1.1
+            if event.button == 'up':
+                self._img_scale *= step
+            elif event.button == 'down':
+                self._img_scale /= step
+            else:
+                return
+            self._update_bg_transform()
+            self.draw_idle()
+            return
+
         # Facteur de zoom
         base_scale = 1.2
         if event.button == 'up':
@@ -730,6 +1012,28 @@ class ProfilCanvas(FigureCanvasQTAgg):
         self._ax.set_ylim(ydata - new_height * rel_y,
                           ydata + new_height * (1 - rel_y))
         self.draw_idle()
+
+    # ==================================================================
+    # Clavier (mode image)
+    # ==================================================================
+
+    def enterEvent(self, event):
+        u"""Donne le focus clavier au survol (pour capter la touche 'i')."""
+        self.setFocus()
+        super().enterEvent(event)
+
+    def keyPressEvent(self, event):
+        u"""Active le mode image quand la touche 'i' est enfoncee."""
+        if event.key() == Qt.Key_I and not event.isAutoRepeat():
+            self._image_mode = True
+        super().keyPressEvent(event)
+
+    def keyReleaseEvent(self, event):
+        u"""Desactive le mode image au relachement de la touche 'i'."""
+        if event.key() == Qt.Key_I and not event.isAutoRepeat():
+            self._image_mode = False
+            self._img_action = None
+        super().keyReleaseEvent(event)
 
     # ==================================================================
     # Menu contextuel
@@ -1305,6 +1609,5 @@ class ProfilCanvas(FigureCanvasQTAgg):
         self._clear_deviation_artists()
 
     def _update_axes(self):
-        """Recalcule les limites des axes."""
-        self._ax.relim()
-        self._ax.autoscale_view()
+        """Recalcule les limites des axes (en ignorant le calque)."""
+        self._autoscale_ignoring_image()

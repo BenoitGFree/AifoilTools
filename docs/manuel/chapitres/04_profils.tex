@@ -32,6 +32,11 @@ d'affichage. De gauche à droite :
         verticaux + enveloppe).
         L'écart est donné à iso abscisse selon l'axe vertical.
         Une évolution permettra de tracer la déviation réélle.
+    \item \textbf{Image} : affiche ou masque l'\textbf{image de
+        calque} (arrière-plan) lorsqu'une image a été chargée.
+        La case reste inactive (grisée) tant qu'aucune image n'est
+        chargée. Voir la section~\ref{sec:calque},
+        page~\pageref{sec:calque}.
 \end{itemize}
 
 \begin{important}
@@ -291,6 +296,10 @@ Le menu contextuel offre plusieurs actions selon le contexte :
 \begin{itemize}
     \item \menu{Info point\dots} (si clic sur un point de contrôle) :
         affiche les coordonnées et les paramètres locaux du point.
+    \item \menu{Libérer la contrainte de tangence verticale au bord
+        d'attaque} (si clic sur le nœud P1, voisin du bord d'attaque) :
+        libère ou rétablit la tangente verticale au bord d'attaque.
+        Voir la section~\ref{sec:batangente}.
     \item \menu{Échelle porcupines\dots} : règle l'échelle
         d'affichage de la courbure.
     \item \menu{Densité porcupines / $\times 2$ ou $\div 2$} :
@@ -306,6 +315,131 @@ Le menu contextuel offre plusieurs actions selon le contexte :
         permet de définir des \emph{overrides per-segment}
         (degré, nombre de points, méthode différente du global).
 \end{itemize}
+
+\subsection{Tangente verticale au bord d'attaque}
+\label{sec:batangente}
+
+Par défaut, le premier point de contrôle intérieur de chaque côté
+(noté \textbf{P1}, voisin du bord d'attaque) est \textbf{contraint}
+à rester sur la verticale du bord d'attaque (BA). Cette contrainte
+garantit une \textbf{tangente verticale} au bord d'attaque, ce qui
+correspond à la géométrie naturelle de la plupart des profils. Lors
+de l'édition, le déplacement de P1 est donc limité à l'axe vertical.
+
+\screenshot{13_ba_tangente.png}{1.0}{%
+    Effet de la contrainte de tangente verticale au bord d'attaque.
+    À gauche, contrainte active : le nœud P1 (entouré en rouge) reste
+    aligné verticalement avec le BA, la tangente (pointillé rouge) est
+    verticale. À droite, contrainte libérée : P1 peut être déplacé
+    librement, la tangente s'incline.}
+
+Il est parfois souhaitable de \textbf{libérer} cette contrainte (par
+exemple pour décalquer un profil dont le bord d'attaque n'a pas une
+tangente strictement verticale). Pour cela :
+
+\begin{enumerate}
+    \item Effectuer un \textbf{clic droit} sur le nœud P1 de
+        l'extrados ou de l'intrados.
+    \item Choisir \menu{Libérer la contrainte de tangence verticale
+        au bord d'attaque}.
+\end{enumerate}
+
+Le nœud P1 devient alors librement déplaçable (en $x$ et en $y$).
+Pour rétablir la contrainte, refaire un clic droit sur le nœud et
+choisir \menu{Rétablir la tangence verticale au bord d'attaque} :
+le nœud P1 est automatiquement ramené sur la verticale du bord
+d'attaque.
+
+\begin{noteinfo}
+La contrainte est gérée \textbf{indépendamment} pour l'extrados et
+l'intrados. Libérer la tangente côté extrados n'affecte pas
+l'intrados, et inversement.
+\end{noteinfo}
+
+\section{Image de calque (décalquer un profil)}
+\label{sec:calque}
+
+AirfoilTools permet de charger une \textbf{image en arrière-plan}
+(photo, scan d'un plan, capture d'écran d'un profil) afin de
+\textbf{décalquer} sa forme en déplaçant les points de contrôle du
+profil courant jusqu'à épouser la silhouette de l'image.
+
+\screenshot{12_tab_profils_calque.png}{1.0}{%
+    Décalquage d'un profil : l'image de calque (silhouette grise) est
+    affichée en arrière-plan ; le profil courant (bleu, en mode spline)
+    et ses points de contrôle se superposent par-dessus. On ajuste les
+    points de contrôle pour faire coïncider la courbe bleue avec la
+    silhouette.}
+
+\subsection{Chargement de l'image}
+
+Le chargement se fait via \menu{Fichier $\rightarrow$ Charger image
+de calque\dots}. Les formats usuels sont acceptés : \chemin{.jpg},
+\chemin{.png}, \chemin{.tif}, \chemin{.bmp}. À l'ouverture, l'image
+est mise à l'échelle pour couvrir approximativement la corde
+(1\,000~mm) et la case \textbf{Image} de la barre de contrôle
+devient active et cochée.
+
+L'image est dessinée \textbf{en arrière-plan}, sous le profil et ses
+points de contrôle, qui restent donc parfaitement visibles et
+manipulables par-dessus.
+
+\subsection{Positionner, mettre à l'échelle et tourner l'image}
+
+Les manipulations de l'image se font en maintenant la touche
+\touche{i} enfoncée, combinée à la souris :
+
+\begin{tabularx}{\linewidth}{l X}
+    \toprule
+    \textbf{Action} & \textbf{Effet} \\
+    \midrule
+    \touche{i} + clic gauche glissé
+        & \textbf{Déplace} l'image (translation).\\
+    \touche{i} + molette
+        & \textbf{Met à l'échelle} l'image (agrandit / réduit autour
+          de son centre).\\
+    \touche{i} + clic droit glissé
+        & \textbf{Tourne} l'image autour de l'origine $(0,0)$
+          (le bord d'attaque).\\
+    \touche{Maj} + \touche{i} + action
+        & \textbf{Ajustements fins} : déplacement et rotation
+          dix fois plus lents, pas d'échelle réduit. Idéal pour le
+          calage précis.\\
+    \bottomrule
+\end{tabularx}
+
+\begin{astuce}
+Procédez en deux temps : d'abord un calage grossier (déplacement,
+échelle, rotation sans \touche{Maj}) pour superposer
+approximativement l'image et le profil, puis un \textbf{ajustement
+fin} en maintenant \touche{Maj} pour le calage précis du bord
+d'attaque et du bord de fuite.
+\end{astuce}
+
+\begin{noteinfo}
+Le canvas doit avoir le \textbf{focus clavier} pour que la touche
+\touche{i} soit prise en compte : il l'obtient automatiquement
+dès que le curseur survole la zone de tracé.
+\end{noteinfo}
+
+\subsection{Masquer ou retirer l'image}
+
+\begin{itemize}
+    \item La case \textbf{Image} de la barre de contrôle affiche ou
+        masque l'image sans la supprimer.
+    \item \menu{Fichier $\rightarrow$ Retirer l'image de calque}
+        supprime définitivement l'image de la session.
+\end{itemize}
+
+\begin{important}
+L'image de calque et sa position (échelle, rotation, translation)
+sont \textbf{enregistrées avec le projet} au format \chemin{.aftproj}
+(voir chapitre~\ref{chap:formats}). On retrouve ainsi son calque
+exactement tel qu'il était à la réouverture du projet. Les formats
+de profil classiques (\chemin{.dat}, \chemin{.bspl}\dots) ne
+contiennent \textbf{pas} l'image : pour conserver le calque, il faut
+enregistrer un projet.
+\end{important}
 
 \section{Avertissement \og Courbure indisponible \fg{}}
 

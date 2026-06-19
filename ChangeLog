@@ -1,5 +1,39 @@
 # Changelog
 
+## [Non publié] - 2026-06-19 16:53
+
+### Added (Ajouté)
+- **Image de calque (décalquage de profil)** dans l'onglet Profils :
+  - Chargement d'une image en arrière-plan (jpg, png, tif, bmp) via
+    `Fichier › Charger image de calque` (`gui/main_window.py`)
+  - Manipulation au clavier+souris dans `gui/profil_canvas.py` :
+    `i`+clic gauche = déplacer, `i`+molette = échelle, `i`+clic droit
+    = rotation autour de (0,0), `Maj` = ajustements fins (ratio 10)
+  - Affichage en arrière-plan (zorder bas) sans fausser l'autoscale
+    (détachement temporaire du calque lors du recadrage)
+  - Checkbox « Image » pour afficher/masquer, `Retirer l'image de
+    calque` pour la supprimer (`gui/tab_profils.py`)
+- **Format projet `.aftproj`** (`model/project.py`, nouveau) :
+  - Sauvegarde JSON des profils courant/référence (mode spline inclus)
+    + image de calque embarquée en base64 + sa transformation
+  - Menus `Fichier › Ouvrir projet` (Ctrl+Maj+P) et `Enregistrer
+    projet` (Ctrl+Alt+S)
+- **Export au format GNU `.gnu`** (compatible Axile/gnuplot) :
+  - `ProfilSpline._write_gnu()` : points `x y` en `%.18e`, séparés par
+    une espace, fins de ligne LF garanties (`model/profil_spline.py`)
+  - Filtre « GNU (*.gnu) » ajouté au dialogue de sauvegarde
+- Dépendance `Pillow>=9` ajoutée à `requirements.txt`
+
+### Documentation
+- Manuel utilisateur enrichi (chapitres Présentation, Interface,
+  Onglet Profils, Formats) : tangente verticale au BA, image de
+  calque, format projet `.aftproj`, format GNU
+- Nouvelles illustrations `12_tab_profils_calque.png` et
+  `13_ba_tangente.png` ; captures `01`–`06` régénérées (checkbox Image)
+- `tools/capture_screenshots.py` : injection des polices TTF de
+  matplotlib (`QT_QPA_FONTDIR`) pour un rendu headless sans « tofu »,
+  capture du calque et génération de la figure de tangente BA
+
 ## [Non publié] - 2026-06-19 15:39
 
 ### Added (Ajouté)

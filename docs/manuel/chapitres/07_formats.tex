@@ -73,6 +73,36 @@ x,y
 ...
 \end{lstlisting}
 
+\subsection{Format GNU (\chemin{.gnu})}
+
+Format de points brut compatible avec le logiciel \textbf{Axile} et
+directement exploitable par \textbf{gnuplot}. C'est un simple fichier
+texte de deux colonnes \texttt{x~y}, sans en-tête ni nom de profil.
+
+\begin{itemize}
+    \item Une ligne par point, deux colonnes \texttt{x y}.
+    \item Chaque nombre en notation scientifique à 18 décimales
+        (\texttt{\%.18e}), séparé par une seule espace.
+    \item Fins de ligne \texttt{LF} (y compris après le dernier point),
+        garanties même sous Windows.
+    \item Aucun en-tête, commentaire ni troisième colonne.
+\end{itemize}
+
+\begin{lstlisting}[caption={Exemple de fichier GNU (.gnu)}]
+1.000000000000000000e+00 0.000000000000000000e+00
+9.754952615109063752e-01 6.041608209341215764e-03
+0.000000000000000000e+00 0.000000000000000000e+00
+\end{lstlisting}
+
+Ce format est produit à l'identique par \code{numpy.savetxt} et
+relisible par \code{numpy.loadtxt} (tableau de forme $(n, 2)$).
+
+\begin{noteinfo}
+Le format \chemin{.gnu} est proposé en \textbf{écriture uniquement}
+(sauvegarde du profil courant). Pour réimporter des points,
+utilisez un fichier \chemin{.dat} (Selig) ou \chemin{.csv}.
+\end{noteinfo}
+
 \section{Formats splines AirfoilTools}
 
 \subsection{Format \chemin{.bspl}}
@@ -98,6 +128,49 @@ d'aérodynamique. Pour une diffusion externe, ré-exportez en
 Variante simplifiée du \chemin{.bspl} pour les profils définis
 par une seule courbe de Bézier par côté (mode mono-segment).
 Conservé pour compatibilité avec les versions antérieures.
+
+\section{Format projet (\chemin{.aftproj})}
+\label{sec:aftproj}
+
+Le format \chemin{.aftproj} sauvegarde l'\textbf{intégralité d'une
+session de travail} dans un seul fichier, là où les formats
+précédents ne sauvegardent qu'un profil isolé. Un projet contient :
+
+\begin{itemize}
+    \item le \textbf{profil courant} et le \textbf{profil de
+        référence} (avec leur définition spline complète le cas
+        échéant) ;
+    \item l'\textbf{image de calque} éventuelle, \emph{embarquée}
+        dans le fichier, ainsi que sa \textbf{transformation}
+        (position, échelle, rotation, visibilité).
+\end{itemize}
+
+Il s'agit d'un fichier \textbf{JSON} (texte). L'image est encodée
+en base64 et embarquée directement : le projet est donc
+\textbf{autonome et portable}. On retrouve l'image du calque à la
+réouverture même si le fichier image d'origine a été déplacé ou
+supprimé.
+
+\begin{itemize}
+    \item Ouverture : \menu{Fichier $\rightarrow$ Ouvrir projet\dots}
+        (\touche{Ctrl}+\touche{Maj}+\touche{P}).
+    \item Enregistrement : \menu{Fichier $\rightarrow$ Enregistrer
+        projet\dots} (\touche{Ctrl}+\touche{Alt}+\touche{S}).
+\end{itemize}
+
+\begin{important}
+Le format \chemin{.aftproj} est le \textbf{seul} qui conserve
+l'image de calque et son calage. Si votre travail comporte un
+décalquage (voir section~\ref{sec:calque}), enregistrez un projet
+plutôt qu'un simple profil.
+\end{important}
+
+\begin{noteinfo}
+L'image étant embarquée en base64, un projet comportant une image
+volumineuse produit un fichier \chemin{.aftproj} plus gros que la
+somme des fichiers de profil. C'est le prix de la portabilité
+(aucune dépendance à un fichier image externe).
+\end{noteinfo}
 
 \section{Génération NACA}
 
@@ -127,8 +200,10 @@ préchargez un fichier \chemin{.dat} obtenu ailleurs.
     Selig (\chemin{.dat})    & oui & oui & non \\
     Lednicer (\chemin{.dat}) & oui & oui & non \\
     CSV (\chemin{.csv})      & oui & oui & non \\
+    GNU (\chemin{.gnu})      & non & oui & non \\
     Spline (\chemin{.bspl})  & oui & oui & \textbf{oui} \\
     Bézier (\chemin{.bez})   & oui & oui & \textbf{oui} (mono-segment) \\
+    Projet (\chemin{.aftproj}) & oui & oui & \textbf{oui} (+ calque) \\
     \bottomrule
 \end{tabularx}
 

@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 """Onglet Profils : affichage et edition interactive des profils."""
 
+import os
+
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QCheckBox, QLabel, QMessageBox
 )
@@ -107,6 +109,23 @@ class TabProfils(QWidget):
             self._on_toggle_deviation)
         ctrl_layout.addWidget(self._chk_deviation)
 
+        ctrl_layout.addSpacing(20)
+
+        self._chk_image = QCheckBox("Image")
+        self._chk_image.setChecked(False)
+        self._chk_image.setEnabled(False)
+        self._chk_image.setToolTip(
+            u"Affiche / masque l'image de calque (en arrière-plan).\n"
+            u"Charger une image via Fichier › Charger image de"
+            u" calque.\n\n"
+            u"Manipulation (maintenir la touche « i ») :\n"
+            u"  - i + clic gauche glisser : déplacer l'image\n"
+            u"  - i + molette : mettre à l'échelle\n"
+            u"  - i + clic droit glisser : tourner autour de (0,0)\n"
+            u"  - Maj enfoncée : ajustements fins (ratio 10)")
+        self._chk_image.stateChanged.connect(self._on_toggle_image)
+        ctrl_layout.addWidget(self._chk_image)
+
         ctrl_layout.addStretch()
         layout.addLayout(ctrl_layout)
 
@@ -187,6 +206,137 @@ class TabProfils(QWidget):
         """Affiche/masque la deviation entre profils."""
         self._canvas.set_show_deviation(
             state == Qt.Checked.value)
+
+    def _on_toggle_image(self, state):
+        """Affiche/masque l'image de calque."""
+        self._canvas.set_background_visible(
+            state == Qt.Checked.value)
+
+    # ------------------------------------------------------------------
+    # Image de calque
+    # ------------------------------------------------------------------
+
+    def _set_image_checkbox(self, enabled, checked):
+        """Active/coche la checkbox image sans declencher de signal.
+
+        :param enabled: rendre la checkbox active
+        :type enabled: bool
+        :param checked: etat coche
+        :type checked: bool
+        """
+        self._chk_image.blockSignals(True)
+        self._chk_image.setEnabled(enabled)
+        self._chk_image.setChecked(bool(checked) if enabled else False)
+        self._chk_image.blockSignals(False)
+
+    def load_background_image(self, filepath):
+        """Charge une image de calque depuis un fichier.
+
+        :param filepath: chemin du fichier image
+        :type filepath: str
+        :returns: (True, info) ou (False, message)
+        :rtype: tuple
+        """
+        try:
+            w, h = self._canvas.load_background_image(filepath)
+        except Exception as e:
+            return False, str(e)
+        self._set_image_checkbox(True, True)
+        return True, "%s (%d x %d)" % (os.path.basename(filepath), w, h)
+
+    def clear_background_image(self):
+        """Supprime l'image de calque."""
+        self._canvas.clear_background_image()
+        self._set_image_checkbox(False, False)
+
+    # ------------------------------------------------------------------
+    # Projet (.aftproj)
+    # ------------------------------------------------------------------
+
+    def save_project(self):
+        """Sauvegarde le projet (profils + image) via un dialogue.
+
+        :returns: (None, None) si annule, (True, chemin), (False, msg)
+        :rtype: tuple
+        """
+        from PySide6.QtWidgets import QFileDialog
+        from model.project import (
+            save_project, encode_image_array, PROJECT_EXT)
+
+        filepath, _ = QFileDialog.getSaveFileName(
+            self,
+            "Enregistrer le projet",
+            "projet%s" % PROJECT_EXT,
+            u"Projet AirfoilTools (*%s)" % PROJECT_EXT)
+        if not filepath:
+            return None, None
+        if not filepath.lower().endswith(PROJECT_EXT):
+            filepath += PROJECT_EXT
+
+        image = None
+        if self._canvas.has_background_image:
+            state = self._canvas.get_background_state()
+            image = {
+                'filename': self._canvas.background_filename,
+                'source_path': self._canvas.background_source_path,
+                'data_b64': encode_image_array(
+                    self._canvas.background_array),
+            }
+            image.update(state)
+
+        try:
+            save_project(
+                filepath, self._profil_current,
+                self._profil_reference, image=image)
+        except Exception as e:
+            return False, str(e)
+        return True, filepath
+
+    def open_project(self, filepath):
+        """Ouvre un projet (.aftproj) : profils + image de calque.
+
+        :param filepath: chemin du fichier projet
+        :type filepath: str
+        :returns: (True, info) ou (False, message)
+        :rtype: tuple
+        """
+        from model.project import load_project, decode_image_b64
+
+        try:
+            current, reference, image = load_project(filepath)
+        except Exception as e:
+            return False, str(e)
+
+        if current is not None:
+            self._profil_current = current
+            self._lbl_current.setText(current.name)
+            self._chk_current.setChecked(True)
+            self._canvas.set_current_profil(current)
+        if reference is not None:
+            self._profil_reference = reference
+            self._lbl_reference.setText(reference.name)
+            self._chk_reference.setChecked(True)
+            self._canvas.set_reference_profil(reference)
+
+        # Image de calque (embarquee dans le projet)
+        self._canvas.clear_background_image()
+        if image and image.get('data_b64'):
+            try:
+                arr = decode_image_b64(image['data_b64'])
+                self._canvas.set_background_array(
+                    arr,
+                    filename=image.get('filename'),
+                    path=image.get('source_path'))
+                self._canvas.set_background_state(image)
+                self._set_image_checkbox(
+                    True, image.get('visible', True))
+            except Exception as e:
+                return False, u"Profils OK mais image illisible : %s" % e
+        else:
+            self._set_image_checkbox(False, False)
+
+        self.profil_changed.emit('current')
+        return True, os.path.basename(filepath)
 
     def load_profil_from_file(self, filepath, role="current"):
         """Charge un profil depuis un fichier.
@@ -278,13 +428,16 @@ class TabProfils(QWidget):
             self,
             "Sauvegarder le profil courant",
             "%s.dat" % self._profil_current.name,
-            u"Selig (*.dat);;Lednicer (*.dat);;Spline (*.bspl);;CSV (*.csv)"
+            u"Selig (*.dat);;Lednicer (*.dat);;Spline (*.bspl)"
+            u";;CSV (*.csv);;GNU (*.gnu)"
         )
         if not filepath:
             return None, None
 
         if "CSV" in selected_filter:
             fmt = 'csv'
+        elif "GNU" in selected_filter:
+            fmt = 'gnu'
         elif "Lednicer" in selected_filter:
             fmt = 'lednicer'
         elif "Spline" in selected_filter:

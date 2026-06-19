@@ -131,10 +131,10 @@ class ProfilSpline(object):
 
     @output_format.setter
     def output_format(self, value):
-        if value not in ('selig', 'lednicer', 'csv', 'bspl'):
+        if value not in ('selig', 'lednicer', 'csv', 'bspl', 'gnu'):
             raise ValueError(
                 u"Format inconnu '%s'. Attendu : selig, lednicer, "
-                u"csv, bspl" % value)
+                u"csv, bspl, gnu" % value)
         self._output_format = value
 
     # ------------------------------------------------------------------
@@ -1129,6 +1129,7 @@ class ProfilSpline(object):
             'lednicer': self._write_lednicer,
             'csv': self._write_csv,
             'bspl': self._write_bspl,
+            'gnu': self._write_gnu,
         }
         if fmt not in writers:
             raise ValueError(
@@ -1175,6 +1176,22 @@ class ProfilSpline(object):
             for i in range(len(pts)):
                 f.write('%.6f;%.6f\n'
                         % (pts[i, 0], pts[i, 1]))
+
+    def _write_gnu(self, filepath):
+        u"""Ecrit au format GNU (.gnu), compatible Axile.
+
+        Format identique a ``numpy.savetxt`` par defaut : un point par
+        ligne, deux colonnes ``x y`` separees par une espace, chaque
+        nombre en notation scientifique a 18 decimales (``%.18e``),
+        fin de ligne LF. Aucun en-tete ni colonne supplementaire.
+        Relisible par ``numpy.loadtxt`` -> tableau de forme (n, 2).
+
+        Le handle est ouvert avec ``newline='\\n'`` pour garantir des
+        fins de ligne LF meme sous Windows (ou le mode texte
+        traduirait sinon ``\\n`` en ``\\r\\n``).
+        """
+        with open(filepath, 'w', newline='\n') as f:
+            np.savetxt(f, self.points)
 
     def _write_bspl(self, filepath):
         u"""Ecrit au format BezierSpline (.bspl).

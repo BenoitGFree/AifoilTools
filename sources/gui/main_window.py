@@ -131,6 +131,41 @@ class MainWindow(QMainWindow):
 
         file_menu.addSeparator()
 
+        # --- Projet (.aftproj) ---
+        act_open_project = QAction(u"Ouvrir &projet...", self)
+        act_open_project.setShortcut("Ctrl+Shift+P")
+        act_open_project.setStatusTip(
+            u"Ouvrir un projet AirfoilTools (.aftproj) : profils +"
+            u" image de calque")
+        act_open_project.triggered.connect(self._on_open_project)
+        file_menu.addAction(act_open_project)
+
+        act_save_project = QAction(u"&Enregistrer projet...", self)
+        act_save_project.setShortcut("Ctrl+Alt+S")
+        act_save_project.setStatusTip(
+            u"Enregistrer le projet (profils courant/reference +"
+            u" image de calque) au format .aftproj")
+        act_save_project.triggered.connect(self._on_save_project)
+        file_menu.addAction(act_save_project)
+
+        file_menu.addSeparator()
+
+        # --- Image de calque ---
+        act_load_image = QAction(u"Charger &image de calque...", self)
+        act_load_image.setStatusTip(
+            u"Charger une image (jpg, png, tif...) en arriere-plan pour"
+            u" decalquer un profil. Manipulation : touche « i » + souris")
+        act_load_image.triggered.connect(self._on_load_image)
+        file_menu.addAction(act_load_image)
+
+        act_clear_image = QAction(u"Retirer l'image de calque", self)
+        act_clear_image.setStatusTip(
+            u"Supprimer l'image de calque actuellement affichee")
+        act_clear_image.triggered.connect(self._on_clear_image)
+        file_menu.addAction(act_clear_image)
+
+        file_menu.addSeparator()
+
         act_quit = QAction("&Quitter", self)
         act_quit.setShortcut("Ctrl+Q")
         act_quit.setStatusTip(u"Fermer l'application")
@@ -321,6 +356,61 @@ class MainWindow(QMainWindow):
             from PySide6.QtWidgets import QMessageBox
             QMessageBox.warning(self, "Erreur de sauvegarde", info)
             self.statusBar().showMessage("Echec de la sauvegarde")
+
+    def _on_open_project(self):
+        """Ouvre un projet AirfoilTools (.aftproj)."""
+        from PySide6.QtWidgets import QFileDialog, QMessageBox
+        filepath, _ = QFileDialog.getOpenFileName(
+            self,
+            "Ouvrir un projet",
+            "",
+            u"Projet AirfoilTools (*.aftproj);;Tous (*)")
+        if not filepath:
+            return
+        ok, info = self._tab_profils.open_project(filepath)
+        if ok:
+            self._tabs.setCurrentWidget(self._tab_profils)
+            self.statusBar().showMessage(u"Projet ouvert : %s" % info)
+        else:
+            QMessageBox.warning(self, "Erreur d'ouverture du projet", info)
+            self.statusBar().showMessage(u"Echec de l'ouverture du projet")
+
+    def _on_save_project(self):
+        """Enregistre le projet courant (profils + image)."""
+        from PySide6.QtWidgets import QMessageBox
+        ok, info = self._tab_profils.save_project()
+        if ok is None:
+            return
+        if ok:
+            self.statusBar().showMessage(u"Projet enregistre : %s" % info)
+        else:
+            QMessageBox.warning(self, "Erreur d'enregistrement", info)
+            self.statusBar().showMessage(u"Echec de l'enregistrement")
+
+    def _on_load_image(self):
+        """Charge une image de calque en arriere-plan."""
+        from PySide6.QtWidgets import QFileDialog, QMessageBox
+        filepath, _ = QFileDialog.getOpenFileName(
+            self,
+            "Charger une image de calque",
+            "",
+            u"Images (*.jpg *.jpeg *.png *.tif *.tiff *.bmp);;Tous (*)")
+        if not filepath:
+            return
+        ok, info = self._tab_profils.load_background_image(filepath)
+        if ok:
+            self.statusBar().showMessage(
+                u"Image de calque chargee : %s "
+                u"(maintenir « i » + souris pour ajuster)" % info)
+        else:
+            QMessageBox.warning(
+                self, "Erreur de chargement de l'image", info)
+            self.statusBar().showMessage(u"Echec du chargement de l'image")
+
+    def _on_clear_image(self):
+        """Retire l'image de calque."""
+        self._tab_profils.clear_background_image()
+        self.statusBar().showMessage(u"Image de calque retiree")
 
     def _on_change_sampling(self, role):
         """Change le nombre de points d'echantillonnage d'un profil Bezier."""
