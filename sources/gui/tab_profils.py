@@ -423,13 +423,33 @@ class TabProfils(QWidget):
         if self._profil_current is None:
             return None, None
 
-        from PySide6.QtWidgets import QFileDialog
+        from PySide6.QtWidgets import QFileDialog, QInputDialog
+
+        # 1) Choix de la partie a enregistrer
+        parts = [u"Profil complet", u"Extrados seul", u"Intrados seul"]
+        choice, ok = QInputDialog.getItem(
+            self, "Sauvegarder le profil",
+            u"Partie à enregistrer :", parts, 0, False)
+        if not ok:
+            return None, None
+        part = {parts[0]: 'full', parts[1]: 'extrados',
+                parts[2]: 'intrados'}[choice]
+
+        # 2) Formats proposes (Lednicer et Spline : profil complet seul)
+        if part == 'full':
+            flt = (u"Selig (*.dat);;Lednicer (*.dat);;Spline (*.bspl)"
+                   u";;CSV (*.csv);;GNU (*.gnu)")
+            suffix = ''
+        else:
+            flt = u"Selig (*.dat);;CSV (*.csv);;GNU (*.gnu)"
+            suffix = '_%s' % part
+
+        default = "%s%s.dat" % (self._profil_current.name, suffix)
         filepath, selected_filter = QFileDialog.getSaveFileName(
             self,
             "Sauvegarder le profil courant",
-            "%s.dat" % self._profil_current.name,
-            u"Selig (*.dat);;Lednicer (*.dat);;Spline (*.bspl)"
-            u";;CSV (*.csv);;GNU (*.gnu)"
+            default,
+            flt
         )
         if not filepath:
             return None, None
@@ -446,11 +466,13 @@ class TabProfils(QWidget):
             fmt = 'selig'
 
         try:
-            self._profil_current.write(filepath, fmt=fmt)
+            self._profil_current.write(filepath, fmt=fmt, part=part)
         except Exception as e:
             return False, str(e)
 
-        return True, filepath
+        label = {'full': 'complet', 'extrados': 'extrados',
+                 'intrados': 'intrados'}[part]
+        return True, "%s (%s)" % (filepath, label)
 
     @property
     def profil_current(self):

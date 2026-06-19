@@ -1105,13 +1105,33 @@ class ProfilSpline(object):
     #  Ecriture
     # ------------------------------------------------------------------
 
-    def write(self, filepath=None, fmt=None):
+    def _points_for_part(self, part):
+        u"""Retourne les points a exporter selon la partie demandee.
+
+        :param part: 'full' (profil complet), 'extrados' ou 'intrados'
+        :type part: str
+        :returns: points (n, 2). Pour un cote isole : du BA au BF
+            (x croissant).
+        :rtype: numpy.ndarray
+        """
+        if part == 'extrados':
+            return self.extrados
+        if part == 'intrados':
+            return self.intrados
+        return self.points
+
+    def write(self, filepath=None, fmt=None, part='full'):
         u"""Ecrit le profil dans un fichier.
 
         :param filepath: chemin de sortie (defaut : self.output_path)
         :type filepath: str or None
         :param fmt: format (defaut : self.output_format)
         :type fmt: str or None
+        :param part: partie a enregistrer : 'full' (profil complet,
+            defaut), 'extrados' ou 'intrados'. Les formats Lednicer et
+            Spline (.bspl), intrinsequement bi-faces ou geometriques,
+            n'acceptent que 'full'.
+        :type part: str
         :returns: chemin du fichier ecrit
         :rtype: str
         """
@@ -1123,26 +1143,43 @@ class ProfilSpline(object):
                 u"(filepath ou output_path)")
         if fmt is None:
             fmt = self._output_format
+        if part not in ('full', 'extrados', 'intrados'):
+            raise ValueError(
+                u"part inconnu '%s'. Attendu : full, extrados, "
+                u"intrados" % part)
 
-        writers = {
+        # Formats "liste de points" : exportables par cote
+        point_writers = {
             'selig': self._write_selig,
-            'lednicer': self._write_lednicer,
             'csv': self._write_csv,
-            'bspl': self._write_bspl,
             'gnu': self._write_gnu,
         }
-        if fmt not in writers:
+        # Formats globaux : profil complet uniquement
+        full_writers = {
+            'lednicer': self._write_lednicer,
+            'bspl': self._write_bspl,
+        }
+
+        if fmt in point_writers:
+            pts = self._points_for_part(part)
+            point_writers[fmt](filepath, pts)
+        elif fmt in full_writers:
+            if part != 'full':
+                raise ValueError(
+                    u"Le format '%s' ne peut enregistrer qu'un profil "
+                    u"complet, pas un cote isole." % fmt)
+            full_writers[fmt](filepath)
+        else:
             raise ValueError(
                 u"Format d'ecriture inconnu '%s'" % fmt)
 
-        writers[fmt](filepath)
-        logger.info(u"Profil '%s' ecrit dans %s (format %s)",
-                    self._name, filepath, fmt)
+        logger.info(u"Profil '%s' ecrit dans %s (format %s, partie %s)",
+                    self._name, filepath, fmt, part)
         return filepath
 
-    def _write_selig(self, filepath):
-        u"""Ecrit au format Selig."""
-        pts = self.points
+    def _write_selig(self, filepath, points=None):
+        u"""Ecrit au format Selig (profil complet ou cote isole)."""
+        pts = self.points if points is None else np.asarray(points)
         with open(filepath, 'w') as f:
             f.write('%s\n' % self._name)
             for i in range(len(pts)):
@@ -1168,16 +1205,16 @@ class ProfilSpline(object):
                 f.write(' %10.6f %10.6f\n'
                         % (intrados[i, 0], intrados[i, 1]))
 
-    def _write_csv(self, filepath):
+    def _write_csv(self, filepath, points=None):
         u"""Ecrit au format CSV (separateur ;)."""
-        pts = self.points
+        pts = self.points if points is None else np.asarray(points)
         with open(filepath, 'w') as f:
             f.write('x;y\n')
             for i in range(len(pts)):
                 f.write('%.6f;%.6f\n'
                         % (pts[i, 0], pts[i, 1]))
 
-    def _write_gnu(self, filepath):
+    def _write_gnu(self, filepath, points=None):
         u"""Ecrit au format GNU (.gnu), compatible Axile.
 
         Format identique a ``numpy.savetxt`` par defaut : un point par
@@ -1190,8 +1227,9 @@ class ProfilSpline(object):
         fins de ligne LF meme sous Windows (ou le mode texte
         traduirait sinon ``\\n`` en ``\\r\\n``).
         """
+        pts = self.points if points is None else np.asarray(points)
         with open(filepath, 'w', newline='\n') as f:
-            np.savetxt(f, self.points)
+            np.savetxt(f, pts)
 
     def _write_bspl(self, filepath):
         u"""Ecrit au format BezierSpline (.bspl).

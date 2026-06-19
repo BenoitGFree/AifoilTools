@@ -1,5 +1,26 @@
 # Changelog
 
+## [Non publié] - 2026-06-19 18:21
+
+### Added (Ajouté)
+- **Enregistrement par partie du profil** : la sauvegarde permet
+  désormais de choisir entre profil complet, extrados seul ou
+  intrados seul.
+  - `ProfilSpline.write()` accepte un paramètre `part`
+    ('full' / 'extrados' / 'intrados') et un helper
+    `_points_for_part()` (`model/profil_spline.py`)
+  - Côté isolé exporté du BA vers le BF (x croissant) ; formats
+    « liste de points » Selig, CSV et GNU pris en charge
+  - Le dialogue de sauvegarde demande la partie à enregistrer
+    (`QInputDialog`) puis adapte les formats proposés
+    (`gui/tab_profils.py`)
+
+### Changed (Modifié)
+- `_write_selig()`, `_write_csv()`, `_write_gnu()` acceptent un
+  argument `points` optionnel (côté isolé ou profil complet)
+- Les formats Lednicer et Spline (`.bspl`), bi-faces/géométriques,
+  refusent explicitement un côté isolé (erreur claire)
+
 ## [Non publié] - 2026-06-19 16:53
 
 ### Added (Ajouté)
