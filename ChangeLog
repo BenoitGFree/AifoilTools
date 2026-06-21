@@ -1,5 +1,18 @@
 # Changelog
 
+## [Non publié] - 2026-06-21 12:11
+
+### Changed (Modifié)
+- **Onglet Profils : réorganisation de la barre de contrôle** en trois
+  cadres distincts (`gui/tab_profils.py`) pour mieux séparer les
+  fonctions :
+  - cadre « Profil courant » (afficher, courbure, points)
+  - cadre « Profil référence » (afficher, courbure)
+  - cadre « Comparaison & calque » : déviation (liée aux deux profils)
+    et image de calque (liée à aucun)
+  - cadres `QFrame` arrondis scopés par `objectName` pour ne pas border
+    les étiquettes
+
 ## [Non publié] - 2026-06-19 18:21
 
 ### Added (Ajouté)

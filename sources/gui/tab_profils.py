@@ -5,7 +5,8 @@
 import os
 
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QCheckBox, QLabel, QMessageBox
+    QWidget, QVBoxLayout, QHBoxLayout, QCheckBox, QLabel, QMessageBox,
+    QFrame
 )
 from PySide6.QtCore import Qt, Signal
 
@@ -28,12 +29,27 @@ class TabProfils(QWidget):
         self._build_ui()
         self._load_default_profiles()
 
+    # Cadre arrondi pour regrouper les controles (scope par objectName
+    # pour ne pas border les QLabel, qui derivent de QFrame).
+    _FRAME_STYLE = (
+        "QFrame#ctrlGroup { border: 1px solid #b0b0b0;"
+        " border-radius: 6px; }")
+
     def _build_ui(self):
         """Construit l'interface de l'onglet."""
         layout = QVBoxLayout(self)
 
-        # --- Barre de controle superieure ---
+        # --- Barre de controle : 3 cadres de regroupement ---
+        # (1) profil courant  (2) profil reference
+        # (3) global : deviation (deux profils) / image (aucun)
         ctrl_layout = QHBoxLayout()
+
+        # === Groupe 1 : Profil courant ===
+        grp_current = QFrame()
+        grp_current.setObjectName("ctrlGroup")
+        grp_current.setStyleSheet(self._FRAME_STYLE)
+        h_cur = QHBoxLayout(grp_current)
+        h_cur.setContentsMargins(8, 2, 8, 2)
 
         # Checkbox profil courant
         self._chk_current = QCheckBox("Profil courant")
@@ -41,14 +57,14 @@ class TabProfils(QWidget):
         self._chk_current.setToolTip(
             u"Affiche / masque le profil courant (bleu) sur le graphique.")
         self._chk_current.stateChanged.connect(self._on_toggle_current)
-        ctrl_layout.addWidget(self._chk_current)
+        h_cur.addWidget(self._chk_current)
 
         self._lbl_current = QLabel("NACA 2412")
         self._lbl_current.setStyleSheet("color: #1f77b4; font-weight: bold;")
         self._lbl_current.setToolTip(
             u"Nom du profil courant.\n"
             u"Modifiable via Fichier \u203a Charger profil courant.")
-        ctrl_layout.addWidget(self._lbl_current)
+        h_cur.addWidget(self._lbl_current)
 
         self._chk_porc_current = QCheckBox("Courbure")
         self._chk_porc_current.setChecked(False)
@@ -56,8 +72,9 @@ class TabProfils(QWidget):
             u"Affiche les porcupines de courbure (segments perpendiculaires"
             u" de longueur proportionnelle a la courbure locale).\n"
             u"Necessite que le profil courant soit en mode Spline.")
-        self._chk_porc_current.stateChanged.connect(self._on_toggle_porc_current)
-        ctrl_layout.addWidget(self._chk_porc_current)
+        self._chk_porc_current.stateChanged.connect(
+            self._on_toggle_porc_current)
+        h_cur.addWidget(self._chk_porc_current)
 
         self._chk_sample_pts = QCheckBox("Pts")
         self._chk_sample_pts.setChecked(False)
@@ -67,9 +84,16 @@ class TabProfils(QWidget):
             u"Utile pour controler la densite et la repartition.")
         self._chk_sample_pts.stateChanged.connect(
             self._on_toggle_sample_pts)
-        ctrl_layout.addWidget(self._chk_sample_pts)
+        h_cur.addWidget(self._chk_sample_pts)
 
-        ctrl_layout.addSpacing(40)
+        ctrl_layout.addWidget(grp_current)
+
+        # === Groupe 2 : Profil reference ===
+        grp_ref = QFrame()
+        grp_ref.setObjectName("ctrlGroup")
+        grp_ref.setStyleSheet(self._FRAME_STYLE)
+        h_ref = QHBoxLayout(grp_ref)
+        h_ref.setContentsMargins(8, 2, 8, 2)
 
         # Checkbox profil reference
         self._chk_reference = QCheckBox(u"Profil r\u00e9f\u00e9rence")
@@ -78,14 +102,14 @@ class TabProfils(QWidget):
             u"Affiche / masque le profil de reference (rouge) sur le"
             u" graphique.")
         self._chk_reference.stateChanged.connect(self._on_toggle_reference)
-        ctrl_layout.addWidget(self._chk_reference)
+        h_ref.addWidget(self._chk_reference)
 
         self._lbl_reference = QLabel("NACA 0012")
         self._lbl_reference.setStyleSheet("color: #d62728; font-weight: bold;")
         self._lbl_reference.setToolTip(
             u"Nom du profil de reference.\n"
             u"Modifiable via Fichier \u203a Charger profil reference.")
-        ctrl_layout.addWidget(self._lbl_reference)
+        h_ref.addWidget(self._lbl_reference)
 
         self._chk_porc_reference = QCheckBox("Courbure")
         self._chk_porc_reference.setChecked(False)
@@ -94,9 +118,17 @@ class TabProfils(QWidget):
             u"Necessite que le profil de reference soit en mode Spline.")
         self._chk_porc_reference.stateChanged.connect(
             self._on_toggle_porc_reference)
-        ctrl_layout.addWidget(self._chk_porc_reference)
+        h_ref.addWidget(self._chk_porc_reference)
 
-        ctrl_layout.addSpacing(20)
+        ctrl_layout.addWidget(grp_ref)
+
+        # === Groupe 3 : Comparaison & calque ===
+        # Deviation : lie aux DEUX profils. Image : liee a AUCUN.
+        grp_global = QFrame()
+        grp_global.setObjectName("ctrlGroup")
+        grp_global.setStyleSheet(self._FRAME_STYLE)
+        h_glob = QHBoxLayout(grp_global)
+        h_glob.setContentsMargins(8, 2, 8, 2)
 
         self._chk_deviation = QCheckBox(u"D\u00e9viation")
         self._chk_deviation.setChecked(False)
@@ -107,9 +139,7 @@ class TabProfils(QWidget):
             u" (clic droit sur le canvas).")
         self._chk_deviation.stateChanged.connect(
             self._on_toggle_deviation)
-        ctrl_layout.addWidget(self._chk_deviation)
-
-        ctrl_layout.addSpacing(20)
+        h_glob.addWidget(self._chk_deviation)
 
         self._chk_image = QCheckBox("Image")
         self._chk_image.setChecked(False)
@@ -124,8 +154,9 @@ class TabProfils(QWidget):
             u"  - i + clic droit glisser : tourner autour de (0,0)\n"
             u"  - Maj enfoncée : ajustements fins (ratio 10)")
         self._chk_image.stateChanged.connect(self._on_toggle_image)
-        ctrl_layout.addWidget(self._chk_image)
+        h_glob.addWidget(self._chk_image)
 
+        ctrl_layout.addWidget(grp_global)
         ctrl_layout.addStretch()
         layout.addLayout(ctrl_layout)
 
