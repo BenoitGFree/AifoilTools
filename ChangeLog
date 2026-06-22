@@ -1,5 +1,21 @@
 # Changelog
 
+## [Non publié] - 2026-06-22 19:50
+
+### Documentation
+- **Cohérence du versionning et de l'installation** dans la doc :
+  - `installer/README.md` : section « Mise à jour de version » réécrite
+    (`__version__` = source unique, GUI + manuel automatiques, seul
+    l'installateur reste manuel) ; noms `Setup-2.0.exe` rendus
+    génériques (`-<version>.exe`)
+  - `CLAUDE.md` : nouvelle section « Versioning »
+  - `AirfoilTools.iss` : commentaire de sortie rendu générique
+
+### Changed (Modifié)
+- `installer/build_installer.bat` : suppression de la recompilation du
+  manuel (désormais gérée par `AirfoilTools.spec` avec injection de
+  `version.tex`), passage à 2 étapes, sortie générique
+
 ## [Non publié] - 2026-06-22 19:35
 
 ### Added (Ajouté)

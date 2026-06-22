@@ -69,6 +69,21 @@ env_py3\Scripts\python.exe -c "import unittest; import sys; sys.path.insert(0, '
 env_py3\Scripts\python.exe tests/test_foil2d.py
 ```
 
+## Versioning
+
+- **Source unique** : `__version__` dans `sources/gui/__init__.py`.
+- **GUI** (boîte « À propos ») : lit directement `__version__`.
+- **Manuel** : injecté au build — `AirfoilTools.spec` lance
+  `docs/manuel/gen_version.py` qui génère `docs/manuel/version.tex`
+  (artefact gitignoré), puis recompile le PDF. `manuel.tex` le lit via
+  `\InputIfFileExists{version.tex}` (fallback `dev`). Pour une
+  compilation LaTeX manuelle, lancer d'abord `gen_version.py`.
+- **Installateur** : à reporter manuellement dans
+  `installer/AirfoilTools.iss` (`#define MyAppVersion`), chaîne d'outils
+  Inno Setup sans accès à Python.
+- `setup.py` (`version=...`) est indépendant : c'est la version du
+  package pip `airfoiltools`, pas du logiciel.
+
 ## Key Classes
 
 ### Bezier (`sources/model/bezier.py`)

@@ -1,7 +1,9 @@
 # Génération de l'installateur Windows
 
 Ce dossier contient la configuration pour produire un installateur
-Windows (`AirfoilTools-Setup-2.0.exe`) à partir du build PyInstaller.
+Windows (`AirfoilTools-Setup-<version>.exe`) à partir du build
+PyInstaller. La `<version>` provient de `__version__`
+(`sources/gui/__init__.py`), reportée dans `AirfoilTools.iss`.
 
 ## Prérequis
 
@@ -41,7 +43,7 @@ Deux méthodes :
 
 ### Étape 3 : Tester l'installateur
 
-Le fichier `installer/Output/AirfoilTools-Setup-2.0.exe` (~70 Mo)
+Le fichier `installer/Output/AirfoilTools-Setup-<version>.exe` (~70 Mo)
 peut être :
 
 - Lancé directement pour installer
@@ -65,14 +67,27 @@ peut être :
 
 ## Mise à jour de version
 
-Modifier dans `AirfoilTools.iss` :
+La **source unique** de la version est `__version__` dans
+`sources/gui/__init__.py` :
 
-```ini
-#define MyAppVersion "2.1"
+```python
+__version__ = "3.0"
 ```
 
-et dans `sources/gui/main_window.py` (boîte "À propos") + le manuel
-LaTeX (`\manuelversion`).
+Elle alimente automatiquement :
+
+- la **boîte « À propos »** de la GUI (lecture directe de `__version__`) ;
+- le **manuel** : le build PyInstaller (`AirfoilTools.spec`) régénère
+  `docs/manuel/version.tex` via `docs/manuel/gen_version.py`, puis
+  recompile le PDF.
+
+Seul l'**installateur** doit être mis à jour manuellement (chaîne
+d'outils Inno Setup, sans accès à Python) — reporter la même valeur
+dans `AirfoilTools.iss` :
+
+```ini
+#define MyAppVersion "3.0"
+```
 
 **Important** : ne pas changer `AppId` entre deux versions —
 Inno Setup l'utilise pour détecter et remplacer les installations

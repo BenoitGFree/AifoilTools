@@ -6,7 +6,7 @@
 ;  Compilation :
 ;    "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\AirfoilTools.iss
 ;  Resultat :
-;    installer\Output\AirfoilTools-Setup-2.0.exe
+;    installer\Output\AirfoilTools-Setup-<version>.exe
 ; ====================================================================
 
 #define MyAppName        "AirfoilTools"
