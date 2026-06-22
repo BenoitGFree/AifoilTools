@@ -8,7 +8,7 @@ zones (\figref{01_main_window.png}) :
 
 \begin{enumerate}
     \item la \textbf{barre de menus} (\menu{Fichier}, \menu{Édition},
-        \menu{Affichage}, \menu{Aide}) ;
+        \menu{Affichage}, \menu{Options}, \menu{Aide}) ;
     \item le \textbf{sélecteur d'onglets} (\menu{Profils},
         \menu{Paramétrage XFoil}, \menu{Résultats}) ;
     \item la \textbf{zone de travail} qui change selon l'onglet
@@ -56,10 +56,25 @@ l'entrée de menu.
     Depuis la base UIUC / Profil référence\dots
         & ---
         & Idem pour le profil de référence.\\
+    Profil NACA / Profil courant\dots
+        & ---
+        & Génère un profil NACA (4 ou 5 chiffres) comme profil courant.
+          Demande les indices puis le nombre de points. Voir
+          section~\ref{sec:naca}, page~\pageref{sec:naca}.\\
+    Profil NACA / Profil référence\dots
+        & ---
+        & Idem pour le profil de référence.\\
     Sauvegarder profil\dots
         & \touche{Ctrl}+\touche{S}
-        & Sauvegarde le profil courant. Le format est sélectionné
-          dans le filtre du dialogue.\\
+        & Sauvegarde le profil courant. Un premier dialogue propose
+          d'enregistrer le \emph{profil complet}, l'\emph{extrados}
+          seul ou l'\emph{intrados} seul ; le format est ensuite
+          sélectionné dans le filtre du dialogue de fichier.\\
+    Sauvegarder profil avec volet\dots
+        & ---
+        & Sauvegarde le profil avec volet braqué (vert), de la même
+          manière que le profil courant. Nécessite que le volet soit
+          actif. Voir section~\ref{sec:flap}, page~\pageref{sec:flap}.\\
     Ouvrir projet\dots
         & \touche{Ctrl}+\touche{Maj}+\touche{P}
         & Ouvre un projet AirfoilTools (\chemin{.aftproj}) :
@@ -121,6 +136,32 @@ l'entrée de menu.
           (lignes $\times$ colonnes).\\
     \bottomrule
 \end{tabularx}
+
+\section{Menu \menu{Options}}
+
+\begin{tabularx}{\linewidth}{l l X}
+    \toprule
+    \textbf{Entrée} & \textbf{Raccourci} & \textbf{Action} \\
+    \midrule
+    Déviation / Verticale (épaisseur)
+        & ---
+        & Calcule la déviation entre profils comme un écart
+          d'épaisseur mesuré \textbf{verticalement} (selon l'axe $z$),
+          à abscisse constante. Mode par défaut.\\
+    Déviation / Normale (perpendiculaire)
+        & ---
+        & Calcule la déviation \textbf{perpendiculairement} à la
+          surface du profil courant (distance le long de la normale).
+          Voir section~\ref{sec:deviation},
+          page~\pageref{sec:deviation}.\\
+    \bottomrule
+\end{tabularx}
+
+\begin{noteinfo}
+Les deux modes de déviation sont \textbf{exclusifs} : choisir l'un
+décoche automatiquement l'autre. Le changement est répercuté
+immédiatement sur le tracé de l'onglet \menu{Profils}.
+\end{noteinfo}
 
 \section{Menu \menu{Aide}}
 

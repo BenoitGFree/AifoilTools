@@ -2,13 +2,20 @@
 \label{chap:xfoil}
 
 L'onglet \menu{Paramétrage XFoil} regroupe l'ensemble des paramètres
-de simulation transmis au solveur. Il est structuré en trois zones
-principales (Reynolds, Alpha, Paramètres XFoil) et une rangée de
-boutons de lancement.
+de simulation transmis au solveur. Il est structuré en zones de
+saisie (Reynolds, Alpha, Paramètres XFoil), une rangée de boutons
+de lancement et un cadre \menu{Diagnostic}.
 
 \screenshot{09_tab_xfoil.png}{1.0}{%
-    Onglet \menu{Paramétrage XFoil} avec ses trois zones de saisie
-    et la rangée des boutons de lancement.}
+    Onglet \menu{Paramétrage XFoil} : zones de saisie, boutons de
+    lancement (dont \og Flap seul \fg{}) et cadre \og Diagnostic \fg{}.}
+
+\begin{noteinfo}
+Valeurs par défaut au démarrage : Reynolds de 1\,000\,000 à
+2\,000\,000 (pas 1\,000\,000), incidence de $-5^\circ$ à $+15^\circ$
+(pas $0{,}5^\circ$), transition forcée XTR~$=0{,}2$, 100~itérations,
+balayage \menu{ASEQ}.
+\end{noteinfo}
 
 \section{Plage de Reynolds}
 
@@ -70,6 +77,25 @@ améliore souvent la convergence en initialisant chaque branche
 à partir de la solution à $\alpha=0$.
 \end{astuce}
 
+\subsection*{Option \menu{Réinit. si échec}}
+
+Lorsqu'un point d'incidence ne converge pas (message
+\texttt{VISCAL: Convergence failed}), le balayage en marche peut
+\textbf{abandonner toute la suite} de la branche (effet de cascade).
+La case \menu{Réinit. si échec} ajoute une \textbf{seconde passe}
+qui rejoue chaque incidence depuis un état propre (commande
+\texttt{INIT} avant chaque \texttt{ALFA}), afin de récupérer les
+points manqués sans dégrader le balayage en marche (le
+postprocesseur conserve la solution obtenue en marche lorsqu'elle
+existe).
+
+\begin{attention}
+L'option \menu{Réinit. si échec} implique le mode \texttt{ALFA}
+individuel (incompatible avec \menu{ASEQ}) et \textbf{double
+environ} le temps de calcul. Pensez à augmenter le \menu{Timeout}
+en conséquence. Elle est \textbf{décochée par défaut}.
+\end{attention}
+
 \section{Paramètres XFoil avancés}
 
 La zone \menu{Paramètres XFoil} regroupe les options du solveur
@@ -117,6 +143,15 @@ respectivement sur l'extrados (\emph{top}) et l'intrados
         impact d'insectes\dots).
 \end{itemize}
 
+\begin{important}
+La valeur minimale est \textbf{0{,}05}. Forcer la transition trop
+près du bord d'attaque (par exemple 0{,}01) \textbf{déstabilise la
+couche limite de XFoil} : la routine de transition diverge
+(\texttt{NaN}) et entre dans une boucle quasi infinie, jusqu'à
+expiration du \menu{Timeout}. La valeur par défaut est
+\textbf{0{,}2}.
+\end{important}
+
 \subsection{Repanel et NPanel}
 
 \begin{itemize}
@@ -138,24 +173,35 @@ une boucle de non-convergence.
 
 \begin{attention}
 Augmenter le timeout (par exemple à 120~s) si vous balayez une
-plage très large d'incidences ($\Delta \alpha > 30^\circ$) ou si
-vos profils convergent lentement (profils minces, transitions
-brutales\dots).
+plage très large d'incidences ($\Delta \alpha > 30^\circ$), si vous
+calculez plusieurs Reynolds, si l'option \menu{Réinit. si échec}
+est active (temps doublé), ou si vos profils convergent lentement.
 \end{attention}
+
+\subsection{Itérations}
+
+Nombre maximum d'itérations de Newton par point (commande
+\texttt{ITER} de XFoil), par défaut 100. \textbf{Augmenter} cette
+valeur (200--300) lorsqu'un point précis ne converge pas
+(\texttt{VISCAL: Convergence failed}), situation typique près du
+décrochage ou avec un coude de volet.
 
 \section{Boutons de lancement}
 
-Trois boutons en bas de la fenêtre permettent de lancer la
-simulation :
+Quatre boutons en bas de la zone de paramètres permettent de lancer
+la simulation :
 
 \begin{itemize}
-    \item \bouton{Lancer les 2} : simule simultanément le profil
-        courant et le profil de référence avec les paramètres
-        ci-dessus.
+    \item \bouton{Lancer tout} : simule tous les profils actifs ---
+        courant, référence et, si le volet est activé, le profil
+        avec volet.
     \item \bouton{Courant seul} : ne simule que le profil courant
         (bleu).
     \item \bouton{Référence seul} : ne simule que le profil de
         référence (rouge).
+    \item \bouton{Flap seul} : ne simule que le profil avec volet
+        (vert). Nécessite que le volet soit activé dans l'onglet
+        \menu{Profils}.
 \end{itemize}
 
 Pendant la simulation, les contrôles de l'onglet sont désactivés,
@@ -163,9 +209,43 @@ et la barre de statut affiche la progression. À la fin, l'onglet
 \menu{Résultats} se sélectionne automatiquement.
 
 \begin{important}
-Si vous relancez une simulation pour \textbf{un seul} des deux
-profils, les résultats antérieurs de l'autre profil sont
-\emph{conservés} (merge). Cela permet par exemple d'itérer
-rapidement sur le profil courant tout en gardant la référence
-fixe pour comparaison.
+Si vous relancez une simulation pour \textbf{un seul} des profils,
+les résultats antérieurs des autres profils sont \emph{conservés}
+(merge). Cela permet par exemple d'itérer rapidement sur le profil
+courant tout en gardant la référence fixe pour comparaison.
 \end{important}
+
+\section{Diagnostic}
+\label{sec:diagnostic}
+
+Le cadre \menu{Diagnostic}, en bas de l'onglet, donne accès aux
+fichiers internes de la dernière simulation de chaque profil
+(\bouton{Courant}, \bouton{Référence}, \bouton{Volet}). Les
+boutons restent inactifs tant qu'aucune simulation n'a été lancée
+pour le profil correspondant.
+
+\screenshot{17_dialog_diagnostic.png}{0.85}{%
+    Fenêtre de diagnostic : accès au répertoire de travail et aux
+    fichiers de la simulation. Le journal \chemin{diagnostic.log}
+    récapitule le déroulé du calcul.}
+
+La fenêtre de diagnostic permet de :
+
+\begin{itemize}
+    \item parcourir les \textbf{fichiers} de la simulation : journal
+        \chemin{diagnostic.log} (résumé du déroulé : étapes,
+        avertissements, bilan de convergence), log console XFoil
+        (\chemin{xfoil\_alpha.cmd.log}), script de commandes,
+        polaires, distributions de pression ;
+    \item \textbf{ouvrir le dossier} de travail dans l'explorateur
+        de fichiers du système.
+\end{itemize}
+
+\begin{astuce}
+En cas d'échec ou de résultats incomplets, ouvrez d'abord
+\chemin{diagnostic.log} : il indique clairement si le problème
+vient d'une non-convergence (\og AUCUN point convergé\dots\fg{}),
+d'un \emph{timeout}, ou d'une polaire vide. Le log console XFoil
+fournit ensuite le détail incidence par incidence. Le journal est
+sauvegardé \textbf{même en cas de timeout}.
+\end{astuce}

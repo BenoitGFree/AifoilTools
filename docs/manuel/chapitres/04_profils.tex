@@ -3,41 +3,73 @@
 
 L'onglet \menu{Profils} est le cœur de l'application : il permet
 le chargement, la visualisation, l'édition et la comparaison des
-profils. Au démarrage, deux profils NACA sont chargés :
-\textbf{NACA~2412} comme profil courant (bleu) et \textbf{NACA~0012}
-comme profil de référence (rouge).
+profils. Au démarrage, le profil courant (bleu) est un
+\textbf{NACA~2412} automatiquement \textbf{converti en Bézier}, et
+le profil de référence (rouge) est un \textbf{NACA~2412} en mode
+points discrets. Par défaut, la \textbf{courbure} du courant, la
+\textbf{déviation} entre les deux profils et le \textbf{volet}
+(braqué à $-10^\circ$) sont également affichés.
 
 \screenshot{02_tab_profils_default.png}{1.0}{%
-    Onglet \menu{Profils} dans son état par défaut.}
+    Onglet \menu{Profils} dans son état par défaut : profil courant
+    (bleu, Bézier) avec ses points de contrôle, courbure au bord
+    d'attaque, profil avec volet (vert) et déviation par rapport à
+    la référence.}
 
 \section{Barre de contrôle}
 
 La barre située sous le sélecteur d'onglets regroupe les options
-d'affichage. De gauche à droite :
+d'affichage, organisées en \textbf{quatre cadres} selon qu'elles
+concernent un seul profil, les deux, ou aucun.
+
+\subsubsection*{Cadre \og Profil courant \fg{}}
 
 \begin{itemize}
     \item \textbf{Profil courant} (case à cocher) : affiche ou
         masque le profil courant. L'étiquette colorée indique
         son nom (par défaut \og NACA~2412 \fg{}).
-    \item \textbf{Courbure} (à droite du nom) : affiche les
-        \emph{porcupines} de courbure du profil courant
-        (segments perpendiculaires à la courbe, longueur
-        proportionnelle à la courbure locale).
+    \item \textbf{Courbure} : affiche les \emph{porcupines} de
+        courbure du profil courant (segments perpendiculaires à la
+        courbe, longueur proportionnelle à la courbure locale).
     \item \textbf{Pts} : affiche les points effectivement
-        échantillonnés sur les splines (marqueurs $\times$).
+        échantillonnés sur les splines (marqueurs).
+\end{itemize}
+
+\subsubsection*{Cadre \og Profil référence \fg{}}
+
+\begin{itemize}
     \item \textbf{Profil référence} et \textbf{Courbure} :
         idem pour le profil de référence.
+\end{itemize}
+
+\subsubsection*{Cadre global (deux profils / aucun)}
+
+\begin{itemize}
     \item \textbf{Déviation} : trace les écarts géométriques
-        entre profil courant et référence (segments noirs
-        verticaux + enveloppe).
-        L'écart est donné à iso abscisse selon l'axe vertical.
-        Une évolution permettra de tracer la déviation réélle.
+        entre profil courant et référence. Le \textbf{mode} de calcul
+        (verticale ou normale) se choisit dans le menu
+        \menu{Options $\rightarrow$ Déviation}. Voir
+        section~\ref{sec:deviation}, page~\pageref{sec:deviation}.
     \item \textbf{Image} : affiche ou masque l'\textbf{image de
         calque} (arrière-plan) lorsqu'une image a été chargée.
         La case reste inactive (grisée) tant qu'aucune image n'est
         chargée. Voir la section~\ref{sec:calque},
         page~\pageref{sec:calque}.
 \end{itemize}
+
+\subsubsection*{Cadre \og Flap \fg{} (volet)}
+
+\begin{itemize}
+    \item \textbf{Flap} (case à cocher) : active la génération et
+        l'affichage d'un profil avec volet braqué (vert).
+    \item \textbf{Xf} : position de l'axe d'articulation, en pourcent
+        de corde depuis le bord d'attaque.
+    \item \textbf{Braquage} : angle de braquage du volet, en degrés
+        (positif = bord de fuite vers le haut).
+\end{itemize}
+
+Le module de volet est détaillé en section~\ref{sec:flap},
+page~\pageref{sec:flap}.
 
 \begin{important}
 Les options \textbf{Courbure} ne fonctionnent que sur des
@@ -117,22 +149,72 @@ de l'échantillonnage avant export ou simulation.
     de manière uniforme le long de l'arc.}
 
 \subsection{Visualisation de la déviation}
+\label{sec:deviation}
 
-L'option \textbf{Déviation} mesure l'écart géométrique entre
-profil courant et profil de référence par interpolation sur
-une grille commune en $x$.
+L'option \textbf{Déviation} mesure l'écart géométrique entre le
+profil courant et le profil de référence, sous forme d'un faisceau
+de segments (\emph{quills}) accompagné d'une enveloppe. Le maximum
+de déviation est mis en évidence.
 
-\screenshot{06_tab_profils_deviation.png}{1.0}{%
-    Affichage de la déviation entre NACA~2412 (bleu) et
-    NACA~0012 (rouge) : les segments noirs verticaux
-    matérialisent l'écart en chaque point.}
+\subsubsection*{Modes de calcul}
+
+Le mode se choisit dans le menu \menu{Options $\rightarrow$
+Déviation} :
+
+\begin{itemize}
+    \item \textbf{Verticale (épaisseur)} : l'écart est mesuré
+        \textbf{verticalement} (selon l'axe $z$), à abscisse $x$
+        constante, par interpolation des deux profils sur une grille
+        commune. C'est le mode par défaut, adapté à la comparaison
+        d'épaisseur.
+    \item \textbf{Normale (perpendiculaire)} : l'écart est mesuré
+        \textbf{perpendiculairement à la surface} du profil courant
+        (distance le long de la normale). Ce mode reflète mieux
+        l'écart géométrique réel entre deux courbes, en particulier
+        près du bord d'attaque où les surfaces sont fortement
+        inclinées.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\includegraphics[width=0.49\textwidth]{images/06_tab_profils_deviation.png}}
+    \hfill
+    \fbox{\includegraphics[width=0.49\textwidth]{images/14_deviation_normale.png}}
+    \caption{Déviation entre NACA~2412 (courant, bleu) et NACA~0012
+        (référence, rouge). À gauche le mode \emph{verticale}
+        (quills verticaux), à droite le mode \emph{normale}
+        (quills perpendiculaires à la surface). Dans les deux cas,
+        le quill de déviation maximale est tracé en \textcolor{red}{rouge}
+        avec sa valeur en millimètres.}
+    \label{fig:06_tab_profils_deviation.png}
+\end{figure}
+
+\subsubsection*{Déviation maximale}
+
+Le \textbf{maximum} de déviation est signalé par un quill
+\textcolor{red}{\textbf{rouge}} portant sa \textbf{valeur en
+millimètres} à son extrémité. Le calcul est effectué :
+
+\begin{itemize}
+    \item \textbf{par segment} de Bézier si le profil courant est en
+        mode spline (un maximum par segment d'extrados et
+        d'intrados) ;
+    \item \textbf{par côté} (extrados, intrados) si le profil courant
+        est en mode points discrets.
+\end{itemize}
+
+La valeur affichée est la déviation \textbf{réelle} (non
+exagérée), exprimée dans l'unité du profil (millimètres pour une
+corde de 1\,000~mm).
 
 \begin{astuce}
 Lorsque les profils ont une déviation très petite à l'œil
 (par exemple lors d'une optimisation par petits déplacements
 des points de contrôle), il est utile d'\textbf{amplifier}
 l'affichage de la déviation. L'échelle est réglable via le
-menu contextuel : \menu{Échelle déviation\dots}.
+menu contextuel : \menu{Échelle déviation\dots}. Cette échelle
+n'affecte que la longueur visuelle des quills, pas la valeur en
+millimètres affichée au maximum.
 \end{astuce}
 
 \section{Charger un profil depuis la base UIUC}
@@ -206,6 +288,56 @@ d'indisponibilité du serveur UIUC, le dialogue affiche un
 message d'erreur ; les profils déjà mis en cache restent
 toutefois utilisables.
 \end{attention}
+
+\section{Générer un profil NACA}
+\label{sec:naca}
+
+AirfoilTools sait générer à la volée les profils de la famille
+\textbf{NACA} à partir de leur désignation, sans passer par un
+fichier. La génération est accessible via \menu{Fichier
+$\rightarrow$ Profil NACA $\rightarrow$ Profil courant\dots} (ou
+\menu{\dots Profil référence\dots}).
+
+\screenshot{16_dialog_naca.png}{0.55}{%
+    Saisie des indices NACA. Un second dialogue demande ensuite le
+    nombre de points du profil.}
+
+\subsection{Utilisation}
+
+\begin{enumerate}
+    \item Saisir les \textbf{indices} dans le premier dialogue :
+        \begin{itemize}
+            \item \textbf{4 chiffres} (ex. \texttt{2412}) : cambrure
+                maximale (\%), position de cambrure max (dixièmes de
+                corde), épaisseur relative (\%) ;
+            \item \textbf{5 chiffres} (ex. \texttt{23012}) : profil
+                cambré à ligne moyenne plus complexe.
+        \end{itemize}
+    \item Saisir le \textbf{nombre de points} dans le second
+        dialogue (par défaut 150).
+    \item Le profil est généré, normalisé (corde 1\,000~mm) et
+        affecté au rôle choisi (courant ou référence).
+\end{enumerate}
+
+\subsection{Régénération propre depuis le menu contextuel}
+
+Un profil généré par cette fonction est \textbf{marqué} comme
+profil NACA tant qu'il n'a pas été modifié (édition d'un point de
+contrôle) ni converti en spline. Pour un tel profil NACA en mode
+points discrets, le \textbf{menu contextuel} (clic droit) propose
+l'entrée \menu{Nombre de points\dots}.
+
+Changer le nombre de points par ce biais ne se contente pas
+d'interpoler les points existants : il \textbf{rappelle la fonction
+de génération NACA} pour produire un profil \emph{propre} à la
+nouvelle résolution, conforme à la formule analytique.
+
+\begin{noteinfo}
+Cette régénération propre n'est possible que pour un profil NACA
+\textbf{non modifié}. Dès qu'il est converti en spline ou édité,
+le marqueur est perdu : on revient alors au ré-échantillonnage
+classique de la spline.
+\end{noteinfo}
 
 \section{Conversion en spline}
 \label{sec:convertspline}
@@ -355,6 +487,89 @@ La contrainte est gérée \textbf{indépendamment} pour l'extrados et
 l'intrados. Libérer la tangente côté extrados n'affecte pas
 l'intrados, et inversement.
 \end{noteinfo}
+
+\section{Volet (flap)}
+\label{sec:flap}
+
+Le module \textbf{volet} génère un \textbf{profil braqué} à partir
+du profil courant, en faisant pivoter sa partie arrière autour d'un
+axe d'articulation. Le profil avec volet est tracé en
+\textbf{vert}, en plus du courant et de la référence ; il est
+\textbf{non modifiable} (recalculé automatiquement) et peut être
+simulé puis sauvegardé comme le profil courant.
+
+\screenshot{15_tab_profils_flap.png}{1.0}{%
+    Profil avec volet (vert) braqué à $-10^\circ$ à 70~\% de corde,
+    superposé au profil courant (bleu) et à ses points de contrôle.}
+
+\subsection{Activation et réglages}
+
+Les contrôles se trouvent dans le cadre \og Flap \fg{} de la barre
+de l'onglet \menu{Profils} :
+
+\begin{tabularx}{\linewidth}{l X}
+    \toprule
+    \textbf{Contrôle} & \textbf{Rôle} \\
+    \midrule
+    \textbf{Flap} & Active la génération du profil braqué (vert). \\
+    \textbf{Xf} & Position de l'axe d'articulation, en \textbf{pourcent
+        de corde} mesuré depuis le bord d'attaque (5 à 95~\%). \\
+    \textbf{Braquage} & Angle de braquage en degrés ($-45$ à
+        $+45$). \textbf{Positif} = bord de fuite vers le \textbf{haut} ;
+        \textbf{négatif} = bord de fuite vers le \textbf{bas}. \\
+    \bottomrule
+\end{tabularx}
+
+Le profil braqué est recalculé en temps réel à chaque changement
+de \menu{Xf} ou de \menu{Braquage}, et à chaque modification du
+profil courant.
+
+\subsection{Géométrie de l'articulation}
+
+L'axe d'articulation est le \textbf{centre du cercle inscrit}
+tangent simultanément à l'extrados et à l'intrados, dont l'abscisse
+vaut \menu{Xf}. La partie arrière de chaque surface est ensuite
+tournée de l'angle de braquage autour de cet axe.
+
+\screenshot{19_flap_schema.png}{0.95}{%
+    Construction de l'articulation : le cercle inscrit (vert),
+    tangent à l'extrados et à l'intrados à l'abscisse $X_f$, fournit
+    le centre de rotation (point rouge) du volet.}
+
+Selon le côté et le signe du braquage, le raccord entre la partie
+fixe et la partie braquée est traité différemment :
+
+\begin{itemize}
+    \item du côté où le braquage \textbf{ouvre} un jeu, un
+        \textbf{arc de cercle} comble l'espace ;
+    \item du côté où le braquage \textbf{referme} la matière, la
+        surface est \textbf{coupée à l'intersection} (recouvrement
+        retiré).
+\end{itemize}
+
+\subsection{Simulation et sauvegarde}
+
+\begin{itemize}
+    \item \textbf{Simulation} : le profil avec volet est simulé par
+        XFoil au même titre que le courant et la référence. Le bouton
+        \bouton{Flap seul} de l'onglet \menu{Paramétrage XFoil} le
+        calcule isolément ; \bouton{Lancer tout} l'inclut s'il est
+        actif. Les résultats apparaissent sous le rôle
+        \emph{Volet} (vert) dans l'onglet \menu{Résultats}.
+    \item \textbf{Sauvegarde} : \menu{Fichier $\rightarrow$
+        Sauvegarder profil avec volet\dots} enregistre le profil
+        braqué, avec le même choix complet / extrados / intrados et
+        les mêmes formats que le profil courant.
+\end{itemize}
+
+\begin{important}
+Pour la simulation, le profil avec volet est exprimé dans le
+\textbf{repère normalisé du profil courant} : XFoil ne le
+renormalise ni ne le redresse. On observe ainsi uniquement
+l'effet du braquage par rapport au profil courant (déplacement de
+la polaire, du moment, etc.), sans artefact de changement de corde
+ou d'incidence de référence.
+\end{important}
 
 \section{Image de calque (décalquer un profil)}
 \label{sec:calque}

@@ -26,13 +26,23 @@ L'application combine :
         arrière-plan (photo, scan, plan) pour reconstruire un profil
         en superposant les points de contrôle à la silhouette, le
         tout sauvegardable dans un fichier \textbf{projet}
-        (\chemin{.aftproj}).
+        (\chemin{.aftproj}) ;
+    \item un \textbf{générateur de profils NACA} (4 et 5 chiffres)
+        directement depuis l'interface ;
+    \item un \textbf{module de volet} (flap) : génération d'un profil
+        braqué autour d'un axe d'articulation, simulable et comparable
+        au profil d'origine ;
+    \item des \textbf{outils de comparaison géométrique} : déviation
+        entre deux profils (verticale ou normale) et tracé de la
+        courbure.
 \end{itemize}
 
 \screenshot{01_main_window.png}{1.0}{%
-    Vue générale de l'application au démarrage : profils
-    NACA~2412 (courant, en bleu) et NACA~0012 (référence,
-    en rouge).}
+    Vue générale de l'application au démarrage. Le profil courant
+    (NACA~2412, bleu, converti en Bézier) est superposé au profil de
+    référence (NACA~2412, rouge) ; le profil avec volet braqué
+    (vert) ainsi que la courbure et la déviation sont affichés par
+    défaut.}
 
 \section{À qui s'adresse ce manuel}
 

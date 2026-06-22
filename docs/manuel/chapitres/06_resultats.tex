@@ -12,6 +12,13 @@ etc.).
     est par défaut en disposition $2\times2$, soit
     quatre cellules vides.}
 
+\screenshot{18_tab_results.png}{1.0}{%
+    Onglet \menu{Résultats} après simulation du profil courant
+    (bleu), de la référence (rouge) et du profil avec volet (vert).
+    Les quatre cellules affichent ici $C_L(\alpha)$, la polaire
+    $C_L(C_D)$, la finesse $C_L/C_D$ en fonction de $C_L$ et le
+    moment $C_M(C_L)$.}
+
 \section{Configuration de la grille}
 
 La grille est configurable via le menu
@@ -44,6 +51,8 @@ Chaque cellule comporte une \textbf{barre de contrôle} et un
         & Affiche / masque les courbes du profil courant (bleu). \\
     Case \menu{R}
         & Affiche / masque les courbes du profil de référence (rouge). \\
+    Case \menu{F}
+        & Affiche / masque les courbes du profil avec volet (vert). \\
     Liste \menu{Reynolds}
         & Pour les analyses dépendant d'un Reynolds particulier
           ($-C_p(x)$, profil~+~CL, couche limite), choisit le
@@ -101,6 +110,12 @@ une cellule supplémentaire.
     $C_L/C_D$~$(\alpha)$ & \emph{Finesse} en fonction de
                      l'incidence. Permet de déterminer
                      l'incidence de finesse maximale.\\
+    $C_L/C_D$~$(C_L)$ & \emph{Finesse} en fonction du coefficient de
+                     portance. Pratique pour lire la finesse au
+                     $C_L$ de croisière visé.\\
+    $C_M(C_L)$     & Coefficient de moment en fonction de la
+                     portance. La pente renseigne sur la stabilité ;
+                     l'effet d'un volet y est très lisible.\\
     $C_D(C_L)$ \emph{(polaire de Lilienthal)}
                    & Polaire classique : traînée en abscisse
                      vs portance en ordonnée. La tangente

@@ -227,6 +227,10 @@ class TabProfils(QWidget):
         self._profil_reference = ProfilSpline.from_naca('2412', n_points=150)
         self._profil_reference.normalize()
 
+        # Mettre les etiquettes a jour avec le nom reel des profils
+        self._lbl_current.setText(self._profil_current.name)
+        self._lbl_reference.setText(self._profil_reference.name)
+
         self._canvas.set_current_profil(self._profil_current)
         self._canvas.set_reference_profil(self._profil_reference)
 

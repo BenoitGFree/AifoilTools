@@ -4,6 +4,8 @@
 
 Lance la GUI et capture les ecrans cles via QWidget.grab() (capture
 native Qt, ne necessite pas que la fenetre soit visible a l'ecran).
+Certaines figures explicatives sont generees directement avec
+matplotlib (Agg).
 
 Usage :
     env_py3\\Scripts\\python.exe tools\\capture_screenshots.py
@@ -30,9 +32,8 @@ if os.path.isdir(_FONTDIR) and not os.environ.get('QT_QPA_FONTDIR'):
 
 from PySide6.QtWidgets import (
     QApplication, QDialog, QDialogButtonBox, QFormLayout,
-    QSpinBox, QDoubleSpinBox, QMessageBox
+    QSpinBox, QDoubleSpinBox, QMessageBox, QInputDialog
 )
-from PySide6.QtCore import Qt, QTimer
 
 from gui.main_window import MainWindow
 from model.profil_spline import ProfilSpline
@@ -58,54 +59,91 @@ def pump(app, n=5):
         time.sleep(0.05)
 
 
+# ----------------------------------------------------------------------
+#  Reglage de l'etat de l'onglet Profils
+# ----------------------------------------------------------------------
+
+def _set_profils_state(win, current=True, reference=True, courbure=False,
+                       pts=False, deviation=False, flap=False,
+                       dev_mode='vertical'):
+    """Positionne les cases de l'onglet Profils dans un etat connu."""
+    tab = win._tab_profils
+    tab._chk_current.setChecked(current)
+    tab._chk_reference.setChecked(reference)
+    tab._chk_porc_current.setChecked(courbure)
+    tab._chk_sample_pts.setChecked(pts)
+    tab._chk_flap.setChecked(flap)
+    tab.set_deviation_mode(dev_mode)
+    tab._chk_deviation.setChecked(deviation)
+
+
 def capture_main_window(app, win):
-    """Capture la fenetre principale au demarrage."""
+    """Capture la fenetre principale au demarrage (etat par defaut riche)."""
     print("[1] Fenetre principale au demarrage")
-    pump(app, 10)
+    win._tabs.setCurrentWidget(win._tab_profils)
+    win._tab_profils.zoom_fit()
+    pump(app, 12)
     save(win, '01_main_window.png')
 
 
 def capture_tab_profils(app, win):
     """Capture l'onglet Profils en differents etats."""
+    tab = win._tab_profils
+    win._tabs.setCurrentWidget(tab)
+
     print("[2] Onglet Profils - etat par defaut")
-    win._tabs.setCurrentWidget(win._tab_profils)
+    tab.zoom_fit()
     pump(app, 10)
     save(win, '02_tab_profils_default.png')
 
-    print("[3] Onglet Profils - profils en mode Spline")
-    p = win._tab_profils.profil_current
-    if p is not None and not p.has_splines:
-        p.approximate_spline(degree=11, max_dev=0.001,
-                             smoothing=0.1, max_segments=4)
-        win._tab_profils._canvas.set_current_profil(p)
+    print("[3] Onglet Profils - mode Spline (points de controle)")
+    _set_profils_state(win, current=True, reference=False)
+    tab.zoom_fit()
     pump(app, 10)
     save(win, '03_tab_profils_spline.png')
 
-    print("[4] Onglet Profils - avec porcupines de courbure")
-    win._tab_profils._chk_porc_current.setChecked(True)
+    print("[4] Onglet Profils - courbure")
+    _set_profils_state(win, current=True, reference=False, courbure=True)
+    tab.zoom_fit()
     pump(app, 10)
     save(win, '04_tab_profils_courbure.png')
 
-    print("[5] Onglet Profils - avec points echantillonnes")
-    win._tab_profils._chk_porc_current.setChecked(False)
-    win._tab_profils._chk_sample_pts.setChecked(True)
+    print("[5] Onglet Profils - points echantillonnes")
+    _set_profils_state(win, current=True, reference=False, pts=True)
+    tab.zoom_fit()
     pump(app, 10)
     save(win, '05_tab_profils_pts.png')
 
-    print("[6] Onglet Profils - deviation")
-    # Convertir aussi la reference
-    p_ref = win._tab_profils.profil_reference
-    if p_ref is not None and not p_ref.has_splines:
-        p_ref.approximate_spline(degree=11, max_dev=0.001,
-                                 smoothing=0.1, max_segments=4)
-        win._tab_profils._canvas.set_reference_profil(p_ref)
-    win._tab_profils._chk_sample_pts.setChecked(False)
-    win._tab_profils._chk_deviation.setChecked(True)
+    # Pour la deviation, utiliser une reference contrastee (NACA 0012)
+    # afin que l'ecart soit nettement visible et illustratif.
+    tab.load_profil_from_naca('0012', 'reference', n_points=150)
+
+    print("[6] Onglet Profils - deviation (mode vertical)")
+    _set_profils_state(win, current=True, reference=True,
+                       deviation=True, dev_mode='vertical')
+    tab.zoom_fit()
     pump(app, 10)
     save(win, '06_tab_profils_deviation.png')
 
-    # Reset
-    win._tab_profils._chk_deviation.setChecked(False)
+    print("[14] Onglet Profils - deviation (mode normal)")
+    _set_profils_state(win, current=True, reference=True,
+                       deviation=True, dev_mode='normal')
+    tab.zoom_fit()
+    pump(app, 10)
+    save(win, '14_deviation_normale.png')
+
+    # Restaurer la reference NACA 2412 par defaut
+    tab.load_profil_from_naca('2412', 'reference', n_points=150)
+
+    print("[15] Onglet Profils - profil avec volet (flap)")
+    _set_profils_state(win, current=True, reference=False, flap=True)
+    tab.zoom_fit()
+    pump(app, 10)
+    save(win, '15_tab_profils_flap.png')
+
+    # Reset etat par defaut
+    _set_profils_state(win, current=True, reference=True,
+                       courbure=True, deviation=True, flap=True)
 
 
 def capture_convert_dialog(app, win):
@@ -134,7 +172,7 @@ def capture_convert_dialog(app, win):
 
     spn_max_seg = QSpinBox()
     spn_max_seg.setRange(1, 20)
-    spn_max_seg.setValue(4)
+    spn_max_seg.setValue(1)
     form.addRow("Max segments :", spn_max_seg)
 
     spn_smooth = QDoubleSpinBox()
@@ -148,6 +186,7 @@ def capture_convert_dialog(app, win):
         QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
     form.addRow(buttons)
 
+    dlg.setMinimumWidth(360)
     dlg.adjustSize()
     dlg.show()
     pump(app, 10)
@@ -182,7 +221,7 @@ def capture_tab_xfoil(app, win):
     save(win, '09_tab_xfoil.png')
 
 
-def capture_tab_results(app, win):
+def capture_tab_results_empty(app, win):
     """Capture l'onglet Resultats (vide)."""
     print("[10] Onglet Resultats - vide")
     win._tabs.setCurrentWidget(win._tab_results)
@@ -190,17 +229,110 @@ def capture_tab_results(app, win):
     save(win, '10_tab_results_empty.png')
 
 
-def _make_calque_asset(path):
-    """Genere une image de calque synthetique (silhouette de profil).
+def capture_naca_dialog(app, win):
+    """Capture le dialogue de saisie des indices NACA."""
+    print("[16] Dialogue Profil NACA")
+    dlg = QInputDialog(win)
+    dlg.setInputMode(QInputDialog.TextInput)
+    dlg.setWindowTitle(u"Profil NACA — courant")
+    dlg.setLabelText(
+        u"Indices NACA (4 ou 5 chiffres, ex. 2412 ou 23012) :")
+    dlg.setTextValue("2412")
+    dlg.resize(440, 130)
+    dlg.show()
+    pump(app, 10)
+    save(dlg, '16_dialog_naca.png')
+    dlg.close()
 
-    Simule un plan/scan de profil a decalquer : un profil NACA cambre
-    (different du profil courant 2412) dessine en silhouette grise sur
-    un fond couleur papier. L'image est rognee a la corde, de sorte
-    qu'au chargement elle se cale sur la corde (1000 mm).
-    """
+
+def capture_diagnostic_dialog(app, win):
+    """Capture le dialogue de diagnostic XFoil."""
+    print("[17] Dialogue Diagnostic XFoil")
+    from gui.diagnostic_dialog import DiagnosticDialog
+
+    wd = os.path.join(tempfile.gettempdir(), '_diag_demo')
+    os.makedirs(wd, exist_ok=True)
+    with open(os.path.join(wd, 'diagnostic.log'), 'w',
+              encoding='utf-8') as f:
+        f.write(
+            "10:42:18 INFO    model.simulation: Simulation 'NACA 2412'"
+            " avec xfoil (Re=1000000.0)\n"
+            "10:42:18 INFO    model.pipeline: === Demarrage pipeline"
+            " foil2d [xfoil] ===\n"
+            "10:42:18 INFO    model.pipeline: --- Etape 1/3 :"
+            " Preprocessing ---\n"
+            "10:42:18 INFO    model.pipeline:   2 fichiers generes\n"
+            "10:42:18 INFO    model.pipeline: --- Etape 2/3 :"
+            " Simulation ---\n"
+            "10:42:18 INFO    model.xfoil_simulator: XFoil termine"
+            " avec succes\n"
+            "10:42:18 INFO    model.pipeline: --- Etape 3/3 :"
+            " Postprocessing ---\n"
+            "10:42:18 INFO    model.xfoil_postprocessor: Resultats"
+            " parses : 2 polaires, 27 distributions Cp\n"
+            "10:42:18 INFO    model.simulation: Bilan : 27 point(s)"
+            " converge(s) sur 2 Reynolds\n"
+            "10:42:18 INFO    model.simulation: Simulation terminee :"
+            " SimulationResults(2 Re, 27 pts converges, 0 warnings)\n")
+    open(os.path.join(wd, 'xfoil_alpha.cmd'), 'w').write(
+        "LOAD profil.dat\nOPER\nVISC 1000000\nASEQ -5 15 0.5\nQUIT\n")
+    open(os.path.join(wd, 'polar_Re1000000.dat'), 'w').write(
+        "XFoil polar\n  alpha   CL ...\n")
+
+    dlg = DiagnosticDialog(wd, title=u"courant", parent=win)
+    dlg.show()
+    pump(app, 12)
+    save(dlg, '17_dialog_diagnostic.png')
+    dlg.close()
+
+
+def capture_results_populated(app, win):
+    """Lance une petite simulation et capture l'onglet Resultats peuple."""
+    print("[18] Onglet Resultats - peuple (simulation reelle)")
+    from model.simulation import Simulation
+
+    params = {
+        'RE_LIST': [1000000.0], 'RE': 1000000.0,
+        'ALPHA_MIN': -3.0, 'ALPHA_MAX': 12.0, 'ALPHA_STEP': 1.0,
+        'VISCOUS': True, 'NCRIT': 9.0, 'XTR_TOP': 0.2, 'XTR_BOT': 0.2,
+        'REPANEL': True, 'NPANEL': 200, 'TIMEOUT': 90, 'ITER': 150,
+        'USE_ASEQ': True, 'INIT_RETRY': False}
+
+    tab = win._tab_profils
+    jobs = [
+        ('current', tab.profil_current, True),
+        ('reference', tab.profil_reference, True),
+        ('flap', tab.profil_flap_normalized(), False),
+    ]
+    results = {}
+    for role, prof, norm in jobs:
+        if prof is None:
+            continue
+        try:
+            sim = Simulation(prof, params=params, normalize=norm)
+            results[role] = sim.run()
+            print(u"    %s : %d pts" % (role, results[role].n_converged))
+        except Exception as e:
+            print(u"    %s : echec (%s)" % (role, e))
+
+    if not results:
+        print("    (aucun resultat : XFoil indisponible ?) - ignore")
+        return
+
+    win._tab_results.set_results(results)
+    # Configurer les 4 cellules pour des analyses representatives
+    analyses = ['CL(alpha)', 'CL(CD)', 'Finesse(CL)', 'CM(CL)']
+    for cell, name in zip(win._tab_results._cells, analyses):
+        cell.set_analysis(name)
+    win._tabs.setCurrentWidget(win._tab_results)
+    pump(app, 15)
+    save(win, '18_tab_results.png')
+
+
+def _make_calque_asset(path):
+    """Genere une image de calque synthetique (silhouette de profil)."""
     from matplotlib.figure import Figure
     from matplotlib.backends.backend_agg import FigureCanvasAgg
-    from model.profil_spline import ProfilSpline
 
     prof = ProfilSpline.from_naca('4412', n_points=240)
     prof.normalize()
@@ -223,19 +355,9 @@ def capture_calque(app, win):
     """Capture l'onglet Profils avec une image de calque en arriere-plan."""
     print("[12] Onglet Profils - image de calque")
     tab = win._tab_profils
+    win._tabs.setCurrentWidget(tab)
+    _set_profils_state(win, current=True, reference=False)
 
-    # Profil courant en mode spline (points de controle visibles)
-    p = tab.profil_current
-    if p is not None and not p.has_splines:
-        p.approximate_spline(degree=11, max_dev=0.001,
-                             smoothing=0.1, max_segments=4)
-        tab._canvas.set_current_profil(p)
-
-    # Masquer la reference pour ne pas surcharger l'illustration
-    win._tab_profils._chk_reference.setChecked(False)
-    win._tab_profils._chk_deviation.setChecked(False)
-
-    # Generer et charger l'image de calque
     calque = os.path.join(tempfile.gettempdir(), '_calque_demo.png')
     _make_calque_asset(calque)
     tab.load_background_image(calque)
@@ -244,9 +366,9 @@ def capture_calque(app, win):
     pump(app, 12)
     save(win, '12_tab_profils_calque.png')
 
-    # Nettoyage de l'etat
     tab.clear_background_image()
-    win._tab_profils._chk_reference.setChecked(True)
+    _set_profils_state(win, current=True, reference=True,
+                       courbure=True, deviation=True, flap=True)
     try:
         os.remove(calque)
     except OSError:
@@ -254,12 +376,7 @@ def capture_calque(app, win):
 
 
 def generate_ba_tangent_figure():
-    """Genere la figure illustrant la contrainte de tangente au BA.
-
-    Deux panneaux : a gauche la contrainte active (tangente verticale,
-    P1 aligne verticalement avec le BA) ; a droite la contrainte liberee
-    (P1 deplace librement, tangente inclinee).
-    """
+    """Genere la figure illustrant la contrainte de tangente au BA."""
     print("[13] Figure - contrainte tangente verticale au BA")
     from matplotlib.figure import Figure
     from matplotlib.backends.backend_agg import FigureCanvasAgg
@@ -272,22 +389,16 @@ def generate_ba_tangent_figure():
     def draw_panel(ax, cp, title):
         b = Bezier(cp)
         pts = b.points
-        # Courbe
         ax.plot(pts[:, 0], pts[:, 1], '-', color=blue, lw=2.0)
-        # Polygone de controle
         ax.plot(cp[:, 0], cp[:, 1], '--', color=grey, lw=0.9)
-        # Points de controle interieurs (carres)
         ax.plot(cp[1:-1, 0], cp[1:-1, 1], 's', color=blue, ms=7)
-        # BA (P0)
         ax.plot(cp[0, 0], cp[0, 1], 'o', color=blue, ms=6)
         ax.annotate('BA (P0)', xy=cp[0], xytext=(20, -28),
                     textcoords='offset points', fontsize=10)
         ax.annotate('P1', xy=cp[1], xytext=(14, 6),
                     textcoords='offset points', fontsize=10)
-        # Cercle rouge sur P1 (rappel de la demande utilisateur)
         ax.add_patch(Circle(cp[1], radius=22, fill=False,
                             edgecolor='#d62728', lw=2.0))
-        # Tangente au BA : direction P1 - P0, prolongee
         d = cp[1] - cp[0]
         d = d / (np.hypot(d[0], d[1]) + 1e-12)
         t = np.array([-40.0, 130.0])
@@ -322,6 +433,65 @@ def generate_ba_tangent_figure():
     print(u"  -> 13_ba_tangente.png")
 
 
+def generate_flap_schema_figure():
+    """Schema geometrique du braquage de volet (cercle d'articulation)."""
+    print("[19] Figure - schema geometrique du volet")
+    from matplotlib.figure import Figure
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
+    from matplotlib.patches import Circle
+    from model.flap import hinge_circle
+
+    prof = ProfilSpline.from_naca('2412', n_points=300)
+    prof.normalize()
+    ext = np.asarray(prof.extrados, dtype=float)
+    intr = np.asarray(prof.intrados, dtype=float)
+    chord = prof.chord
+    xf = ext[0, 0] + 0.70 * chord
+    C, r, ef, if_ = hinge_circle(ext, intr, xf)
+
+    fig = Figure(figsize=(10, 4.2), dpi=110)
+    FigureCanvasAgg(fig)
+    ax = fig.add_subplot(111)
+    pts = prof.points
+    ax.plot(pts[:, 0], pts[:, 1], '-', color='#1f77b4', lw=1.6,
+            label=u'profil')
+    ax.add_patch(Circle(C, radius=r, fill=False, edgecolor='#2ca02c',
+                        lw=1.8))
+    ax.plot([C[0]], [C[1]], 'o', color='#d62728', ms=7)
+    ax.annotate(u"axe d'articulation\n(centre du cercle inscrit)",
+                xy=(C[0], C[1]), xytext=(120, 150),
+                textcoords='offset points', fontsize=9, ha='center',
+                arrowprops=dict(arrowstyle='->', color='#d62728'))
+    ax.plot([ef[0]], [ef[1]], 's', color='#2ca02c', ms=7)
+    ax.plot([if_[0]], [if_[1]], 's', color='#2ca02c', ms=7)
+    ax.annotate(u"tangence extrados", xy=(ef[0], ef[1]),
+                xytext=(-30, 70), textcoords='offset points', fontsize=9,
+                ha='center',
+                arrowprops=dict(arrowstyle='->', color='#2ca02c'))
+    ax.annotate(u"tangence intrados", xy=(if_[0], if_[1]),
+                xytext=(-30, -70), textcoords='offset points', fontsize=9,
+                ha='center',
+                arrowprops=dict(arrowstyle='->', color='#2ca02c'))
+    ax.axvline(xf, color='#999999', ls=':', lw=1.0)
+    ax.annotate(u"$X_f$ = 70 % de corde", xy=(xf, r + C[1]),
+                xytext=(xf, 250), fontsize=9, ha='center',
+                color='#555555',
+                arrowprops=dict(arrowstyle='->', color='#999999'))
+    ax.set_aspect('equal')
+    ax.set_xlim(-60, 1060)
+    ax.set_ylim(-230, 320)
+    ax.set_xlabel('x (mm)')
+    ax.set_ylabel('y (mm)')
+    ax.grid(True, alpha=0.3)
+    ax.set_title(
+        u"Articulation du volet : cercle inscrit tangent aux deux "
+        u"surfaces,\ncentre a l'abscisse $X_f$", fontsize=10)
+    fig.tight_layout()
+    path = os.path.join(OUT_DIR, '19_flap_schema.png')
+    fig.savefig(path, dpi=110)
+    print(u"  -> 19_flap_schema.png")
+
+
 def main():
     print("=" * 60)
     print("Capture screenshots manuel utilisateur AirfoilTools")
@@ -333,6 +503,9 @@ def main():
     win = MainWindow()
     win.resize(1280, 760)
     win.show()
+    # Echelle de courbure lisible pour les illustrations (le defaut
+    # 200 fait sortir les quills du cadre pour une corde de 1000 mm).
+    win._tab_profils._canvas._set_porcupine_scale(10.0)
     pump(app, 20)
 
     capture_main_window(app, win)
@@ -340,10 +513,14 @@ def main():
     capture_calque(app, win)
     capture_convert_dialog(app, win)
     capture_courbure_warning(app, win)
+    capture_naca_dialog(app, win)
+    capture_diagnostic_dialog(app, win)
     capture_tab_xfoil(app, win)
-    capture_tab_results(app, win)
+    capture_tab_results_empty(app, win)
+    capture_results_populated(app, win)
 
     generate_ba_tangent_figure()
+    generate_flap_schema_figure()
 
     print("=" * 60)
     print("Termine.")

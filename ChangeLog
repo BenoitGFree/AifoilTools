@@ -1,5 +1,23 @@
 # Changelog
 
+## [Non publié] - 2026-06-22 18:30
+
+### Documentation
+- **Manuel utilisateur** mis à jour (v2.1) et recompilé : nouvelle
+  section **Volet (flap)**, section **Déviation** réécrite (modes
+  vertical/normal + maximum en rouge), section **Générer un profil
+  NACA** (+ régénération propre), section **Diagnostic** XFoil, ajout
+  de **ITER**, **Réinit. si échec**, **Flap seul**, menu **Options**,
+  analyses **Finesse(CL)** et **CM(CL)**, défauts de démarrage
+- **Captures d'écran** régénérées et enrichies (`tools/capture_screenshots.py`) :
+  6 nouvelles illustrations (volet, schéma d'articulation, déviation
+  normale, dialogues NACA et diagnostic, résultats peuplés)
+
+### Fixed (Corrigé)
+- Étiquette du profil de référence erronée au démarrage (« NACA 0012 »
+  affiché alors que la référence est NACA 2412) : mise à jour des
+  étiquettes dans `TabProfils._load_default_profiles`
+
 ## [Non publié] - 2026-06-22 17:30
 
 ### Added (Ajouté)

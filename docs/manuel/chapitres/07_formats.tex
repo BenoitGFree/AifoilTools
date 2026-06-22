@@ -186,9 +186,19 @@ de leur désignation, sans passer par un fichier :
 \end{itemize}
 
 Cette génération se fait automatiquement au démarrage de
-l'application (NACA~2412 et NACA~0012 par défaut). Pour générer
-d'autres NACA en cours de session, utilisez l'API Python ou
-préchargez un fichier \chemin{.dat} obtenu ailleurs.
+l'application (NACA~2412 comme profil courant et comme référence).
+Pour générer d'autres NACA en cours de session, utilisez le menu
+\menu{Fichier $\rightarrow$ Profil NACA $\rightarrow$ Profil
+courant\dots} ou \menu{\dots Profil référence\dots} : un dialogue
+demande les indices, puis le nombre de points. Voir la procédure
+détaillée en section~\ref{sec:naca}, page~\pageref{sec:naca}.
+
+\begin{noteinfo}
+Un profil NACA non encore modifié peut être régénéré proprement à
+une autre résolution via le menu contextuel \menu{Nombre de
+points\dots} (clic droit), qui rappelle la formule analytique au
+lieu d'interpoler les points. Voir section~\ref{sec:naca}.
+\end{noteinfo}
 
 \section{Tableau récapitulatif}
 
