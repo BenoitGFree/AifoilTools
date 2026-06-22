@@ -6,7 +6,7 @@ import os
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QCheckBox, QLabel, QMessageBox,
-    QFrame
+    QFrame, QDoubleSpinBox
 )
 from PySide6.QtCore import Qt, Signal
 
@@ -157,13 +157,58 @@ class TabProfils(QWidget):
         h_glob.addWidget(self._chk_image)
 
         ctrl_layout.addWidget(grp_global)
+
+        # === Groupe 4 : Flap (volet) ===
+        grp_flap = QFrame()
+        grp_flap.setObjectName("ctrlGroup")
+        grp_flap.setStyleSheet(self._FRAME_STYLE)
+        h_flap = QHBoxLayout(grp_flap)
+        h_flap.setContentsMargins(8, 2, 8, 2)
+
+        self._chk_flap = QCheckBox("Flap")
+        self._chk_flap.setChecked(False)
+        self._chk_flap.setToolTip(
+            u"Cree et affiche un profil avec volet braque (vert, non"
+            u" modifiable), en plus du courant et de la reference.\n"
+            u"Le profil braque est construit a partir du profil courant.")
+        self._chk_flap.stateChanged.connect(self._on_toggle_flap)
+        h_flap.addWidget(self._chk_flap)
+
+        h_flap.addWidget(QLabel("Xf"))
+        self._spin_xf = QDoubleSpinBox()
+        self._spin_xf.setRange(5.0, 95.0)
+        self._spin_xf.setValue(70.0)
+        self._spin_xf.setDecimals(1)
+        self._spin_xf.setSingleStep(1.0)
+        self._spin_xf.setSuffix(" %")
+        self._spin_xf.setToolTip(
+            u"Position de l'axe d'articulation, en pourcent de corde"
+            u" depuis le bord d'attaque.")
+        self._spin_xf.valueChanged.connect(self._on_flap_params)
+        h_flap.addWidget(self._spin_xf)
+
+        h_flap.addWidget(QLabel("Braquage"))
+        self._spin_delta = QDoubleSpinBox()
+        self._spin_delta.setRange(-45.0, 45.0)
+        self._spin_delta.setValue(0.0)
+        self._spin_delta.setDecimals(1)
+        self._spin_delta.setSingleStep(1.0)
+        self._spin_delta.setSuffix(u" °")
+        self._spin_delta.setToolTip(
+            u"Angle de braquage du volet en degres.\n"
+            u"  positif = bord de fuite vers le haut\n"
+            u"  negatif = bord de fuite vers le bas")
+        self._spin_delta.valueChanged.connect(self._on_flap_params)
+        h_flap.addWidget(self._spin_delta)
+
+        ctrl_layout.addWidget(grp_flap)
+
         ctrl_layout.addStretch()
         layout.addLayout(ctrl_layout)
 
         # --- Canvas matplotlib ---
         self._canvas = ProfilCanvas(self)
-        self._canvas.profil_edited.connect(
-            lambda: self.profil_changed.emit('current'))
+        self._canvas.profil_edited.connect(self._on_current_edited)
         layout.addWidget(self._canvas, stretch=1)
 
     def _load_default_profiles(self):
@@ -242,6 +287,42 @@ class TabProfils(QWidget):
         """Affiche/masque l'image de calque."""
         self._canvas.set_background_visible(
             state == Qt.Checked.value)
+
+    # ------------------------------------------------------------------
+    # Flap (volet)
+    # ------------------------------------------------------------------
+
+    def _on_current_edited(self):
+        """Le profil courant a ete edite : propage et recalcule le flap."""
+        self.profil_changed.emit('current')
+        self._update_flap()
+
+    def _on_toggle_flap(self, state):
+        """Active/desactive l'affichage du profil braque."""
+        self._update_flap()
+
+    def _on_flap_params(self, _value):
+        """Recalcule le profil braque quand Xf ou le braquage change."""
+        if self._chk_flap.isChecked():
+            self._update_flap()
+
+    def _update_flap(self):
+        """Construit (ou retire) le profil braque selon l'etat des controles."""
+        if (not self._chk_flap.isChecked()
+                or self._profil_current is None):
+            self._canvas.set_flap_profil(None)
+            return
+        from model.flap import apply_flap
+        try:
+            flap_profil = apply_flap(
+                self._profil_current,
+                self._spin_xf.value(),
+                self._spin_delta.value())
+        except Exception:
+            # Echec geometrique : ne pas planter, masquer le profil braque
+            self._canvas.set_flap_profil(None)
+            return
+        self._canvas.set_flap_profil(flap_profil)
 
     # ------------------------------------------------------------------
     # Image de calque
@@ -366,6 +447,7 @@ class TabProfils(QWidget):
         else:
             self._set_image_checkbox(False, False)
 
+        self._update_flap()
         self.profil_changed.emit('current')
         return True, os.path.basename(filepath)
 
@@ -395,6 +477,7 @@ class TabProfils(QWidget):
             self._lbl_current.setText(profil.name)
             self._chk_current.setChecked(True)
             self._canvas.set_current_profil(self._profil_current)
+            self._update_flap()
         self.profil_changed.emit(role)
         return True, profil.name
 
@@ -441,6 +524,7 @@ class TabProfils(QWidget):
             return False, str(e)
 
         self._canvas.set_current_profil(p)
+        self._update_flap()
         self.profil_changed.emit('current')
         return True, p.name
 
@@ -545,6 +629,7 @@ class TabProfils(QWidget):
         profil.spline_intrados.n_points = value
         if role == 'current':
             self._canvas.set_current_profil(profil)
+            self._update_flap()
         else:
             self._canvas.set_reference_profil(profil)
         self.profil_changed.emit(role)

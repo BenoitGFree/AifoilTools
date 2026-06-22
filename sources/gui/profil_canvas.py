@@ -27,6 +27,7 @@ from PySide6.QtCore import Signal, Qt
 # Couleurs
 COLOR_CURRENT = '#1f77b4'      # bleu
 COLOR_REFERENCE = '#d62728'    # rouge
+COLOR_FLAP = '#2ca02c'         # vert (profil braque)
 COLOR_CTRL_POLYGON = '#888888' # gris
 COLOR_MEAN_LINE = '#2ca02c'    # vert
 COLOR_PORCUPINE = '#ff7f0e'    # orange
@@ -64,6 +65,7 @@ class ProfilCanvas(FigureCanvasQTAgg):
         # Donnees modele
         self._profil_current = None
         self._profil_reference = None
+        self._profil_flap = None
         self._show_current = True
         self._show_reference = True
         self._show_porc_current = False
@@ -81,6 +83,10 @@ class ProfilCanvas(FigureCanvasQTAgg):
             [], [], '-', color=COLOR_REFERENCE, linewidth=1.2, label=u'R\u00e9f\u00e9rence')
         self._line_ref_int, = self._ax.plot(
             [], [], '-', color=COLOR_REFERENCE, linewidth=1.2)
+
+        # --- Artist profil flap (vert, non editable) ---
+        self._line_flap, = self._ax.plot(
+            [], [], '-', color=COLOR_FLAP, linewidth=1.6, label='Flap')
 
         # --- Polygone de controle (gris pointille) ---
         self._line_ctrl_ext, = self._ax.plot(
@@ -233,6 +239,26 @@ class ProfilCanvas(FigureCanvasQTAgg):
         self._update_reference()
         self._update_axes()
         self.draw_idle()
+
+    def set_flap_profil(self, profil):
+        """Definit le profil braque (volet), affiche en vert (lecture seule).
+
+        :param profil: profil braque, ou None pour masquer
+        :type profil: model.profil_spline.ProfilSpline or None
+        """
+        self._profil_flap = profil
+        self._update_flap_lines()
+        self._update_axes()
+        self.draw_idle()
+
+    def _update_flap_lines(self):
+        """Met a jour le trace du profil braque (vert)."""
+        p = self._profil_flap
+        if p is None:
+            self._line_flap.set_data([], [])
+            return
+        pts = p.points
+        self._line_flap.set_data(pts[:, 0], pts[:, 1])
 
     def set_show_current(self, visible):
         """Affiche/masque le profil courant."""

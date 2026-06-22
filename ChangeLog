@@ -1,5 +1,25 @@
 # Changelog
 
+## [Non publié] - 2026-06-22 10:00
+
+### Added (Ajouté)
+- **Fonction Flap (braquage de volet)** dans l'onglet Profils :
+  - Nouveau module `model/flap.py` : `apply_flap(profil, xf_percent,
+    delta_deg)` construit le profil braqué. Articulation = cercle
+    tangent extrados/intrados centré à `x=Xf` (`hinge_circle()`) ;
+    partie arrière tournée autour du centre ; comblement par **arc**
+    (jeu) ou **intersection** (recouvrement) selon le côté et le signe
+    du braquage (+ = bord de fuite vers le haut)
+  - 4ᵉ cadre « Flap » dans la barre de contrôle (`gui/tab_profils.py`) :
+    case Flap, position `Xf` (% de corde, défaut 70), braquage (°,
+    défaut 0)
+  - Profil braqué affiché en **vert**, non modifiable, en plus du
+    courant et de la référence (`gui/profil_canvas.py` :
+    `set_flap_profil()`) ; recalculé à chaque changement du profil
+    courant ou des paramètres
+  - `tools/flap_schema.py` : schéma matplotlib explicatif de la
+    construction géométrique
+
 ## [Non publié] - 2026-06-21 12:11
 
 ### Changed (Modifié)
