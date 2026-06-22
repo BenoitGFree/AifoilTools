@@ -14,39 +14,43 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
 
 from . import __version__
+from . import i18n
+from .i18n import tr as _
 from .tab_profils import TabProfils
 from .tab_xfoil import TabXfoil
 from .tab_results import TabResults
 
 
-def _find_manuel_pdf():
-    u"""Localise le fichier manuel.pdf (mode dev ou frozen).
+def _find_manuel_pdf(lang='fr'):
+    u"""Localise le manuel PDF pour la langue donnee (dev ou frozen).
 
-    En mode developpement, le manuel est dans
-    ``<racine>/docs/manuel/manuel.pdf``. En mode frozen (PyInstaller),
-    il est bundle dans ``<MEIPASS>/docs/manuel.pdf`` via le fichier
-    spec.
+    En anglais, cherche d'abord ``manuel_en.pdf`` ; a defaut (manuel
+    anglais non encore disponible), retombe sur le manuel francais
+    ``manuel.pdf``. En mode developpement les PDF sont dans
+    ``<racine>/docs/manuel/`` ; en mode frozen (PyInstaller) dans
+    ``<MEIPASS>/docs/``.
 
+    :param lang: code de langue ('fr' ou 'en')
     :returns: chemin absolu du PDF, ou None si introuvable
     :rtype: str or None
     """
+    names = ['manuel_en.pdf', 'manuel.pdf'] if lang == 'en' else ['manuel.pdf']
     if getattr(sys, 'frozen', False):
-        candidates = [
-            os.path.join(sys._MEIPASS, 'docs', 'manuel.pdf'),
-            os.path.join(os.path.dirname(sys.executable),
-                         'docs', 'manuel.pdf'),
+        roots = [
+            os.path.join(sys._MEIPASS, 'docs'),
+            os.path.join(os.path.dirname(sys.executable), 'docs'),
         ]
     else:
         # Mode dev : remonter de sources/gui/ vers la racine du projet
         base = os.path.dirname(os.path.abspath(__file__))
         project_root = os.path.normpath(
             os.path.join(base, '..', '..'))
-        candidates = [
-            os.path.join(project_root, 'docs', 'manuel', 'manuel.pdf'),
-        ]
-    for path in candidates:
-        if os.path.isfile(path):
-            return path
+        roots = [os.path.join(project_root, 'docs', 'manuel')]
+    for name in names:
+        for root in roots:
+            path = os.path.join(root, name)
+            if os.path.isfile(path):
+                return path
     return None
 
 
@@ -70,12 +74,12 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("AirfoilTools")
+        self.setWindowTitle(_("AirfoilTools"))
         self.resize(1200, 700)
 
         self._build_menus()
         self._build_tabs()
-        self.statusBar().showMessage("Pret")
+        self.statusBar().showMessage(_("Pret"))
 
     # ------------------------------------------------------------------
     # Menus
@@ -86,174 +90,174 @@ class MainWindow(QMainWindow):
         menubar = self.menuBar()
 
         # --- Fichier ---
-        file_menu = menubar.addMenu("&Fichier")
+        file_menu = menubar.addMenu(_("&Fichier"))
 
-        act_open_current = QAction("Ouvrir profil &courant...", self)
+        act_open_current = QAction(_("Ouvrir profil &courant..."), self)
         act_open_current.setShortcut("Ctrl+O")
         act_open_current.setStatusTip(
-            u"Charger un profil (.dat / .bspl / .bez / .csv) comme profil"
-            u" courant (bleu)")
+            _(u"Charger un profil (.dat / .bspl / .bez / .csv) comme profil"
+            u" courant (bleu)"))
         act_open_current.triggered.connect(self._on_open_current)
         file_menu.addAction(act_open_current)
 
-        act_open_ref = QAction(u"Ouvrir profil r\u00e9f\u00e9rence...", self)
+        act_open_ref = QAction(_(u"Ouvrir profil r\u00e9f\u00e9rence..."), self)
         act_open_ref.setShortcut("Ctrl+Shift+O")
         act_open_ref.setStatusTip(
-            u"Charger un profil comme profil de reference (rouge)")
+            _(u"Charger un profil comme profil de reference (rouge)"))
         act_open_ref.triggered.connect(self._on_open_reference)
         file_menu.addAction(act_open_ref)
 
         # Sous-menu UIUC (base de profils en ligne)
-        uiuc_menu = file_menu.addMenu(u"Depuis la base &UIUC")
+        uiuc_menu = file_menu.addMenu(_(u"Depuis la base &UIUC"))
         uiuc_menu.setStatusTip(
-            u"Charger un profil depuis la base de donnees UIUC (Selig)")
+            _(u"Charger un profil depuis la base de donnees UIUC (Selig)"))
         act_uiuc_current = uiuc_menu.addAction(
-            u"Profil courant\u2026")
+            _(u"Profil courant\u2026"))
         act_uiuc_current.setStatusTip(
-            u"Telecharger un profil depuis UIUC comme profil courant")
+            _(u"Telecharger un profil depuis UIUC comme profil courant"))
         act_uiuc_current.triggered.connect(
             lambda: self._on_open_uiuc('current'))
         act_uiuc_ref = uiuc_menu.addAction(
-            u"Profil r\u00e9f\u00e9rence\u2026")
+            _(u"Profil r\u00e9f\u00e9rence\u2026"))
         act_uiuc_ref.setStatusTip(
-            u"Telecharger un profil depuis UIUC comme profil de reference")
+            _(u"Telecharger un profil depuis UIUC comme profil de reference"))
         act_uiuc_ref.triggered.connect(
             lambda: self._on_open_uiuc('reference'))
 
         # Sous-menu NACA (generation a partir des indices)
-        naca_menu = file_menu.addMenu(u"Profil &NACA")
+        naca_menu = file_menu.addMenu(_(u"Profil &NACA"))
         naca_menu.setStatusTip(
-            u"Generer un profil NACA (4 ou 5 chiffres) a partir de ses"
-            u" indices")
-        act_naca_current = naca_menu.addAction(u"Profil courant…")
+            _(u"Generer un profil NACA (4 ou 5 chiffres) a partir de ses"
+            u" indices"))
+        act_naca_current = naca_menu.addAction(_(u"Profil courant…"))
         act_naca_current.setStatusTip(
-            u"Generer un profil NACA comme profil courant")
+            _(u"Generer un profil NACA comme profil courant"))
         act_naca_current.triggered.connect(
             lambda: self._on_new_naca('current'))
-        act_naca_ref = naca_menu.addAction(u"Profil référence…")
+        act_naca_ref = naca_menu.addAction(_(u"Profil référence…"))
         act_naca_ref.setStatusTip(
-            u"Generer un profil NACA comme profil de reference")
+            _(u"Generer un profil NACA comme profil de reference"))
         act_naca_ref.triggered.connect(
             lambda: self._on_new_naca('reference'))
 
         file_menu.addSeparator()
 
-        act_save = QAction("&Sauvegarder profil...", self)
+        act_save = QAction(_("&Sauvegarder profil..."), self)
         act_save.setShortcut("Ctrl+S")
         act_save.setStatusTip(
-            u"Sauvegarder le profil courant (formats : Selig .dat,"
-            u" Lednicer .dat, Spline .bspl, CSV)")
+            _(u"Sauvegarder le profil courant (formats : Selig .dat,"
+            u" Lednicer .dat, Spline .bspl, CSV)"))
         act_save.triggered.connect(self._on_save)
         file_menu.addAction(act_save)
 
-        act_save_flap = QAction(u"Sauvegarder profil avec &volet...", self)
+        act_save_flap = QAction(_(u"Sauvegarder profil avec &volet..."), self)
         act_save_flap.setStatusTip(
-            u"Sauvegarder le profil avec volet braque (vert), de la meme"
+            _(u"Sauvegarder le profil avec volet braque (vert), de la meme"
             u" maniere que le profil courant (complet, extrados ou"
-            u" intrados). Necessite le volet active.")
+            u" intrados). Necessite le volet active."))
         act_save_flap.triggered.connect(self._on_save_flap)
         file_menu.addAction(act_save_flap)
 
         file_menu.addSeparator()
 
         # --- Projet (.aftproj) ---
-        act_open_project = QAction(u"Ouvrir &projet...", self)
+        act_open_project = QAction(_(u"Ouvrir &projet..."), self)
         act_open_project.setShortcut("Ctrl+Shift+P")
         act_open_project.setStatusTip(
-            u"Ouvrir un projet AirfoilTools (.aftproj) : profils +"
-            u" image de calque")
+            _(u"Ouvrir un projet AirfoilTools (.aftproj) : profils +"
+            u" image de calque"))
         act_open_project.triggered.connect(self._on_open_project)
         file_menu.addAction(act_open_project)
 
-        act_save_project = QAction(u"&Enregistrer projet...", self)
+        act_save_project = QAction(_(u"&Enregistrer projet..."), self)
         act_save_project.setShortcut("Ctrl+Alt+S")
         act_save_project.setStatusTip(
-            u"Enregistrer le projet (profils courant/reference +"
-            u" image de calque) au format .aftproj")
+            _(u"Enregistrer le projet (profils courant/reference +"
+            u" image de calque) au format .aftproj"))
         act_save_project.triggered.connect(self._on_save_project)
         file_menu.addAction(act_save_project)
 
         file_menu.addSeparator()
 
         # --- Image de calque ---
-        act_load_image = QAction(u"Charger &image de calque...", self)
+        act_load_image = QAction(_(u"Charger &image de calque..."), self)
         act_load_image.setStatusTip(
-            u"Charger une image (jpg, png, tif...) en arriere-plan pour"
-            u" decalquer un profil. Manipulation : touche « i » + souris")
+            _(u"Charger une image (jpg, png, tif...) en arriere-plan pour"
+            u" decalquer un profil. Manipulation : touche « i » + souris"))
         act_load_image.triggered.connect(self._on_load_image)
         file_menu.addAction(act_load_image)
 
-        act_clear_image = QAction(u"Retirer l'image de calque", self)
+        act_clear_image = QAction(_(u"Retirer l'image de calque"), self)
         act_clear_image.setStatusTip(
-            u"Supprimer l'image de calque actuellement affichee")
+            _(u"Supprimer l'image de calque actuellement affichee"))
         act_clear_image.triggered.connect(self._on_clear_image)
         file_menu.addAction(act_clear_image)
 
         file_menu.addSeparator()
 
-        act_quit = QAction("&Quitter", self)
+        act_quit = QAction(_("&Quitter"), self)
         act_quit.setShortcut("Ctrl+Q")
-        act_quit.setStatusTip(u"Fermer l'application")
+        act_quit.setStatusTip(_(u"Fermer l'application"))
         act_quit.triggered.connect(self.close)
         file_menu.addAction(act_quit)
 
         # --- Edition ---
-        edit_menu = menubar.addMenu("&Edition")
+        edit_menu = menubar.addMenu(_("&Edition"))
 
-        act_undo = QAction("&Annuler", self)
+        act_undo = QAction(_("&Annuler"), self)
         act_undo.setShortcut("Ctrl+Z")
-        act_undo.setStatusTip(u"Annuler la derniere action (non implemente)")
+        act_undo.setStatusTip(_(u"Annuler la derniere action (non implemente)"))
         edit_menu.addAction(act_undo)
 
-        act_redo = QAction("&Refaire", self)
+        act_redo = QAction(_("&Refaire"), self)
         act_redo.setShortcut("Ctrl+Y")
         act_redo.setStatusTip(
-            u"Refaire l'action annulee (non implemente)")
+            _(u"Refaire l'action annulee (non implemente)"))
         edit_menu.addAction(act_redo)
 
         edit_menu.addSeparator()
 
-        act_to_spline = QAction("Convertir en Spline", self)
+        act_to_spline = QAction(_("Convertir en Spline"), self)
         act_to_spline.setShortcut("Ctrl+B")
         act_to_spline.setStatusTip(
-            u"Convertit le profil courant (mode points discrets) en"
-            u" splines de Bezier multi-segment editables")
+            _(u"Convertit le profil courant (mode points discrets) en"
+            u" splines de Bezier multi-segment editables"))
         act_to_spline.triggered.connect(self._on_convert_to_spline)
         edit_menu.addAction(act_to_spline)
 
         edit_menu.addSeparator()
 
-        sample_menu = edit_menu.addMenu(u"\u00c9chantillonnage")
+        sample_menu = edit_menu.addMenu(_(u"\u00c9chantillonnage"))
         sample_menu.setStatusTip(
-            u"Modifier le nombre de points d'echantillonnage des splines")
-        act_sample_cur = sample_menu.addAction("Profil &courant...")
+            _(u"Modifier le nombre de points d'echantillonnage des splines"))
+        act_sample_cur = sample_menu.addAction(_("Profil &courant..."))
         act_sample_cur.setStatusTip(
-            u"Choisir le nombre de points pour le profil courant"
-            u" (necessite mode Spline)")
+            _(u"Choisir le nombre de points pour le profil courant"
+            u" (necessite mode Spline)"))
         act_sample_cur.triggered.connect(
             lambda: self._on_change_sampling('current'))
         act_sample_ref = sample_menu.addAction(
-            u"Profil r\u00e9f\u00e9rence...")
+            _(u"Profil r\u00e9f\u00e9rence..."))
         act_sample_ref.setStatusTip(
-            u"Choisir le nombre de points pour le profil de reference"
-            u" (necessite mode Spline)")
+            _(u"Choisir le nombre de points pour le profil de reference"
+            u" (necessite mode Spline)"))
         act_sample_ref.triggered.connect(
             lambda: self._on_change_sampling('reference'))
 
         # --- Affichage ---
-        view_menu = menubar.addMenu("&Affichage")
+        view_menu = menubar.addMenu(_("&Affichage"))
 
-        act_zoom_fit = QAction("Zoom &adapte", self)
+        act_zoom_fit = QAction(_("Zoom &adapte"), self)
         act_zoom_fit.setShortcut("Ctrl+0")
         act_zoom_fit.setStatusTip(
-            u"Recadrer la vue sur l'ensemble des profils visibles")
+            _(u"Recadrer la vue sur l'ensemble des profils visibles"))
         act_zoom_fit.triggered.connect(self._on_zoom_fit)
         view_menu.addAction(act_zoom_fit)
 
         # Sous-menu Disposition
-        disp_menu = view_menu.addMenu("&Disposition")
+        disp_menu = view_menu.addMenu(_("&Disposition"))
         disp_menu.setStatusTip(
-            u"Choisir la grille (lignes x colonnes) de l'onglet Resultats")
+            _(u"Choisir la grille (lignes x colonnes) de l'onglet Resultats"))
         self._disp_actions = []
         for rows, cols in [(1, 1), (1, 2), (2, 2), (2, 3), (3, 3)]:
             label = "%d \u00d7 %d" % (rows, cols)
@@ -271,50 +275,66 @@ class MainWindow(QMainWindow):
 
         # --- Options ---
         from PySide6.QtGui import QActionGroup
-        options_menu = menubar.addMenu("&Options")
+        options_menu = menubar.addMenu(_("&Options"))
 
-        dev_menu = options_menu.addMenu(u"Déviation")
+        dev_menu = options_menu.addMenu(_(u"Déviation"))
         dev_menu.setStatusTip(
-            u"Mode de calcul de la deviation entre profil courant et"
-            u" reference")
+            _(u"Mode de calcul de la deviation entre profil courant et"
+            u" reference"))
         self._dev_mode_group = QActionGroup(self)
         self._dev_mode_group.setExclusive(True)
 
-        act_dev_vert = QAction(u"Verticale (épaisseur)", self)
+        act_dev_vert = QAction(_(u"Verticale (épaisseur)"), self)
         act_dev_vert.setCheckable(True)
         act_dev_vert.setChecked(True)
         act_dev_vert.setStatusTip(
-            u"Ecart mesure verticalement (selon z), a abscisse constante")
+            _(u"Ecart mesure verticalement (selon z), a abscisse constante"))
         act_dev_vert.triggered.connect(
             lambda: self._on_set_deviation_mode('vertical'))
         self._dev_mode_group.addAction(act_dev_vert)
         dev_menu.addAction(act_dev_vert)
 
-        act_dev_norm = QAction(u"Normale (perpendiculaire)", self)
+        act_dev_norm = QAction(_(u"Normale (perpendiculaire)"), self)
         act_dev_norm.setCheckable(True)
         act_dev_norm.setStatusTip(
-            u"Ecart mesure perpendiculairement a la surface du profil"
-            u" courant")
+            _(u"Ecart mesure perpendiculairement a la surface du profil"
+            u" courant"))
         act_dev_norm.triggered.connect(
             lambda: self._on_set_deviation_mode('normal'))
         self._dev_mode_group.addAction(act_dev_norm)
         dev_menu.addAction(act_dev_norm)
 
-        # --- Aide ---
-        help_menu = menubar.addMenu("&Aide")
+        # Sous-menu Langue (effet au redemarrage)
+        lang_menu = options_menu.addMenu(_(u"&Langue"))
+        lang_menu.setStatusTip(
+            _(u"Choisir la langue de l'interface (effet au redemarrage)"))
+        self._lang_group = QActionGroup(self)
+        self._lang_group.setExclusive(True)
+        current_lang = i18n.get_language()
+        for code, name in i18n.LANGUAGES:
+            act_lang = QAction(name, self)
+            act_lang.setCheckable(True)
+            act_lang.setChecked(code == current_lang)
+            act_lang.triggered.connect(
+                lambda checked, c=code: self._on_set_language(c))
+            self._lang_group.addAction(act_lang)
+            lang_menu.addAction(act_lang)
 
-        act_manuel = QAction(u"&Manuel utilisateur", self)
+        # --- Aide ---
+        help_menu = menubar.addMenu(_("&Aide"))
+
+        act_manuel = QAction(_(u"&Manuel utilisateur"), self)
         act_manuel.setShortcut("F1")
         act_manuel.setStatusTip(
-            u"Ouvrir le manuel utilisateur (PDF) avec le visualiseur"
-            u" par defaut du systeme")
+            _(u"Ouvrir le manuel utilisateur (PDF) avec le visualiseur"
+            u" par defaut du systeme"))
         act_manuel.triggered.connect(self._on_open_manuel)
         help_menu.addAction(act_manuel)
 
         help_menu.addSeparator()
 
-        act_about = QAction("A &propos...", self)
-        act_about.setStatusTip(u"Informations sur AirfoilTools")
+        act_about = QAction(_("A &propos..."), self)
+        act_about.setStatusTip(_(u"Informations sur AirfoilTools"))
         act_about.triggered.connect(self._on_about)
         help_menu.addAction(act_about)
 
@@ -331,9 +351,9 @@ class MainWindow(QMainWindow):
         self._tab_xfoil = TabXfoil()
         self._tab_results = TabResults()
 
-        self._tabs.addTab(self._tab_profils, "Profils")
-        self._tabs.addTab(self._tab_xfoil, u"Param\u00e9trage XFoil")
-        self._tabs.addTab(self._tab_results, u"R\u00e9sultats")
+        self._tabs.addTab(self._tab_profils, _("Profils"))
+        self._tabs.addTab(self._tab_xfoil, _(u"Param\u00e9trage XFoil"))
+        self._tabs.addTab(self._tab_results, _(u"R\u00e9sultats"))
 
         # Connecter le bouton Lancer
         self._tab_xfoil.run_requested.connect(self._on_run_simulations)
@@ -372,8 +392,8 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Profil %s charge : %s" % (label, info))
         else:
             from PySide6.QtWidgets import QMessageBox
-            QMessageBox.warning(self, "Erreur de chargement", info)
-            self.statusBar().showMessage("Echec du chargement")
+            QMessageBox.warning(self, _("Erreur de chargement"), info)
+            self.statusBar().showMessage(_("Echec du chargement"))
 
     def _on_open_current(self):
         """Ouvre un fichier comme profil courant."""
@@ -401,9 +421,9 @@ class MainWindow(QMainWindow):
                 u"Profil %s charge depuis UIUC : %s" % (label, info))
         else:
             from PySide6.QtWidgets import QMessageBox
-            QMessageBox.warning(self, "Erreur de chargement", info)
+            QMessageBox.warning(self, _("Erreur de chargement"), info)
             self.statusBar().showMessage(
-                u"Echec du chargement depuis UIUC")
+                _(u"Echec du chargement depuis UIUC"))
 
     def _on_set_deviation_mode(self, mode):
         u"""Change le mode de calcul de la deviation (vertical / normal).
@@ -429,7 +449,7 @@ class MainWindow(QMainWindow):
         designation = text.strip()
         if not (designation.isdigit() and len(designation) in (4, 5)):
             QMessageBox.warning(
-                self, u"Indices NACA invalides",
+                self, _(u"Indices NACA invalides"),
                 u"Saisissez 4 ou 5 chiffres (ex. 2412 ou 23012).\n"
                 u"Reçu : « %s »" % text)
             return
@@ -444,8 +464,8 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage(
                 u"Profil %s généré : %s" % (label, info))
         else:
-            QMessageBox.warning(self, u"Erreur de génération NACA", info)
-            self.statusBar().showMessage(u"Echec de la génération NACA")
+            QMessageBox.warning(self, _(u"Erreur de génération NACA"), info)
+            self.statusBar().showMessage(_(u"Echec de la génération NACA"))
 
     def _on_save(self):
         """Sauvegarde le profil courant dans un fichier."""
@@ -456,8 +476,8 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Profil sauvegarde : %s" % info)
         else:
             from PySide6.QtWidgets import QMessageBox
-            QMessageBox.warning(self, "Erreur de sauvegarde", info)
-            self.statusBar().showMessage("Echec de la sauvegarde")
+            QMessageBox.warning(self, _("Erreur de sauvegarde"), info)
+            self.statusBar().showMessage(_("Echec de la sauvegarde"))
 
     def _on_save_flap(self):
         """Sauvegarde le profil avec volet (comme le profil courant)."""
@@ -465,15 +485,15 @@ class MainWindow(QMainWindow):
         if ok is None:
             if info:
                 from PySide6.QtWidgets import QMessageBox
-                QMessageBox.information(self, "Profil avec volet", info)
+                QMessageBox.information(self, _("Profil avec volet"), info)
             return
         if ok:
             self.statusBar().showMessage(
                 "Profil avec volet sauvegarde : %s" % info)
         else:
             from PySide6.QtWidgets import QMessageBox
-            QMessageBox.warning(self, "Erreur de sauvegarde", info)
-            self.statusBar().showMessage("Echec de la sauvegarde")
+            QMessageBox.warning(self, _("Erreur de sauvegarde"), info)
+            self.statusBar().showMessage(_("Echec de la sauvegarde"))
 
     def _on_open_project(self):
         """Ouvre un projet AirfoilTools (.aftproj)."""
@@ -490,8 +510,8 @@ class MainWindow(QMainWindow):
             self._tabs.setCurrentWidget(self._tab_profils)
             self.statusBar().showMessage(u"Projet ouvert : %s" % info)
         else:
-            QMessageBox.warning(self, "Erreur d'ouverture du projet", info)
-            self.statusBar().showMessage(u"Echec de l'ouverture du projet")
+            QMessageBox.warning(self, _("Erreur d'ouverture du projet"), info)
+            self.statusBar().showMessage(_(u"Echec de l'ouverture du projet"))
 
     def _on_save_project(self):
         """Enregistre le projet courant (profils + image)."""
@@ -502,8 +522,8 @@ class MainWindow(QMainWindow):
         if ok:
             self.statusBar().showMessage(u"Projet enregistre : %s" % info)
         else:
-            QMessageBox.warning(self, "Erreur d'enregistrement", info)
-            self.statusBar().showMessage(u"Echec de l'enregistrement")
+            QMessageBox.warning(self, _("Erreur d'enregistrement"), info)
+            self.statusBar().showMessage(_(u"Echec de l'enregistrement"))
 
     def _on_load_image(self):
         """Charge une image de calque en arriere-plan."""
@@ -522,13 +542,13 @@ class MainWindow(QMainWindow):
                 u"(maintenir « i » + souris pour ajuster)" % info)
         else:
             QMessageBox.warning(
-                self, "Erreur de chargement de l'image", info)
-            self.statusBar().showMessage(u"Echec du chargement de l'image")
+                self, _("Erreur de chargement de l'image"), info)
+            self.statusBar().showMessage(_(u"Echec du chargement de l'image"))
 
     def _on_clear_image(self):
         """Retire l'image de calque."""
         self._tab_profils.clear_background_image()
-        self.statusBar().showMessage(u"Image de calque retiree")
+        self.statusBar().showMessage(_(u"Image de calque retiree"))
 
     def _on_change_sampling(self, role):
         """Change le nombre de points d'echantillonnage d'un profil Bezier."""
@@ -541,14 +561,14 @@ class MainWindow(QMainWindow):
         else:
             from PySide6.QtWidgets import QMessageBox
             QMessageBox.warning(
-                self, u"\u00c9chantillonnage", info)
+                self, _(u"\u00c9chantillonnage"), info)
 
     def _on_convert_to_spline(self):
         """Convertit le profil courant en mode Spline."""
         p = self._tab_profils.profil_current
         if p is None or p.has_splines:
             self.statusBar().showMessage(
-                u"Pas de profil ou d\u00e9j\u00e0 en mode Spline")
+                _(u"Pas de profil ou d\u00e9j\u00e0 en mode Spline"))
             return
 
         from PySide6.QtWidgets import (
@@ -556,26 +576,26 @@ class MainWindow(QMainWindow):
             QDoubleSpinBox
         )
         dlg = QDialog(self)
-        dlg.setWindowTitle("Convertir en Spline")
+        dlg.setWindowTitle(_("Convertir en Spline"))
         form = QFormLayout(dlg)
 
         spn_ext = QSpinBox()
         spn_ext.setRange(2, 30)
         spn_ext.setValue(11)
         spn_ext.setToolTip(
-            u"Degre des courbes de Bezier de l'extrados.\n"
+            _(u"Degre des courbes de Bezier de l'extrados.\n"
             u"  Petit (3-5) : forme tres lissee, peu d'inflexions\n"
             u"  Moyen (6-12) : compromis precision/lissage (defaut)\n"
-            u"  Grand (>15) : forme tres precise, risque d'oscillations")
-        form.addRow(u"Degr\u00e9 extrados :", spn_ext)
+            u"  Grand (>15) : forme tres precise, risque d'oscillations"))
+        form.addRow(_(u"Degr\u00e9 extrados :"), spn_ext)
 
         spn_int = QSpinBox()
         spn_int.setRange(2, 30)
         spn_int.setValue(11)
         spn_int.setToolTip(
-            u"Degre des courbes de Bezier de l'intrados.\n"
-            u"Voir l'aide du degre extrados.")
-        form.addRow(u"Degr\u00e9 intrados :", spn_int)
+            _(u"Degre des courbes de Bezier de l'intrados.\n"
+            u"Voir l'aide du degre extrados."))
+        form.addRow(_(u"Degr\u00e9 intrados :"), spn_int)
 
         spn_tol = QDoubleSpinBox()
         spn_tol.setRange(0.0001, 0.1)
@@ -583,17 +603,17 @@ class MainWindow(QMainWindow):
         spn_tol.setSingleStep(0.0005)
         spn_tol.setValue(0.001)
         spn_tol.setToolTip(
-            u"D\u00e9viation max acceptable (corde = 1).\n"
-            u"Plus petit = plus de segments.")
-        form.addRow(u"Tol\u00e9rance :", spn_tol)
+            _(u"D\u00e9viation max acceptable (corde = 1).\n"
+            u"Plus petit = plus de segments."))
+        form.addRow(_(u"Tol\u00e9rance :"), spn_tol)
 
         spn_max_seg = QSpinBox()
         spn_max_seg.setRange(1, 20)
         spn_max_seg.setValue(1)
         spn_max_seg.setToolTip(
-            u"Nombre max de segments B\u00e9zier par c\u00f4t\u00e9.\n"
-            u"1 = un seul segment (ancien comportement).")
-        form.addRow("Max segments :", spn_max_seg)
+            _(u"Nombre max de segments B\u00e9zier par c\u00f4t\u00e9.\n"
+            u"1 = un seul segment (ancien comportement)."))
+        form.addRow(_("Max segments :"), spn_max_seg)
 
         spn_smooth = QDoubleSpinBox()
         spn_smooth.setRange(0.0, 1.0)
@@ -601,9 +621,9 @@ class MainWindow(QMainWindow):
         spn_smooth.setSingleStep(0.01)
         spn_smooth.setValue(0.1)
         spn_smooth.setToolTip(
-            u"R\u00e9gularisation (0 = pas de lissage).\n"
-            u"Valeurs > 0 lissent le polygone de contr\u00f4le.")
-        form.addRow("Lissage :", spn_smooth)
+            _(u"R\u00e9gularisation (0 = pas de lissage).\n"
+            u"Valeurs > 0 lissent le polygone de contr\u00f4le."))
+        form.addRow(_("Lissage :"), spn_smooth)
 
         buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
@@ -622,14 +642,14 @@ class MainWindow(QMainWindow):
             smoothing=spn_smooth.value())
         if ok is None:
             self.statusBar().showMessage(
-                u"Pas de profil ou d\u00e9j\u00e0 en mode Spline")
+                _(u"Pas de profil ou d\u00e9j\u00e0 en mode Spline"))
         elif ok:
             self.statusBar().showMessage(
                 "Profil '%s' converti en Spline" % info)
         else:
             from PySide6.QtWidgets import QMessageBox
             QMessageBox.warning(
-                self, "Erreur de conversion", info)
+                self, _("Erreur de conversion"), info)
 
     # ------------------------------------------------------------------
     # Simulation
@@ -642,7 +662,7 @@ class MainWindow(QMainWindow):
         :type target: str
         """
         if self._sim_worker is not None and self._sim_worker.isRunning():
-            self.statusBar().showMessage("Simulation deja en cours...")
+            self.statusBar().showMessage(_("Simulation deja en cours..."))
             return
 
         profils = {}
@@ -660,7 +680,7 @@ class MainWindow(QMainWindow):
         # Retirer les None (ex. volet inactif)
         profils = {k: v for k, v in profils.items() if v is not None}
         if not profils:
-            self.statusBar().showMessage("Aucun profil a simuler")
+            self.statusBar().showMessage(_("Aucun profil a simuler"))
             return
 
         self._sim_target = target
@@ -674,7 +694,7 @@ class MainWindow(QMainWindow):
         self._sim_worker.finished_error.connect(self._on_sim_error)
 
         self._tab_xfoil.set_enabled(False)
-        self.statusBar().showMessage("Simulations en cours...")
+        self.statusBar().showMessage(_("Simulations en cours..."))
         self._sim_worker.start()
 
     def _on_sim_progress(self, msg):
@@ -717,10 +737,10 @@ class MainWindow(QMainWindow):
 
         from PySide6.QtWidgets import QMessageBox
         QMessageBox.warning(
-            self, "Erreur de simulation",
+            self, _("Erreur de simulation"),
             u"%s\n\nUtilisez les boutons « Diagnostic » de l'onglet"
             u" Paramétrage XFoil pour consulter le log." % error_msg)
-        self.statusBar().showMessage("Echec de la simulation")
+        self.statusBar().showMessage(_("Echec de la simulation"))
 
     def _on_diagnostic(self, role):
         u"""Ouvre le dialogue de diagnostic pour un profil.
@@ -751,43 +771,58 @@ class MainWindow(QMainWindow):
         """Zoom adapte sur le canvas."""
         self._tab_profils.zoom_fit()
 
+    def _on_set_language(self, code):
+        """Enregistre la langue choisie (prise en compte au redemarrage)."""
+        from PySide6.QtWidgets import QMessageBox
+        if code == i18n.get_language():
+            return
+        i18n.save_language(code)
+        QMessageBox.information(
+            self, _(u"Langue de l'interface"),
+            _(u"La langue sera appliquee au prochain demarrage"
+              u" d'AirfoilTools."))
+
     def _on_open_manuel(self):
         """Ouvre le manuel utilisateur PDF avec le visualiseur par defaut."""
-        path = _find_manuel_pdf()
+        path = _find_manuel_pdf(i18n.get_language())
         if path is None:
             from PySide6.QtWidgets import QMessageBox
             QMessageBox.warning(
-                self, u"Manuel introuvable",
-                u"Le fichier manuel.pdf n'a pas ete trouve.\n\n"
+                self, _(u"Manuel introuvable"),
+                _(u"Le fichier manuel.pdf n'a pas ete trouve.\n\n"
                 u"Verifiez que le fichier docs/manuel/manuel.pdf "
-                u"existe a cote de l'application.")
+                u"existe a cote de l'application."))
             return
         try:
             _open_with_default_app(path)
             self.statusBar().showMessage(
-                u"Manuel ouvert : %s" % path)
+                _(u"Manuel ouvert : %s") % path)
         except OSError as exc:
             from PySide6.QtWidgets import QMessageBox
             QMessageBox.warning(
-                self, u"Impossible d'ouvrir le manuel",
-                u"Erreur lors de l'ouverture du PDF :\n\n%s" % exc)
+                self, _(u"Impossible d'ouvrir le manuel"),
+                _(u"Erreur lors de l'ouverture du PDF :\n\n%s") % exc)
 
     def _on_about(self):
         """Affiche la boite A propos."""
         from PySide6.QtWidgets import QMessageBox
         QMessageBox.about(
             self, "AirfoilTools",
-            u"AirfoilTools - Analyse a\u00e9rodynamique 2D\n"
-            u"Courbes de B\u00e9zier, profils, XFoil\n\n"
-            u"Version %s\n"
-            u"Premi\u00e8re version : 2022\n\n" % __version__ +
-            u"Auteur : Beno\u00eet Gagnaire"
+            _(u"AirfoilTools - Analyse a\u00e9rodynamique 2D\n"
+              u"Courbes de B\u00e9zier, profils, XFoil\n\n")
+            + (u"Version %s\n" % __version__)
+            + _(u"Premi\u00e8re version : 2022\n\n")
+            + _(u"Auteur : Beno\u00eet Gagnaire")
         )
 
 
 def main():
     """Point d'entree de l'application."""
     app = QApplication.instance() or QApplication(sys.argv)
+    # Identite pour QSettings (registre Windows) + langue persistee.
+    app.setOrganizationName("Nervures")
+    app.setApplicationName("AirfoilTools")
+    i18n.load_language()
     window = MainWindow()
     window.show()
     sys.exit(app.exec())

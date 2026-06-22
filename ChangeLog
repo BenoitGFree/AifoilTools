@@ -1,5 +1,23 @@
 # Changelog
 
+## [Non publié] - 2026-06-22 20:30
+
+### Added (Ajouté)
+- **Sélection de la langue de l'interface (FR/EN)** : menu
+  Options ▸ Langue, choix persisté (`QSettings`), pris en compte au
+  redémarrage
+- `sources/gui/i18n.py` : module d'internationalisation léger
+  (`tr()`, clé = texte français, fallback gracieux vers le français)
+- **Manuel multilingue** : `_find_manuel_pdf(lang)` ouvre
+  `manuel_en.pdf` en anglais, avec fallback automatique sur le manuel
+  français tant que la version anglaise n'existe pas
+- `tools/i18n_wrap.py` : codemod (tokenisation) enveloppant les
+  arguments-chaînes des appels UI Qt avec `tr()`
+
+### Changed (Modifié)
+- `main_window.py` : chaînes UI enveloppées par `tr()` et traduites en
+  anglais (menus, onglets, À propos, messages) — Phase 1 de l'i18n
+
 ## [Non publié] - 2026-06-22 19:50
 
 ### Documentation
