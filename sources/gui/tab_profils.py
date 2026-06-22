@@ -167,7 +167,7 @@ class TabProfils(QWidget):
         h_flap.setContentsMargins(8, 2, 8, 2)
 
         self._chk_flap = QCheckBox("Flap")
-        self._chk_flap.setChecked(False)
+        self._chk_flap.setChecked(True)
         self._chk_flap.setToolTip(
             u"Cree et affiche un profil avec volet braque (vert, non"
             u" modifiable), en plus du courant et de la reference.\n"
@@ -191,7 +191,7 @@ class TabProfils(QWidget):
         h_flap.addWidget(QLabel("Braquage"))
         self._spin_delta = QDoubleSpinBox()
         self._spin_delta.setRange(-45.0, 45.0)
-        self._spin_delta.setValue(0.0)
+        self._spin_delta.setValue(-10.0)
         self._spin_delta.setDecimals(1)
         self._spin_delta.setSingleStep(1.0)
         self._spin_delta.setSuffix(u" °")
@@ -210,18 +210,41 @@ class TabProfils(QWidget):
         # --- Canvas matplotlib ---
         self._canvas = ProfilCanvas(self)
         self._canvas.profil_edited.connect(self._on_current_edited)
+        self._canvas.request_naca_regen.connect(
+            self._regenerate_current_naca)
         layout.addWidget(self._canvas, stretch=1)
 
     def _load_default_profiles(self):
-        """Charge les profils par defaut au demarrage (mode discret)."""
-        self._profil_current = ProfilSpline.from_naca('2412', n_points=150)
+        """Charge les profils par defaut au demarrage.
+
+        Courant : NACA 2412 converti en Bezier (spline).
+        Reference : NACA 2412 (mode discret).
+        Courbure (du courant) et deviation activees par defaut.
+        """
+        self._profil_current = ProfilSpline.from_naca('2412', n_points=400)
         self._profil_current.normalize()
 
-        self._profil_reference = ProfilSpline.from_naca('0012', n_points=150)
+        self._profil_reference = ProfilSpline.from_naca('2412', n_points=150)
         self._profil_reference.normalize()
 
         self._canvas.set_current_profil(self._profil_current)
         self._canvas.set_reference_profil(self._profil_reference)
+
+        # Convertir le profil courant en Bezier (necessaire pour la
+        # courbure). Mêmes valeurs par defaut que le dialogue
+        # « Edition › Convertir en Spline » de l'interface.
+        self.convert_current_to_spline(
+            degree_ext=11, degree_int=11, max_dev=0.001,
+            max_segments=1, smoothing=0.1)
+
+        # Activer la courbure du courant et la deviation par defaut
+        # (les setChecked emettent les signaux -> mise a jour du canvas).
+        self._chk_porc_current.setChecked(True)
+        self._chk_deviation.setChecked(True)
+
+        # Construire le profil braque si le flap est actif par defaut
+        # (les setValue/setChecked du build n'emettent pas de signal).
+        self._update_flap()
 
     # ------------------------------------------------------------------
     # Slots
@@ -295,8 +318,29 @@ class TabProfils(QWidget):
 
     def _on_current_edited(self):
         """Le profil courant a ete edite : propage et recalcule le flap."""
+        # Le profil n'est plus un NACA "propre" des qu'il est edite
+        if self._profil_current is not None:
+            self._profil_current.naca_designation = None
         self.profil_changed.emit('current')
         self._update_flap()
+
+    def _regenerate_current_naca(self, n_points):
+        u"""Regenere le profil courant NACA avec un nouveau nombre de points.
+
+        Appele depuis le menu contextuel quand le profil courant est un
+        NACA non modifie (mode discret). Rappelle ``from_naca`` pour
+        obtenir un profil propre plutot que d'interpoler les points
+        existants.
+
+        :param n_points: nouveau nombre de points
+        :type n_points: int
+        """
+        p = self._profil_current
+        designation = getattr(p, 'naca_designation', None)
+        if not designation:
+            return
+        # load_profil_from_naca remet a jour canvas, flap et signal
+        self.load_profil_from_naca(designation, 'current', n_points=n_points)
 
     def _on_toggle_flap(self, state):
         """Active/desactive l'affichage du profil braque."""
@@ -486,6 +530,46 @@ class TabProfils(QWidget):
         self.profil_changed.emit(role)
         return True, profil.name
 
+    def load_profil_from_naca(self, designation, role="current",
+                              n_points=150):
+        u"""Genere un profil NACA (4 ou 5 chiffres) et l'affecte a un role.
+
+        Le profil est marque (``naca_designation``) afin de pouvoir etre
+        regenere proprement (via :meth:`_regenerate_current_naca`) tant
+        qu'il n'a pas ete modifie ni converti en spline.
+
+        :param designation: indices NACA (ex: '2412', '23012')
+        :type designation: str
+        :param role: 'current' ou 'reference'
+        :type role: str
+        :param n_points: nombre de points du profil
+        :type n_points: int
+        :returns: (succes, nom_ou_message_erreur)
+        :rtype: tuple(bool, str)
+        """
+        designation = str(designation).strip()
+        try:
+            profil = ProfilSpline.from_naca(designation, n_points=n_points)
+            profil.normalize()
+        except Exception as e:
+            return False, str(e)
+        # Marqueur de profil NACA "propre" (regenerable)
+        profil.naca_designation = designation
+
+        if role == "reference":
+            self._profil_reference = profil
+            self._lbl_reference.setText(profil.name)
+            self._chk_reference.setChecked(True)
+            self._canvas.set_reference_profil(self._profil_reference)
+        else:
+            self._profil_current = profil
+            self._lbl_current.setText(profil.name)
+            self._chk_current.setChecked(True)
+            self._canvas.set_current_profil(self._profil_current)
+            self._update_flap()
+        self.profil_changed.emit(role)
+        return True, profil.name
+
     def convert_current_to_spline(self, degree_ext=6, degree_int=6,
                                    max_dev=0.001, max_segments=8,
                                    smoothing=0.0):
@@ -528,6 +612,8 @@ class TabProfils(QWidget):
         except Exception as e:
             return False, str(e)
 
+        # La conversion en Bezier n'est plus un NACA discret "propre"
+        p.naca_designation = None
         self._canvas.set_current_profil(p)
         self._update_flap()
         self.profil_changed.emit('current')

@@ -1,5 +1,31 @@
 # Changelog
 
+## [Non publié] - 2026-06-22 16:00
+
+### Added (Ajouté)
+- **Génération de profil NACA depuis la GUI** : sous-menu
+  « Fichier › Profil NACA » (courant / référence), saisie des indices
+  (4 ou 5 chiffres) puis du nombre de points
+  (`gui/main_window.py`, `TabProfils.load_profil_from_naca`)
+- **Régénération propre d'un profil NACA** : tant qu'un profil NACA
+  discret n'est pas modifié ni converti, le menu contextuel propose
+  « Nombre de points… » qui rappelle `from_naca` (profil propre) au lieu
+  d'interpoler (`gui/profil_canvas.py` signal `request_naca_regen`,
+  `TabProfils._regenerate_current_naca`)
+
+### Changed (Modifié)
+- **Valeurs par défaut au démarrage** :
+  - Reynolds 1 000 000 → 2 000 000, pas 1 000 000 ; Alpha −5° → 15°
+    (`gui/tab_xfoil.py`, `defaults_xfoil.cfg`)
+  - Transition forcée XTR Top/Bot = 0.2 (`gui/tab_xfoil.py`,
+    `defaults_xfoil.cfg`)
+  - Flap activé, braquage −10° (`gui/tab_profils.py`)
+  - Profil courant : NACA 2412 / 400 points, converti en Bézier avec
+    les valeurs par défaut du dialogue « Convertir en Spline »
+    (degré 11, tolérance 0.001, 1 segment, lissage 0.1)
+  - Profil de référence : NACA 0012 → NACA 2412
+  - Courbure (du courant) et déviation activées par défaut
+
 ## [Non publié] - 2026-06-22 14:30
 
 ### Added (Ajouté)

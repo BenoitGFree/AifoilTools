@@ -39,6 +39,8 @@ class ProfilCanvas(FigureCanvasQTAgg):
     """Canvas matplotlib pour l'affichage et l'edition interactive de profils."""
 
     profil_edited = Signal()  # emis a la fin d'un drag de point de controle
+    # nb de points change sur un profil NACA discret propre
+    request_naca_regen = Signal(int)
 
     def __init__(self, parent=None):
         self._fig = Figure(figsize=(10, 4), dpi=100)
@@ -1135,6 +1137,17 @@ class ProfilCanvas(FigureCanvasQTAgg):
         act_dev_down.triggered.connect(
             self._on_deviation_density_halve)
 
+        # --- Nombre de points d'un profil NACA discret "propre" ---
+        # (regenere via from_naca plutot que d'interpoler les points)
+        p = self._profil_current
+        if (p is not None and not p.has_splines
+                and getattr(p, 'naca_designation', None)):
+            menu.addSeparator()
+            n_cur = len(p.points)
+            act_naca_n = menu.addAction(
+                "Nombre de points (%d)..." % n_cur)
+            act_naca_n.triggered.connect(self._on_change_naca_npoints)
+
         # --- Split spline ---
         p = self._profil_current
         if p is not None and p.has_splines:
@@ -1417,6 +1430,23 @@ class ProfilCanvas(FigureCanvasQTAgg):
     # ==================================================================
     # Parametres echantillonnage spline
     # ==================================================================
+
+    def _on_change_naca_npoints(self):
+        u"""Change le nombre de points d'un profil NACA discret propre.
+
+        Emet ``request_naca_regen`` : le profil sera regenere via
+        ``from_naca`` (profil propre) au lieu d'interpoler les points.
+        """
+        from PySide6.QtWidgets import QInputDialog
+        p = self._profil_current
+        if p is None:
+            return
+        n_cur = len(p.points)
+        value, ok = QInputDialog.getInt(
+            self, u"Profil NACA",
+            u"Nombre de points :", n_cur, 20, 10000, 10)
+        if ok and value != n_cur:
+            self.request_naca_regen.emit(value)
 
     def _on_change_spline_npoints(self):
         """Ouvre un dialogue pour changer le nombre de points de la spline."""

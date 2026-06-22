@@ -45,7 +45,7 @@ class TabXfoil(QWidget):
         self._spn_re_min = QSpinBox()
         self._spn_re_min.setRange(1000, 100000000)
         self._spn_re_min.setSingleStep(10000)
-        self._spn_re_min.setValue(100000)
+        self._spn_re_min.setValue(1000000)
         self._spn_re_min.setToolTip(u"Reynolds minimum du balayage.")
         grid_re.addWidget(self._spn_re_min, 0, 1)
 
@@ -53,7 +53,7 @@ class TabXfoil(QWidget):
         self._spn_re_max = QSpinBox()
         self._spn_re_max.setRange(1000, 100000000)
         self._spn_re_max.setSingleStep(10000)
-        self._spn_re_max.setValue(200000)
+        self._spn_re_max.setValue(2000000)
         self._spn_re_max.setToolTip(u"Reynolds maximum du balayage.")
         grid_re.addWidget(self._spn_re_max, 0, 3)
 
@@ -61,7 +61,7 @@ class TabXfoil(QWidget):
         self._spn_re_step = QSpinBox()
         self._spn_re_step.setRange(1000, 100000000)
         self._spn_re_step.setSingleStep(10000)
-        self._spn_re_step.setValue(100000)
+        self._spn_re_step.setValue(1000000)
         self._spn_re_step.setToolTip(
             u"Increment entre deux Reynolds successifs.\n"
             u"Mettre Pas >= (Max - Min) pour ne calculer qu'une seule"
@@ -82,7 +82,7 @@ class TabXfoil(QWidget):
         self._spn_alpha_min.setRange(-30.0, 30.0)
         self._spn_alpha_min.setSingleStep(0.5)
         self._spn_alpha_min.setDecimals(1)
-        self._spn_alpha_min.setValue(0.0)
+        self._spn_alpha_min.setValue(-5.0)
         self._spn_alpha_min.setToolTip(u"Angle d'incidence minimum (deg).")
         grid_alpha.addWidget(self._spn_alpha_min, 0, 1)
 
@@ -91,7 +91,7 @@ class TabXfoil(QWidget):
         self._spn_alpha_max.setRange(-30.0, 30.0)
         self._spn_alpha_max.setSingleStep(0.5)
         self._spn_alpha_max.setDecimals(1)
-        self._spn_alpha_max.setValue(5.0)
+        self._spn_alpha_max.setValue(15.0)
         self._spn_alpha_max.setToolTip(u"Angle d'incidence maximum (deg).")
         grid_alpha.addWidget(self._spn_alpha_max, 0, 3)
 
@@ -170,7 +170,7 @@ class TabXfoil(QWidget):
         self._spn_xtr_top.setRange(0.05, 1.0)
         self._spn_xtr_top.setSingleStep(0.05)
         self._spn_xtr_top.setDecimals(3)
-        self._spn_xtr_top.setValue(0.05)
+        self._spn_xtr_top.setValue(0.2)
         self._spn_xtr_top.setToolTip(
             u"Position de transition forcee sur l'extrados,"
             u" en fraction de corde (x/c).\n"
@@ -186,7 +186,7 @@ class TabXfoil(QWidget):
         self._spn_xtr_bot.setRange(0.05, 1.0)
         self._spn_xtr_bot.setSingleStep(0.05)
         self._spn_xtr_bot.setDecimals(3)
-        self._spn_xtr_bot.setValue(0.05)
+        self._spn_xtr_bot.setValue(0.2)
         self._spn_xtr_bot.setToolTip(
             u"Position de transition forcee sur l'intrados,"
             u" en fraction de corde (x/c).\n"

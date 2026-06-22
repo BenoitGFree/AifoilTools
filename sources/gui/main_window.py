@@ -119,6 +119,22 @@ class MainWindow(QMainWindow):
         act_uiuc_ref.triggered.connect(
             lambda: self._on_open_uiuc('reference'))
 
+        # Sous-menu NACA (generation a partir des indices)
+        naca_menu = file_menu.addMenu(u"Profil &NACA")
+        naca_menu.setStatusTip(
+            u"Generer un profil NACA (4 ou 5 chiffres) a partir de ses"
+            u" indices")
+        act_naca_current = naca_menu.addAction(u"Profil courant…")
+        act_naca_current.setStatusTip(
+            u"Generer un profil NACA comme profil courant")
+        act_naca_current.triggered.connect(
+            lambda: self._on_new_naca('current'))
+        act_naca_ref = naca_menu.addAction(u"Profil référence…")
+        act_naca_ref.setStatusTip(
+            u"Generer un profil NACA comme profil de reference")
+        act_naca_ref.triggered.connect(
+            lambda: self._on_new_naca('reference'))
+
         file_menu.addSeparator()
 
         act_save = QAction("&Sauvegarder profil...", self)
@@ -356,6 +372,39 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Erreur de chargement", info)
             self.statusBar().showMessage(
                 u"Echec du chargement depuis UIUC")
+
+    def _on_new_naca(self, role):
+        u"""Genere un profil NACA a partir d'indices saisis par l'utilisateur.
+
+        :param role: 'current' ou 'reference'
+        """
+        from PySide6.QtWidgets import QInputDialog, QMessageBox
+        label = u"courant" if role == "current" else u"référence"
+        text, ok = QInputDialog.getText(
+            self, u"Profil NACA — %s" % label,
+            u"Indices NACA (4 ou 5 chiffres, ex. 2412 ou 23012) :")
+        if not ok:
+            return
+        designation = text.strip()
+        if not (designation.isdigit() and len(designation) in (4, 5)):
+            QMessageBox.warning(
+                self, u"Indices NACA invalides",
+                u"Saisissez 4 ou 5 chiffres (ex. 2412 ou 23012).\n"
+                u"Reçu : « %s »" % text)
+            return
+        n_points, ok = QInputDialog.getInt(
+            self, u"Profil NACA — %s" % label,
+            u"Nombre de points :", 150, 20, 10000, 10)
+        if not ok:
+            return
+        res_ok, info = self._tab_profils.load_profil_from_naca(
+            designation, role, n_points=n_points)
+        if res_ok:
+            self.statusBar().showMessage(
+                u"Profil %s généré : %s" % (label, info))
+        else:
+            QMessageBox.warning(self, u"Erreur de génération NACA", info)
+            self.statusBar().showMessage(u"Echec de la génération NACA")
 
     def _on_save(self):
         """Sauvegarde le profil courant dans un fichier."""
