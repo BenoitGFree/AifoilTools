@@ -638,6 +638,53 @@ class Simulation(object):
     #  Methodes
     # ------------------------------------------------------------------
 
+    # Nom du fichier de diagnostic Python ecrit dans le work_dir
+    DIAGNOSTIC_LOG = 'diagnostic.log'
+
+    def _start_diagnostic_log(self):
+        u"""Branche un handler de log fichier dans le repertoire de travail.
+
+        Capture les messages des loggers du package (pipeline, simulateur,
+        postprocesseur, simulation) dans ``<work_dir>/diagnostic.log``.
+
+        :returns: contexte a passer a _stop_diagnostic_log, ou None
+        :rtype: tuple or None
+        """
+        import logging as _logging
+        try:
+            if not os.path.isdir(self._work_dir):
+                os.makedirs(self._work_dir)
+            path = os.path.join(self._work_dir, self.DIAGNOSTIC_LOG)
+            handler = _logging.FileHandler(path, mode='w', encoding='utf-8')
+            handler.setLevel(_logging.DEBUG)
+            handler.setFormatter(_logging.Formatter(
+                '%(asctime)s %(levelname)-7s %(name)s: %(message)s',
+                datefmt='%H:%M:%S'))
+            # Logger racine du package (ex. 'model' ou 'airfoiltools') :
+            # capte tous les sous-modules par propagation.
+            pkg = __name__.split('.')[0]
+            pkg_logger = _logging.getLogger(pkg)
+            prev_level = pkg_logger.level
+            if prev_level == _logging.NOTSET or prev_level > _logging.INFO:
+                pkg_logger.setLevel(_logging.INFO)
+            pkg_logger.addHandler(handler)
+            return (pkg_logger, handler, prev_level)
+        except OSError:
+            # Le diagnostic ne doit jamais faire echouer la simulation
+            return None
+
+    def _stop_diagnostic_log(self, ctx):
+        u"""Detache le handler de diagnostic et restaure le niveau de log."""
+        if ctx is None:
+            return
+        pkg_logger, handler, prev_level = ctx
+        try:
+            handler.close()
+        except Exception:
+            pass
+        pkg_logger.removeHandler(handler)
+        pkg_logger.setLevel(prev_level)
+
     def run(self):
         u"""Execute le pipeline complet.
 
@@ -653,6 +700,13 @@ class Simulation(object):
 
         self._state = self.RUNNING
         self._error = None
+
+        # Capturer tout le diagnostic Python (pipeline, simulateur,
+        # postprocesseur) dans <work_dir>/diagnostic.log, en plus du log
+        # console XFoil. C'est ici que figurent les avertissements de
+        # parsing ("polaire vide"), le bilan de convergence et les
+        # erreurs eventuelles.
+        diag = self._start_diagnostic_log()
 
         try:
             from .profil import Profil
@@ -686,14 +740,31 @@ class Simulation(object):
             self._results = SimulationResults.from_dict(raw_results)
             self._state = self.DONE
 
+            # Bilan explicite de convergence pour le diagnostic
+            n_pts = self._results.n_converged
+            n_re = len(self._results.re_list)
+            if n_pts == 0:
+                logger.warning(
+                    u"AUCUN point converge : XFoil n'a produit aucune "
+                    u"polaire exploitable. Verifiez le profil (croisements, "
+                    u"bord de fuite), le Reynolds, la plage d'alpha et le "
+                    u"timeout. Voir aussi xfoil_alpha.cmd.log.")
+            else:
+                logger.info(u"Bilan : %d point(s) converge(s) sur %d "
+                            u"Reynolds", n_pts, n_re)
+            for w in self._results.warnings:
+                logger.warning(u"Avertissement : %s", w)
+
             logger.info(u"Simulation terminee : %s", repr(self._results))
             return self._results
 
         except Exception as e:
             self._state = self.FAILED
             self._error = str(e)
-            logger.error(u"Simulation echouee : %s", str(e))
+            logger.exception(u"Simulation echouee : %s", str(e))
             raise
+        finally:
+            self._stop_diagnostic_log(diag)
 
     def prepare_only(self):
         u"""Execute uniquement le preprocessing (debug/inspection).

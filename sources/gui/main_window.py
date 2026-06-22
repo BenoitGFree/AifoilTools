@@ -289,6 +289,8 @@ class MainWindow(QMainWindow):
 
         # Connecter le bouton Lancer
         self._tab_xfoil.run_requested.connect(self._on_run_simulations)
+        # Connecter les boutons de diagnostic
+        self._tab_xfoil.diagnostic_requested.connect(self._on_diagnostic)
 
         # Marquer les resultats obsoletes quand un profil change
         self._tab_profils.profil_changed.connect(
@@ -296,6 +298,8 @@ class MainWindow(QMainWindow):
 
         # Worker en cours
         self._sim_worker = None
+        # Repertoires de travail XFoil par role (pour le diagnostic)
+        self._work_dirs = {}
 
     # ------------------------------------------------------------------
     # Slots
@@ -590,6 +594,9 @@ class MainWindow(QMainWindow):
     def _on_sim_finished(self, results):
         u"""Traite les resultats des simulations."""
         self._tab_xfoil.set_enabled(True)
+        if self._sim_worker is not None:
+            self._work_dirs.update(self._sim_worker.work_dirs)
+        self._tab_xfoil.set_diagnostic_available(self._work_dirs.keys())
         self._sim_worker = None
 
         n_profils = len(results)
@@ -611,11 +618,37 @@ class MainWindow(QMainWindow):
     def _on_sim_error(self, error_msg):
         """Affiche l'erreur de simulation."""
         self._tab_xfoil.set_enabled(True)
+        # Conserver les repertoires deja crees : le log d'un calcul en
+        # echec est justement ce qu'on veut diagnostiquer.
+        if self._sim_worker is not None:
+            self._work_dirs.update(self._sim_worker.work_dirs)
+        self._tab_xfoil.set_diagnostic_available(self._work_dirs.keys())
         self._sim_worker = None
 
         from PySide6.QtWidgets import QMessageBox
-        QMessageBox.warning(self, "Erreur de simulation", error_msg)
+        QMessageBox.warning(
+            self, "Erreur de simulation",
+            u"%s\n\nUtilisez les boutons « Diagnostic » de l'onglet"
+            u" Paramétrage XFoil pour consulter le log." % error_msg)
         self.statusBar().showMessage("Echec de la simulation")
+
+    def _on_diagnostic(self, role):
+        u"""Ouvre le dialogue de diagnostic pour un profil.
+
+        :param role: 'current', 'reference' ou 'flap'
+        :type role: str
+        """
+        work_dir = self._work_dirs.get(role)
+        labels = {'current': 'courant', 'reference': u'référence',
+                  'flap': 'volet'}
+        label = labels.get(role, role)
+        if not work_dir:
+            self.statusBar().showMessage(
+                u"Aucune simulation pour le profil %s" % label)
+            return
+        from .diagnostic_dialog import DiagnosticDialog
+        dlg = DiagnosticDialog(work_dir, title=label, parent=self)
+        dlg.exec()
 
     def _on_set_grid(self, rows, cols):
         """Change la disposition de la grille de resultats."""

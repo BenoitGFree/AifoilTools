@@ -151,28 +151,41 @@ class XFoilSimulator(AbstractSimulator):
                 cwd=work_dir
             )
 
+            timed_out = False
             try:
                 stdout, stderr = proc.communicate(
                     input=cmd_content.encode('utf-8'),
                     timeout=self.timeout)
             except subprocess.TimeoutExpired:
+                # Recuperer la sortie partielle avant d'abandonner : c'est
+                # justement ce qu'on veut diagnostiquer.
+                timed_out = True
                 proc.kill()
-                proc.communicate()
-                logger.error(
-                    u"XFoil timeout (%d s) pour %s", self.timeout, cmd_file)
-                return False
+                stdout, stderr = proc.communicate()
 
             stdout = stdout.decode('utf-8', errors='replace') if stdout else ''
             stderr = stderr.decode('utf-8', errors='replace') if stderr else ''
 
-            # Sauvegarder la sortie console de XFoil pour debug
+            # Sauvegarder la sortie console de XFoil pour debug (y compris
+            # en cas de timeout : sortie partielle utile au diagnostic).
             log_file = os.path.join(work_dir,
                                     os.path.basename(cmd_file) + '.log')
             with open(log_file, 'w', encoding='utf-8') as f:
                 f.write(stdout)
+                if timed_out:
+                    f.write(u"\n--- TIMEOUT (%d s) : XFoil interrompu. "
+                            u"Augmentez le Timeout (ou reduisez la plage "
+                            u"d'alpha / le nombre de Reynolds, ou "
+                            u"decochez 'Reinit. si echec' qui double le "
+                            u"temps de calcul). ---\n" % self.timeout)
                 if stderr:
                     f.write('\n--- STDERR ---\n')
                     f.write(stderr)
+
+            if timed_out:
+                logger.error(
+                    u"XFoil timeout (%d s) pour %s", self.timeout, cmd_file)
+                return False
 
             if proc.returncode != 0:
                 logger.warning(

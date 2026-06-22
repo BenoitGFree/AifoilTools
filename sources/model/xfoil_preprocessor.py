@@ -162,6 +162,12 @@ class XFoilPreprocessor(AbstractPreprocessor):
             lines.append('')  # pas de dump file
 
             use_aseq = p.get('USE_ASEQ', True)
+            init_retry = p.get('INIT_RETRY', False)
+            # La recuperation par reinitialisation necessite des ALFA
+            # individuels : impossible d'intercaler un INIT dans un
+            # balayage ASEQ.
+            if init_retry:
+                use_aseq = False
 
             if use_aseq:
                 # Mode ASEQ : balayage sequentiel automatique
@@ -178,28 +184,56 @@ class XFoilPreprocessor(AbstractPreprocessor):
                     alpha += alpha_step
             else:
                 # Mode ALFA individuel (airfoiltools-style)
-                # Balayage bidirectionnel depuis alpha=0
-                alphas_pos = []
-                a = 0.0
+                # Balayage bidirectionnel en RESPECTANT [alpha_min,
+                # alpha_max]. On part de l'incidence de la plage la plus
+                # proche de 0 (meilleure convergence initiale, calculee
+                # depuis la solution non visqueuse) puis on marche vers
+                # chaque extreme. Si la plage ne contient pas 0 (ex.
+                # 5 -> 10), on demarre a l'extreme proche de 0 sans
+                # ajouter les incidences intermediaires hors plage.
+                start = min(max(0.0, alpha_min), alpha_max)
+                alphas_pos = []          # branche montante : start -> max
+                a = start
                 while a <= alpha_max + 1e-9:
                     alphas_pos.append(round(a, 6))
                     a += alpha_step
-                alphas_neg = []
-                a = -alpha_step
+                alphas_neg = []          # branche descendante : -> min
+                a = start - alpha_step
                 while a >= alpha_min - 1e-9:
                     alphas_neg.append(round(a, 6))
                     a -= alpha_step
 
-                for a in alphas_pos:
-                    lines.append('ALFA %g' % a)
+                def _alfa(a):
                     cp_file = 'cp_Re%s_a%g.dat' % (re_tag, a)
+                    lines.append('ALFA %g' % a)
                     lines.append('CPWR %s' % cp_file)
+
+                # --- Passe 1 : marche continue ---
+                # Chaque point est initialise par le precedent converge :
+                # c'est ce chainage qui aide la convergence aux angles
+                # eleves. On NE l'interrompt PAS (sinon on degrade la
+                # convergence).
+                for a in alphas_pos:
+                    _alfa(a)
                 if alphas_neg:
                     lines.append('INIT')
                     for a in alphas_neg:
-                        lines.append('ALFA %g' % a)
-                        cp_file = 'cp_Re%s_a%g.dat' % (re_tag, a)
-                        lines.append('CPWR %s' % cp_file)
+                        _alfa(a)
+
+                # --- Passe 2 : recuperation par reinitialisation ---
+                # Si un point n'a pas converge en marche ('VISCAL:
+                # Convergence failed'), la cascade peut faire sauter toute
+                # la suite. On rejoue donc chaque incidence depuis un etat
+                # propre (INIT avant chaque ALFA) : cela rattrape les
+                # points manquants sans toucher a la chaine de la passe 1.
+                # Les points converges deux fois donnent 2 lignes pour le
+                # meme alpha ; le postprocesseur dedoublonne en gardant la
+                # premiere (solution en marche).
+                if init_retry:
+                    for a in alphas_pos + alphas_neg:
+                        lines.append('INIT')
+                        _alfa(a)
+
                 lines.append('PACC')
 
             # Sauvegarde couche limite pour le dernier alpha

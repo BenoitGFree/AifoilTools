@@ -1,5 +1,47 @@
 # Changelog
 
+## [Non publié] - 2026-06-22 12:15
+
+### Fixed (Corrigé)
+- **Transition forcée par défaut trop en avant (cause de non-convergence).**
+  `XTR_TOP`/`XTR_BOT` valaient 0.01 (1% de corde) : forcer la transition
+  aussi près du bord d'attaque déstabilise la couche limite de XFoil
+  (`TRCHEK2` NaN → boucle infinie, log de plusieurs Mo, timeout, polaire
+  tronquée). Nouveau défaut **0.05** et minimum **0.05** dans les champs
+  GUI pour ne plus pouvoir entrer dans la zone instable
+  (`defaults_xfoil.cfg`, `gui/tab_xfoil.py`).
+- **Plage d'alpha non respectée en mode ALFA individuel.** Le balayage
+  partait toujours de 0° : demander 5→10° calculait en fait 0→10°. La
+  séquence respecte désormais `[alpha_min, alpha_max]` en démarrant de
+  l'incidence la plus proche de 0 dans la plage
+  (`xfoil_preprocessor.py`).
+- **Log console XFoil perdu en cas de timeout.** La sortie partielle
+  (essentielle au diagnostic) est désormais sauvegardée avec une note
+  explicite (`xfoil_simulator.py`).
+
+### Added (Ajouté)
+- **Diagnostic par profil** : boutons « Courant / Référence / Volet »
+  dans l'onglet Paramétrage XFoil ouvrant un dialogue d'accès au
+  répertoire de travail et aux fichiers de la simulation (log console,
+  script, polaires, Cp), log affiché en premier (`gui/diagnostic_dialog.py`,
+  `gui/tab_xfoil.py`, `gui/main_window.py`, `gui/simulation_worker.py`)
+- **`diagnostic.log`** écrit dans le répertoire de travail : capture le
+  diagnostic Python (étapes du pipeline, avertissements de parsing,
+  bilan de convergence, traces d'erreur) invisible jusque-là
+  (`simulation.py`)
+- **Champ « Itérations »** (commande `ITER` de XFoil) dans l'onglet
+  Paramétrage XFoil (`gui/tab_xfoil.py`)
+- **Option « Réinit. si échec »** (décochée par défaut) : 2ᵉ passe
+  rejouant chaque incidence depuis un état propre (`INIT`) pour récupérer
+  les points non convergés en marche, sans dégrader le balayage en marche
+  (`xfoil_preprocessor.py`, `xfoil_postprocessor.py` dédoublonnage)
+
+### Changed (Modifié)
+- `SimulationWorker` expose les répertoires de travail par rôle
+  (`work_dirs`) et accepte `no_normalize_roles` (`gui/simulation_worker.py`)
+- `Simulation` accepte `normalize=` et gère le journal de diagnostic
+  (`simulation.py`)
+
 ## [Non publié] - 2026-06-22 10:30
 
 ### Fixed (Corrigé)

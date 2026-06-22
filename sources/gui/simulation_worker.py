@@ -37,6 +37,18 @@ class SimulationWorker(QThread):
         self._profils = profils
         self._params = params
         self._no_normalize_roles = set(no_normalize_roles or ())
+        self._work_dirs = {}   # {role: repertoire de travail XFoil}
+
+    @property
+    def work_dirs(self):
+        u"""Repertoires de travail XFoil par role (pour le diagnostic).
+
+        Renseigne au fur et a mesure, y compris pour un role dont la
+        simulation a echoue (le log reste consultable).
+
+        :rtype: dict
+        """
+        return dict(self._work_dirs)
 
     def run(self):
         u"""Execute les simulations (dans le thread)."""
@@ -52,6 +64,9 @@ class SimulationWorker(QThread):
                 normalize = role not in self._no_normalize_roles
                 sim = Simulation(profil, params=self._params,
                                  normalize=normalize)
+                # Memoriser le repertoire AVANT run() pour qu'il reste
+                # consultable meme si la simulation echoue.
+                self._work_dirs[role] = sim.work_dir
                 sim_results = sim.run()
                 results[role] = sim_results
 

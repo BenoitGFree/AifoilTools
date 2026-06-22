@@ -224,9 +224,17 @@ class XFoilPostprocessor(AbstractPostprocessor):
             return None
 
         data = np.array(data_lines)
-        # Trier par alpha croissant (necessaire en mode ALFA bidirectionnel)
-        order = np.argsort(data[:, 0])
+        # Trier par alpha croissant (necessaire en mode ALFA bidirectionnel).
+        # Tri stable pour preserver l'ordre des doublons (mode INIT_RETRY :
+        # tentative en marche avant tentative reinitialisee).
+        order = np.argsort(data[:, 0], kind='stable')
         data = data[order]
+        # Dedoublonner les incidences (mode INIT_RETRY produit 2 lignes par
+        # alpha converge) : garder la premiere occurrence, c.-a-d. la
+        # solution obtenue en marche (physique pour un balayage croissant).
+        alphas = data[:, 0]
+        _, first_idx = np.unique(alphas, return_index=True)
+        data = data[np.sort(first_idx)]
         return {
             'alpha': data[:, 0],
             'CL': data[:, 1],

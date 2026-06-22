@@ -20,6 +20,10 @@ class TabXfoil(QWidget):
     # target: 'both', 'current' ou 'reference'
     run_requested = Signal(str)
 
+    # Signal emis pour consulter le diagnostic d'un profil
+    # role: 'current', 'reference' ou 'flap'
+    diagnostic_requested = Signal(str)
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self._build_ui()
@@ -112,6 +116,19 @@ class TabXfoil(QWidget):
             u" convergence aux angles eleves).")
         grid_alpha.addWidget(self._chk_aseq, 0, 6)
 
+        self._chk_init_retry = QCheckBox(u"Réinit. si échec")
+        self._chk_init_retry.setChecked(False)
+        self._chk_init_retry.setToolTip(
+            u"Coche : apres le balayage en marche, une 2e passe rejoue"
+            u" chaque incidence depuis un etat propre (INIT avant chaque"
+            u" ALFA).\n"
+            u"Recupere les points qu'une non-convergence en marche"
+            u" ('VISCAL: Convergence failed') aurait fait sauter, sans"
+            u" degrader le balayage en marche (on garde sa solution).\n"
+            u"Implique le mode ALFA individuel (incompatible avec ASEQ)"
+            u" et environ double le temps de calcul.")
+        grid_alpha.addWidget(self._chk_init_retry, 0, 7)
+
         layout.addWidget(grp_alpha)
 
         # --- Parametres XFoil ---
@@ -150,29 +167,31 @@ class TabXfoil(QWidget):
         # XTR_TOP
         grid_xf.addWidget(QLabel("XTR Top :"), 1, 0)
         self._spn_xtr_top = QDoubleSpinBox()
-        self._spn_xtr_top.setRange(0.0, 1.0)
-        self._spn_xtr_top.setSingleStep(0.01)
+        self._spn_xtr_top.setRange(0.05, 1.0)
+        self._spn_xtr_top.setSingleStep(0.05)
         self._spn_xtr_top.setDecimals(3)
-        self._spn_xtr_top.setValue(0.01)
+        self._spn_xtr_top.setValue(0.05)
         self._spn_xtr_top.setToolTip(
             u"Position de transition forcee sur l'extrados,"
             u" en fraction de corde (x/c).\n"
             u"1.0 = transition libre (laissee au critere NCRIT).\n"
-            u"Valeur < 1.0 = trip turbulent (simulation de"
-            u" rugosite ou turbulateur).")
+            u"Valeur < 1.0 = trip turbulent (rugosite/turbulateur).\n"
+            u"Min 0.05 : forcer la transition plus pres du bord"
+            u" d'attaque destabilise XFoil (NaN, boucle infinie).")
         grid_xf.addWidget(self._spn_xtr_top, 1, 1)
 
         # XTR_BOT
         grid_xf.addWidget(QLabel("XTR Bot :"), 1, 2)
         self._spn_xtr_bot = QDoubleSpinBox()
-        self._spn_xtr_bot.setRange(0.0, 1.0)
-        self._spn_xtr_bot.setSingleStep(0.01)
+        self._spn_xtr_bot.setRange(0.05, 1.0)
+        self._spn_xtr_bot.setSingleStep(0.05)
         self._spn_xtr_bot.setDecimals(3)
-        self._spn_xtr_bot.setValue(0.01)
+        self._spn_xtr_bot.setValue(0.05)
         self._spn_xtr_bot.setToolTip(
             u"Position de transition forcee sur l'intrados,"
             u" en fraction de corde (x/c).\n"
-            u"1.0 = transition libre. Valeur < 1.0 = trip turbulent.")
+            u"1.0 = transition libre. Valeur < 1.0 = trip turbulent.\n"
+            u"Min 0.05 (stabilite XFoil).")
         grid_xf.addWidget(self._spn_xtr_bot, 1, 3)
 
         # REPANEL
@@ -209,6 +228,20 @@ class TabXfoil(QWidget):
             u"Au-dela, le processus est tue (utile en cas de"
             u" non-convergence).")
         grid_xf.addWidget(self._spn_timeout, 3, 1)
+
+        # ITER
+        grid_xf.addWidget(QLabel(u"Iterations :"), 3, 2)
+        self._spn_iter = QSpinBox()
+        self._spn_iter.setRange(10, 2000)
+        self._spn_iter.setSingleStep(10)
+        self._spn_iter.setValue(100)
+        self._spn_iter.setToolTip(
+            u"Nombre maximum d'iterations de Newton par point (commande"
+            u" ITER de XFoil).\n"
+            u"Defaut : 100. Augmenter (200-300) si un point precis ne"
+            u" converge pas (message 'VISCAL: Convergence failed'),\n"
+            u"typique pres du decrochage ou avec un coude de volet.")
+        grid_xf.addWidget(self._spn_iter, 3, 3)
 
         layout.addWidget(grp_xfoil)
 
@@ -254,6 +287,48 @@ class TabXfoil(QWidget):
         btn_layout.addStretch()
         layout.addLayout(btn_layout)
 
+        # --- Diagnostic ---
+        grp_diag = QGroupBox("Diagnostic")
+        grp_diag.setToolTip(
+            u"Acces au repertoire de travail et au log console XFoil de"
+            u" la derniere simulation de chaque profil.\n"
+            u"Utile pour comprendre une non-convergence ou une erreur.")
+        diag_layout = QHBoxLayout(grp_diag)
+        diag_layout.addWidget(QLabel(u"Log / fichiers :"))
+        diag_layout.addStretch()
+
+        self._btn_diag_current = QPushButton("Courant")
+        self._btn_diag_current.setToolTip(
+            u"Ouvre le log et les fichiers XFoil du profil courant.")
+        self._btn_diag_current.clicked.connect(
+            lambda: self.diagnostic_requested.emit('current'))
+        diag_layout.addWidget(self._btn_diag_current)
+
+        self._btn_diag_reference = QPushButton(u"Référence")
+        self._btn_diag_reference.setToolTip(
+            u"Ouvre le log et les fichiers XFoil du profil de reference.")
+        self._btn_diag_reference.clicked.connect(
+            lambda: self.diagnostic_requested.emit('reference'))
+        diag_layout.addWidget(self._btn_diag_reference)
+
+        self._btn_diag_flap = QPushButton("Volet")
+        self._btn_diag_flap.setToolTip(
+            u"Ouvre le log et les fichiers XFoil du profil avec volet.")
+        self._btn_diag_flap.clicked.connect(
+            lambda: self.diagnostic_requested.emit('flap'))
+        diag_layout.addWidget(self._btn_diag_flap)
+
+        self._diag_buttons = {
+            'current': self._btn_diag_current,
+            'reference': self._btn_diag_reference,
+            'flap': self._btn_diag_flap,
+        }
+        # Desactives tant qu'aucune simulation n'a tourne
+        for b in self._diag_buttons.values():
+            b.setEnabled(False)
+
+        layout.addWidget(grp_diag)
+
         layout.addStretch()
 
     # ------------------------------------------------------------------
@@ -294,10 +369,23 @@ class TabXfoil(QWidget):
             'REPANEL': self._chk_repanel.isChecked(),
             'NPANEL': self._spn_npanel.value(),
             'TIMEOUT': self._spn_timeout.value(),
+            'ITER': self._spn_iter.value(),
             'USE_ASEQ': self._chk_aseq.isChecked(),
+            'INIT_RETRY': self._chk_init_retry.isChecked(),
         }
 
     def set_enabled(self, enabled):
         u"""Active/desactive les controles (pendant une simulation)."""
         for w in self.findChildren(QWidget):
             w.setEnabled(enabled)
+
+    def set_diagnostic_available(self, roles):
+        u"""Active les boutons de diagnostic des roles disponibles.
+
+        :param roles: iterable des roles ayant un repertoire de travail
+                      ('current', 'reference', 'flap')
+        :type roles: iterable
+        """
+        available = set(roles)
+        for role, btn in self._diag_buttons.items():
+            btn.setEnabled(role in available)
