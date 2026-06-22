@@ -207,11 +207,13 @@
 % File name or command
 \newcommand{\code}[1]{\texttt{#1}}
 
-% Full-width framed figure
+% Full-width framed figure (English screenshots live in images_en/,
+% with a fallback to the shared images/ folder via \graphicspath).
+\graphicspath{{images_en/}{images/}}
 \newcommand{\screenshot}[3]{%
     \begin{figure}[H]
         \centering
-        \fbox{\includegraphics[width=#2\textwidth]{images/#1}}
+        \fbox{\includegraphics[width=#2\textwidth]{#1}}
         \caption{#3}
         \label{fig:#1}
     \end{figure}

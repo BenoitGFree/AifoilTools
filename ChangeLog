@@ -1,5 +1,14 @@
 # Changelog
 
+## [Non publié] - 2026-06-22 22:30
+
+### Added (Ajouté)
+- **Captures d'écran anglaises** du manuel (`docs/manuel/images_en/`) :
+  `tools/capture_screenshots.py` accepte `AIRFOIL_DOC_LANG=en` (langue
+  de la GUI + dossier de sortie + traduction des libellés de figures
+  via `SCREENSHOT_TR`). Le style EN utilise
+  `\graphicspath{{images_en/}{images/}}` (fallback FR par fichier)
+
 ## [Non publié] - 2026-06-22 22:00
 
 ### Added (Ajouté)

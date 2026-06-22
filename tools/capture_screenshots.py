@@ -36,11 +36,75 @@ from PySide6.QtWidgets import (
 )
 
 from gui.main_window import MainWindow
+from gui import i18n
 from model.profil_spline import ProfilSpline
 
 
-OUT_DIR = os.path.join(_ROOT, 'docs', 'manuel', 'images')
+# Langue des captures : 'fr' (defaut) -> images/, 'en' -> images_en/.
+# Pilotee par la variable d'environnement AIRFOIL_DOC_LANG.
+LANG = os.environ.get('AIRFOIL_DOC_LANG', 'fr')
+if LANG not in ('fr', 'en'):
+    LANG = 'fr'
+
+OUT_DIR = os.path.join(
+    _ROOT, 'docs', 'manuel', 'images' if LANG == 'fr' else 'images_en')
 os.makedirs(OUT_DIR, exist_ok=True)
+
+# Traductions des chaines propres aux captures : figures matplotlib et
+# dialogues reconstruits (non issus directement de la GUI traduite).
+SCREENSHOT_TR = {
+    # Dialogue Convertir en Spline
+    u"Convertir en Spline": u"Convert to Spline",
+    u"Degré extrados :": u"Upper-surface degree:",
+    u"Degré intrados :": u"Lower-surface degree:",
+    u"Tolérance :": u"Tolerance:",
+    u"Max segments :": u"Max segments:",
+    u"Lissage :": u"Smoothing:",
+    # Avertissement courbure
+    u"Courbure indisponible": u"Curvature unavailable",
+    u"La courbure ne peut etre tracee que sur des profils "
+    u"definis par des Beziers (splines).\n\n"
+    u"Solutions :\n"
+    u"  - Convertir le profil courant via le menu "
+    u"« Edition › Convertir en Spline »\n"
+    u"  - Charger un profil au format .bspl ou .bez":
+        u"Curvature can only be drawn on airfoils defined by "
+        u"Bezier curves (splines).\n\n"
+        u"Solutions:\n"
+        u"  - Convert the current airfoil via the menu "
+        u"“Edit › Convert to Spline”\n"
+        u"  - Load an airfoil in .bspl or .bez format",
+    # Dialogue NACA
+    u"Profil NACA — courant": u"NACA airfoil — current",
+    u"Indices NACA (4 ou 5 chiffres, ex. 2412 ou 23012) :":
+        u"NACA digits (4 or 5 digits, e.g. 2412 or 23012):",
+    # Diagnostic (role)
+    u"courant": u"current",
+    # Figure tangente au BA
+    u"BA (P0)": u"LE (P0)",
+    u"Contrainte active : tangente verticale":
+        u"Active constraint: vertical tangent",
+    u"Contrainte libérée : tangente inclinée":
+        u"Released constraint: tilted tangent",
+    # Figure schema de volet
+    u"profil": u"airfoil",
+    u"axe d'articulation\n(centre du cercle inscrit)":
+        u"hinge axis\n(centre of inscribed circle)",
+    u"tangence extrados": u"upper-surface tangency",
+    u"tangence intrados": u"lower-surface tangency",
+    u"$X_f$ = 70 % de corde": u"$X_f$ = 70 % of chord",
+    u"Articulation du volet : cercle inscrit tangent aux deux "
+    u"surfaces,\ncentre a l'abscisse $X_f$":
+        u"Flap hinge: inscribed circle tangent to both surfaces,"
+        u"\ncentred at abscissa $X_f$",
+}
+
+
+def T(s):
+    """Traduit une chaine de capture selon LANG (identite en francais)."""
+    if LANG == 'fr':
+        return s
+    return SCREENSHOT_TR.get(s, s)
 
 
 def save(widget, name):
@@ -150,37 +214,37 @@ def capture_convert_dialog(app, win):
     """Capture le dialogue 'Convertir en Spline'."""
     print("[7] Dialogue Convertir en Spline")
     dlg = QDialog(win)
-    dlg.setWindowTitle("Convertir en Spline")
+    dlg.setWindowTitle(T(u"Convertir en Spline"))
     form = QFormLayout(dlg)
 
     spn_ext = QSpinBox()
     spn_ext.setRange(2, 30)
     spn_ext.setValue(11)
-    form.addRow(u"Degré extrados :", spn_ext)
+    form.addRow(T(u"Degré extrados :"), spn_ext)
 
     spn_int = QSpinBox()
     spn_int.setRange(2, 30)
     spn_int.setValue(11)
-    form.addRow(u"Degré intrados :", spn_int)
+    form.addRow(T(u"Degré intrados :"), spn_int)
 
     spn_tol = QDoubleSpinBox()
     spn_tol.setRange(0.0001, 0.1)
     spn_tol.setDecimals(4)
     spn_tol.setSingleStep(0.0005)
     spn_tol.setValue(0.001)
-    form.addRow(u"Tolérance :", spn_tol)
+    form.addRow(T(u"Tolérance :"), spn_tol)
 
     spn_max_seg = QSpinBox()
     spn_max_seg.setRange(1, 20)
     spn_max_seg.setValue(1)
-    form.addRow("Max segments :", spn_max_seg)
+    form.addRow(T(u"Max segments :"), spn_max_seg)
 
     spn_smooth = QDoubleSpinBox()
     spn_smooth.setRange(0.0, 1.0)
     spn_smooth.setDecimals(2)
     spn_smooth.setSingleStep(0.01)
     spn_smooth.setValue(0.1)
-    form.addRow("Lissage :", spn_smooth)
+    form.addRow(T(u"Lissage :"), spn_smooth)
 
     buttons = QDialogButtonBox(
         QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
@@ -199,14 +263,14 @@ def capture_courbure_warning(app, win):
     print("[8] Message d'avertissement courbure")
     box = QMessageBox(win)
     box.setIcon(QMessageBox.Information)
-    box.setWindowTitle(u"Courbure indisponible")
-    box.setText(
+    box.setWindowTitle(T(u"Courbure indisponible"))
+    box.setText(T(
         u"La courbure ne peut etre tracee que sur des profils "
         u"definis par des Beziers (splines).\n\n"
         u"Solutions :\n"
         u"  - Convertir le profil courant via le menu "
         u"« Edition › Convertir en Spline »\n"
-        u"  - Charger un profil au format .bspl ou .bez")
+        u"  - Charger un profil au format .bspl ou .bez"))
     box.show()
     pump(app, 10)
     save(box, '08_msg_courbure.png')
@@ -234,9 +298,9 @@ def capture_naca_dialog(app, win):
     print("[16] Dialogue Profil NACA")
     dlg = QInputDialog(win)
     dlg.setInputMode(QInputDialog.TextInput)
-    dlg.setWindowTitle(u"Profil NACA — courant")
+    dlg.setWindowTitle(T(u"Profil NACA — courant"))
     dlg.setLabelText(
-        u"Indices NACA (4 ou 5 chiffres, ex. 2412 ou 23012) :")
+        T(u"Indices NACA (4 ou 5 chiffres, ex. 2412 ou 23012) :"))
     dlg.setTextValue("2412")
     dlg.resize(440, 130)
     dlg.show()
@@ -279,7 +343,7 @@ def capture_diagnostic_dialog(app, win):
     open(os.path.join(wd, 'polar_Re1000000.dat'), 'w').write(
         "XFoil polar\n  alpha   CL ...\n")
 
-    dlg = DiagnosticDialog(wd, title=u"courant", parent=win)
+    dlg = DiagnosticDialog(wd, title=T(u"courant"), parent=win)
     dlg.show()
     pump(app, 12)
     save(dlg, '17_dialog_diagnostic.png')
@@ -393,7 +457,7 @@ def generate_ba_tangent_figure():
         ax.plot(cp[:, 0], cp[:, 1], '--', color=grey, lw=0.9)
         ax.plot(cp[1:-1, 0], cp[1:-1, 1], 's', color=blue, ms=7)
         ax.plot(cp[0, 0], cp[0, 1], 'o', color=blue, ms=6)
-        ax.annotate('BA (P0)', xy=cp[0], xytext=(20, -28),
+        ax.annotate(T(u'BA (P0)'), xy=cp[0], xytext=(20, -28),
                     textcoords='offset points', fontsize=10)
         ax.annotate('P1', xy=cp[1], xytext=(14, 6),
                     textcoords='offset points', fontsize=10)
@@ -423,9 +487,9 @@ def generate_ba_tangent_figure():
     cp_free[1] = [80.0, 60.0]
 
     draw_panel(ax1, cp_active,
-               u"Contrainte active : tangente verticale")
+               T(u"Contrainte active : tangente verticale"))
     draw_panel(ax2, cp_free,
-               u"Contrainte libérée : tangente inclinée")
+               T(u"Contrainte libérée : tangente inclinée"))
     ax1.set_ylabel('y (mm)')
     fig.tight_layout()
     path = os.path.join(OUT_DIR, '13_ba_tangente.png')
@@ -454,26 +518,26 @@ def generate_flap_schema_figure():
     ax = fig.add_subplot(111)
     pts = prof.points
     ax.plot(pts[:, 0], pts[:, 1], '-', color='#1f77b4', lw=1.6,
-            label=u'profil')
+            label=T(u'profil'))
     ax.add_patch(Circle(C, radius=r, fill=False, edgecolor='#2ca02c',
                         lw=1.8))
     ax.plot([C[0]], [C[1]], 'o', color='#d62728', ms=7)
-    ax.annotate(u"axe d'articulation\n(centre du cercle inscrit)",
+    ax.annotate(T(u"axe d'articulation\n(centre du cercle inscrit)"),
                 xy=(C[0], C[1]), xytext=(120, 150),
                 textcoords='offset points', fontsize=9, ha='center',
                 arrowprops=dict(arrowstyle='->', color='#d62728'))
     ax.plot([ef[0]], [ef[1]], 's', color='#2ca02c', ms=7)
     ax.plot([if_[0]], [if_[1]], 's', color='#2ca02c', ms=7)
-    ax.annotate(u"tangence extrados", xy=(ef[0], ef[1]),
+    ax.annotate(T(u"tangence extrados"), xy=(ef[0], ef[1]),
                 xytext=(-30, 70), textcoords='offset points', fontsize=9,
                 ha='center',
                 arrowprops=dict(arrowstyle='->', color='#2ca02c'))
-    ax.annotate(u"tangence intrados", xy=(if_[0], if_[1]),
+    ax.annotate(T(u"tangence intrados"), xy=(if_[0], if_[1]),
                 xytext=(-30, -70), textcoords='offset points', fontsize=9,
                 ha='center',
                 arrowprops=dict(arrowstyle='->', color='#2ca02c'))
     ax.axvline(xf, color='#999999', ls=':', lw=1.0)
-    ax.annotate(u"$X_f$ = 70 % de corde", xy=(xf, r + C[1]),
+    ax.annotate(T(u"$X_f$ = 70 % de corde"), xy=(xf, r + C[1]),
                 xytext=(xf, 250), fontsize=9, ha='center',
                 color='#555555',
                 arrowprops=dict(arrowstyle='->', color='#999999'))
@@ -484,8 +548,8 @@ def generate_flap_schema_figure():
     ax.set_ylabel('y (mm)')
     ax.grid(True, alpha=0.3)
     ax.set_title(
-        u"Articulation du volet : cercle inscrit tangent aux deux "
-        u"surfaces,\ncentre a l'abscisse $X_f$", fontsize=10)
+        T(u"Articulation du volet : cercle inscrit tangent aux deux "
+          u"surfaces,\ncentre a l'abscisse $X_f$"), fontsize=10)
     fig.tight_layout()
     path = os.path.join(OUT_DIR, '19_flap_schema.png')
     fig.savefig(path, dpi=110)
@@ -500,6 +564,10 @@ def main():
 
     app = QApplication.instance() or QApplication(sys.argv)
     app.setStyle('Fusion')
+    app.setOrganizationName('Nervures')
+    app.setApplicationName('AirfoilTools')
+    # Construire la GUI dans la langue demandee (avant MainWindow()).
+    i18n.set_language(LANG)
     win = MainWindow()
     win.resize(1280, 760)
     win.show()
