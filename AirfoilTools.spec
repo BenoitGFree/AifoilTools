@@ -1,6 +1,58 @@
 # -*- mode: python ; coding: utf-8 -*-
 """PyInstaller spec file for AirfoilTools."""
 
+import os
+import shutil
+import subprocess
+import sys
+
+
+def _inject_version():
+    """Genere docs/manuel/version.tex depuis __version__ (source unique).
+
+    Delegue a docs/manuel/gen_version.py pour ne pas dupliquer la
+    logique : le meme script est lancable a la main avant une
+    compilation LaTeX isolee. version.tex est un artefact (gitignore),
+    regenere ici a chaque build.
+    """
+    gen = os.path.join(SPECPATH, 'docs', 'manuel', 'gen_version.py')
+    try:
+        subprocess.run([sys.executable, gen], check=True)
+        print("[spec] version.tex genere depuis __version__.")
+    except subprocess.CalledProcessError as exc:
+        print("[spec] AVERTISSEMENT : generation de version.tex echouee "
+              "(code %s)." % exc.returncode)
+
+
+def _rebuild_manual():
+    """Recompile le manuel LaTeX avant le bundling.
+
+    Garantit que le PDF embarque (docs/manuel/manuel.pdf) reflete la
+    derniere source manuel.tex (notamment la version \\manuelversion).
+    Si latexmk est absent ou echoue, on conserve le PDF existant en
+    affichant un avertissement (le build n'est pas interrompu).
+    """
+    manual_dir = os.path.join(SPECPATH, 'docs', 'manuel')
+    latexmk = shutil.which('latexmk')
+    if latexmk is None:
+        print("[spec] AVERTISSEMENT : latexmk introuvable, "
+              "le manuel ne sera PAS recompile (PDF existant conserve).")
+        return
+    print("[spec] Recompilation du manuel LaTeX (latexmk)...")
+    try:
+        subprocess.run(
+            [latexmk, '-pdf', '-interaction=nonstopmode', 'manuel.tex'],
+            cwd=manual_dir, check=True,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        print("[spec] Manuel recompile : docs/manuel/manuel.pdf")
+    except subprocess.CalledProcessError as exc:
+        print("[spec] AVERTISSEMENT : echec de la compilation du manuel "
+              "(code %s), PDF existant conserve." % exc.returncode)
+
+
+_inject_version()
+_rebuild_manual()
+
 a = Analysis(
     ['run_gui.py'],
     pathex=['sources'],

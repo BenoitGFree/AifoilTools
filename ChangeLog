@@ -1,5 +1,23 @@
 # Changelog
 
+## [Non publié] - 2026-06-22 19:35
+
+### Added (Ajouté)
+- **Injection automatique de la version dans le manuel** : le manuel
+  LaTeX devient piloté par `__version__` (source unique). Le `.spec`
+  PyInstaller délègue à `docs/manuel/gen_version.py` la génération de
+  `docs/manuel/version.tex` puis recompile le PDF au build
+- `docs/manuel/gen_version.py` : script de génération de `version.tex`
+  (lancable aussi à la main avant une compilation LaTeX isolée)
+
+### Changed (Modifié)
+- `manuel.tex` lit la version via `\InputIfFileExists{version.tex}`
+  (fallback `dev`) au lieu d'un `\newcommand` codé en dur
+- Profil de référence généré à l'identique du profil courant au
+  démarrage (`n_points=400` au lieu de 150), sans conversion en spline
+  (`TabProfils._load_default_profiles`)
+- `version.tex` ignoré par Git (artefact régénéré au build)
+
 ## [Non publié] - 2026-06-22 19:05
 
 ### Changed (Modifié)

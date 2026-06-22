@@ -1,3 +1,6 @@
+# Version injectee au build (artefact, source = sources/gui/__init__.py)
+version.tex
+
 # Fichiers auxiliaires LaTeX
 *.aux
 *.log

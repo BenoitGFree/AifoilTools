@@ -218,13 +218,17 @@ class TabProfils(QWidget):
         """Charge les profils par defaut au demarrage.
 
         Courant : NACA 2412 converti en Bezier (spline).
-        Reference : NACA 2412 (mode discret).
+        Reference : NACA 2412 genere a l'identique du courant (memes
+        parametres, n_points=400) mais SANS conversion en spline : il
+        reste en mode discret.
         Courbure (du courant) et deviation activees par defaut.
         """
         self._profil_current = ProfilSpline.from_naca('2412', n_points=400)
         self._profil_current.normalize()
 
-        self._profil_reference = ProfilSpline.from_naca('2412', n_points=150)
+        # Meme generation que le courant (n_points=400), sans la
+        # conversion en spline appliquee plus bas au seul courant.
+        self._profil_reference = ProfilSpline.from_naca('2412', n_points=400)
         self._profil_reference.normalize()
 
         # Mettre les etiquettes a jour avec le nom reel des profils

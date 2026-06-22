@@ -3,8 +3,10 @@
 \usepackage{style/manuel_style}
 
 % --- Metadonnees ---
-% Garder synchronise avec sources/gui/__init__.py (__version__)
-\newcommand{\manuelversion}{3.0}
+% Version injectee au build depuis sources/gui/__init__.py (__version__) :
+% le .spec PyInstaller (re)genere docs/manuel/version.tex. Le fallback
+% s'applique aux compilations manuelles si version.tex est absent.
+\InputIfFileExists{version.tex}{}{\newcommand{\manuelversion}{dev}}
 \newcommand{\manueldate}{Juin 2026}
 \newcommand{\manuelauteur}{Beno\^{i}t Gagnaire}
 \newcommand{\manuelpremieredition}{2022}
