@@ -25,45 +25,56 @@ def _inject_version():
 
 
 def _rebuild_manual():
-    """Recompile le manuel LaTeX avant le bundling.
+    """Recompile les manuels LaTeX (FR + EN) avant le bundling.
 
-    Garantit que le PDF embarque (docs/manuel/manuel.pdf) reflete la
-    derniere source manuel.tex (notamment la version \\manuelversion).
-    Si latexmk est absent ou echoue, on conserve le PDF existant en
-    affichant un avertissement (le build n'est pas interrompu).
+    Garantit que les PDF embarques (docs/manuel/manuel.pdf et
+    manuel_en.pdf) refletent les dernieres sources (notamment la
+    version \\manuelversion injectee). Si latexmk est absent ou echoue,
+    on conserve le PDF existant en affichant un avertissement (le build
+    n'est pas interrompu).
     """
     manual_dir = os.path.join(SPECPATH, 'docs', 'manuel')
     latexmk = shutil.which('latexmk')
     if latexmk is None:
         print("[spec] AVERTISSEMENT : latexmk introuvable, "
-              "le manuel ne sera PAS recompile (PDF existant conserve).")
+              "les manuels ne seront PAS recompiles (PDF existants conserves).")
         return
-    print("[spec] Recompilation du manuel LaTeX (latexmk)...")
-    try:
-        subprocess.run(
-            [latexmk, '-pdf', '-interaction=nonstopmode', 'manuel.tex'],
-            cwd=manual_dir, check=True,
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        print("[spec] Manuel recompile : docs/manuel/manuel.pdf")
-    except subprocess.CalledProcessError as exc:
-        print("[spec] AVERTISSEMENT : echec de la compilation du manuel "
-              "(code %s), PDF existant conserve." % exc.returncode)
+    for tex in ('manuel.tex', 'manuel_en.tex'):
+        if not os.path.isfile(os.path.join(manual_dir, tex)):
+            continue
+        print("[spec] Recompilation du manuel LaTeX (%s)..." % tex)
+        try:
+            subprocess.run(
+                [latexmk, '-pdf', '-interaction=nonstopmode', tex],
+                cwd=manual_dir, check=True,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            print("[spec] Manuel recompile : %s" % tex.replace('.tex', '.pdf'))
+        except subprocess.CalledProcessError as exc:
+            print("[spec] AVERTISSEMENT : echec de la compilation de %s "
+                  "(code %s), PDF existant conserve." % (tex, exc.returncode))
 
 
 _inject_version()
 _rebuild_manual()
 
+# Manuels a embarquer : FR toujours, EN seulement s'il a ete compile
+# (manuel_en.pdf). Le menu Aide ouvre la version correspondant a la
+# langue de l'interface, avec fallback FR.
+_datas = [
+    ('sources/model/defaults_xfoil.cfg', 'model'),
+    # Manuel utilisateur (accessible via menu Aide)
+    ('docs/manuel/manuel.pdf', 'docs'),
+    # Executable XFoil (necessaire aux simulations)
+    ('externaltools/xfoil/xfoil.exe', 'externaltools/xfoil'),
+]
+if os.path.isfile(os.path.join(SPECPATH, 'docs', 'manuel', 'manuel_en.pdf')):
+    _datas.append(('docs/manuel/manuel_en.pdf', 'docs'))
+
 a = Analysis(
     ['run_gui.py'],
     pathex=['sources'],
     binaries=[],
-    datas=[
-        ('sources/model/defaults_xfoil.cfg', 'model'),
-        # Manuel utilisateur (accessible via menu Aide)
-        ('docs/manuel/manuel.pdf', 'docs'),
-        # Executable XFoil (necessaire aux simulations)
-        ('externaltools/xfoil/xfoil.exe', 'externaltools/xfoil'),
-    ],
+    datas=_datas,
     hiddenimports=[
         # model package
         'model',

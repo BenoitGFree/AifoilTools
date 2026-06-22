@@ -1,0 +1,169 @@
+\chapter{Appendices}
+\label{chap:annexes}
+
+\section{Keyboard shortcuts}
+
+\begin{tabularx}{\linewidth}{l X}
+    \toprule
+    \textbf{Shortcut} & \textbf{Action} \\
+    \midrule
+    \touche{Ctrl}+\touche{O}            & Open current airfoil \\
+    \touche{Ctrl}+\touche{Shift}+\touche{O} & Open reference airfoil \\
+    \touche{Ctrl}+\touche{S}            & Save current airfoil \\
+    \touche{Ctrl}+\touche{Q}            & Quit \\
+    \touche{Ctrl}+\touche{Z}            & Undo (reserved, not active) \\
+    \touche{Ctrl}+\touche{Y}            & Redo (reserved, not active) \\
+    \touche{Ctrl}+\touche{B}            & Convert to spline \\
+    \touche{Ctrl}+\touche{0}            & Fit zoom (airfoils canvas) \\
+    \bottomrule
+\end{tabularx}
+
+\section{Glossary}
+
+\begin{description}
+    \item[LE / TE] Leading edge ($x=0$) / Trailing edge ($x=c$).
+    \item[Camber] Maximum height of the airfoil mean line,
+        expressed as a percentage of the chord.
+    \item[$C_D$] Drag coefficient. Drag force
+        normalized by the dynamic pressure and the chord.
+    \item[$C_f$] Local wall skin-friction coefficient.
+    \item[$C_L$] Lift coefficient.
+    \item[$C_M$] Pitching moment coefficient, generally
+        referenced to the quarter chord.
+    \item[$C_p$] Pressure coefficient: $(p - p_\infty) /
+        (\frac{1}{2}\rho V_\infty^2)$.
+    \item[$C^0$, $C^1$, $C^2$ continuity] At the junction point of two curves:
+        identity of position ($C^0$), of tangent
+        ($C^1$), of curvature ($C^2$).
+    \item[Chord] Distance between the LE and the TE, used as the
+        reference length.
+    \item[Bézier curve] Parametric curve defined by a
+        control polygon. The degree equals the number of
+        control points minus one.
+    \item[$\delta^*$] Boundary-layer displacement thickness.
+    \item[De Casteljau] Recursive algorithm for evaluating and
+        subdividing a Bézier curve. The subdivision is
+        \emph{exact} (no approximation).
+    \item[Stall] Abrupt loss of lift beyond a
+        critical angle of attack, due to boundary-layer
+        separation.
+    \item[Upper surface / Lower surface] Upper / lower surface of the
+        airfoil.
+    \item[L/D] $C_L/C_D$ ratio. The higher the lift-to-drag ratio,
+        the better the aerodynamic efficiency.
+    \item[$H$] Boundary-layer shape factor,
+        $H = \delta^*/\theta$.
+    \item[NCRIT] Transition criterion in the $e^N$ method;
+        maximum accepted amplitude of disturbances before
+        the onset of turbulence.
+    \item[Polar] Plot of one aerodynamic quantity as a
+        function of another, at a given Reynolds number. Several
+        polars form a family indexed by the Reynolds number.
+    \item[Reynolds] Dimensionless number
+        $\mathrm{Re} = \rho V c / \mu$, characterizing the flow
+        regime (laminar, transitional, turbulent).
+    \item[Selig] Convention for storing the points of an airfoil:
+        TE $\to$ upper surface $\to$ LE $\to$ lower surface $\to$ TE.
+    \item[Spline] Piecewise curve composed of several
+        Bézier segments joined according to a given level of
+        continuity.
+    \item[$\theta$] Boundary-layer momentum thickness.
+    \item[Trip / Turbulator] Element (roughness, stretched wire) forcing
+        the laminar-to-turbulent transition at a given position.
+    \item[$U_e$] Velocity at the outer edge of the boundary layer.
+    \item[XFoil] 2D aerodynamic solver developed by Mark Drela
+        (MIT) coupling a panel method with boundary-layer
+        integral equations.
+    \item[XTR] Boundary-layer transition position ($x_{tr}/c$).
+\end{description}
+
+\section{Troubleshooting (FAQ)}
+
+\subsection*{The GUI does not launch}
+
+Check that:
+
+\begin{enumerate}
+    \item the virtual environment is activated (\chemin{env\_py3});
+    \item the dependencies are installed (\code{pip install -r
+        requirements.txt});
+    \item Python is version 3.10 or higher
+        (\code{python --version}).
+\end{enumerate}
+
+\subsection*{XFoil does not run}
+
+\begin{itemize}
+    \item Check for the presence of \chemin{externaltools/xfoil/xfoil.exe}.
+    \item On Windows, some antivirus programs may block
+        execution. Add an exception for the
+        \chemin{externaltools} folder.
+    \item The commands sent to XFoil are visible in the
+        console (in development mode); review the output
+        to diagnose any syntax error.
+\end{itemize}
+
+\subsection*{XFoil does not converge for some angles}
+
+\begin{itemize}
+    \item Disable \menu{ASEQ} to switch to bidirectional ALFA
+        mode.
+    \item Reduce the $\alpha$ step (for example from 0.5\textdegree{} to
+        0.25\textdegree{}) to ease continuation tracking.
+    \item Increase \menu{Timeout} if the computation is long.
+    \item Check that the airfoil has no geometric
+        singularities (duplicated points, upper/lower surface crossing,
+        degenerate LE).
+\end{itemize}
+
+\subsection*{The curvature is not displayed}
+
+\begin{itemize}
+    \item Convert the airfoil to spline mode
+        (\menu{Edit $\rightarrow$ Convert to Spline}).
+    \item Increase the porcupine scale (right-click on the
+        canvas $\rightarrow$ \menu{Porcupine scale\dots}) if
+        they are too short to be visible.
+\end{itemize}
+
+\subsection*{I lose my splines when saving}
+
+The \chemin{.dat} format (Selig/Lednicer) does not preserve the
+spline representation: only the discrete points are
+saved. To keep the spline, use the
+\chemin{.bspl} format.
+
+\section{Further reading}
+
+\begin{itemize}
+    \item \textbf{Technical documentation}: see the docstrings
+        in the source code (Sphinx reST format) and the documentation
+        generated in the \chemin{docs/} folder.
+    \item \textbf{Unit tests}: see the
+        \chemin{tests/} folder, which contains more than 240 tests
+        (Bezier, Profil, BezierSpline, ProfilSpline,
+        Simulation).
+    \item \textbf{Reference article on XFoil}:
+        Drela, M. \emph{XFOIL: An Analysis and Design System for
+        Low Reynolds Number Airfoils}, in \emph{Low Reynolds
+        Number Aerodynamics}, Springer Lecture Notes in Engineering,
+        Vol.~54, 1989.
+    \item \textbf{Airfoil library}:
+        \url{https://m-selig.ae.illinois.edu/ads/coord_database.html}
+        (large catalogue in \chemin{.dat} format, accessible
+        directly from the application's \menu{File $\rightarrow$ From
+        the UIUC database} menu).
+
+\end{itemize}
+
+\bigskip
+\hrule
+\bigskip
+
+\begin{center}
+    \itshape
+    End of the user manual.\\
+    To report a typo, suggest an improvement or
+    ask a question, open an \emph{issue} on
+    \chemin{https://github.com/BenoitGFree/AirfoilTools}.
+\end{center}

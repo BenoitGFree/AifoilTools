@@ -1,0 +1,112 @@
+\documentclass[11pt,a4paper,oneside]{report}
+
+\usepackage{style/manuel_style_en}
+
+% --- Metadata ---
+% Version injected at build time from sources/gui/__init__.py
+% (__version__): the PyInstaller .spec regenerates docs/manuel/version.tex.
+% The fallback applies to manual compilations when version.tex is absent.
+\InputIfFileExists{version.tex}{}{\newcommand{\manuelversion}{dev}}
+\newcommand{\manueldate}{June 2026}
+\newcommand{\manuelauteur}{Beno\^{i}t Gagnaire}
+\newcommand{\manuelpremieredition}{2022}
+
+\begin{document}
+
+% =====================================================================
+%  COVER PAGE
+% =====================================================================
+\begin{titlepage}
+    \begin{tikzpicture}[remember picture, overlay]
+        % Top band
+        \fill[airfoilprimary] (current page.north west)
+            rectangle ([yshift=-5cm]current page.north east);
+        % Bottom band
+        \fill[airfoilrule] (current page.south west)
+            rectangle ([yshift=2cm]current page.south east);
+        % Title in the band
+        \node[anchor=east, text=white,
+              font=\fontfamily{phv}\selectfont\bfseries\fontsize{50}{55}\selectfont]
+            at ([xshift=-2cm,yshift=-2cm]current page.north east) {AirfoilTools};
+        \node[anchor=east, text=white,
+              font=\fontfamily{phv}\selectfont\fontsize{18}{22}\selectfont]
+            at ([xshift=-2cm,yshift=-3.4cm]current page.north east)
+            {2D aerodynamic analysis of airfoils};
+    \end{tikzpicture}
+
+    \vfill\vfill
+
+    \begin{center}
+        \color{airfoilprimary}
+        \fontfamily{phv}\selectfont
+        \textbf{\Huge User Manual}\\[1em]
+        {\Large Version \manuelversion{} --- \manueldate}
+    \end{center}
+
+    \vfill
+
+    \vspace{1.5cm}
+    \begin{flushleft}
+        \color{airfoilprimary}
+        \fontfamily{phv}\selectfont
+        \Large
+        \textbf{\manuelauteur}\\[2pt]
+        \normalsize
+    \end{flushleft}
+    \vspace{0.5cm}
+\end{titlepage}
+
+% =====================================================================
+%  CREDITS / LICENCE
+% =====================================================================
+\thispagestyle{empty}
+\null
+\vfill
+\begin{flushleft}
+    \small
+    \textbf{AirfoilTools --- User Manual, version \manuelversion}\\
+    Edition of \manueldate.\\[0.5em]
+    Author: \manuelauteur.\\
+    First software release: \manuelpremieredition.\\[1em]
+
+    This document describes the use of the \textbf{AirfoilTools}
+    library and its graphical interface for the 2D aerodynamic
+    analysis of airfoils through coupling with the \emph{XFoil}
+    solver.\\[0.5em]
+
+    AirfoilTools is distributed under the \textbf{LGPL-3.0} licence.
+    The source code is available at:\\
+    \url{https://github.com/BenoitGFree/AirfoilTools}\\[0.5em]
+
+    \emph{XFoil} is a program developed by Mark Drela (MIT) and
+    distributed under the GPL licence.\\[0.5em]
+
+    All trademarks mentioned are the property of their respective
+    owners.
+\end{flushleft}
+\clearpage
+
+% =====================================================================
+%  TABLE OF CONTENTS
+% =====================================================================
+\pagenumbering{roman}
+\tableofcontents
+\clearpage
+\listoffigures
+\clearpage
+
+\pagenumbering{arabic}
+
+% =====================================================================
+%  CHAPTERS
+% =====================================================================
+\input{chapitres_en/01_introduction}
+\input{chapitres_en/02_installation}
+\input{chapitres_en/03_interface}
+\input{chapitres_en/04_profils}
+\input{chapitres_en/05_xfoil}
+\input{chapitres_en/06_resultats}
+\input{chapitres_en/07_formats}
+\input{chapitres_en/08_annexes}
+
+\end{document}

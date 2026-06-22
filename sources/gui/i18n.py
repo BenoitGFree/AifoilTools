@@ -227,6 +227,11 @@ _TR = {
         u"Manuel ouvert : %s": u"Manual opened: %s",
         u"Erreur lors de l'ouverture du PDF :\n\n%s":
             u"Error while opening the PDF:\n\n%s",
+
+        # Noms d'analyses (resultats) : seul 'Finesse' n'est pas une
+        # notation aero internationale. Identifiant interne inchange.
+        u"Finesse(alpha)": u"L/D(alpha)",
+        u"Finesse(CL)": u"L/D(CL)",
     },
 }
 

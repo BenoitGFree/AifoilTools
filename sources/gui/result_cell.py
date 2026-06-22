@@ -352,6 +352,17 @@ ANALYSIS_REGISTRY = [
 # Noms pour acces rapide
 ANALYSIS_NAMES = [a[0] for a in ANALYSIS_REGISTRY]
 
+
+def _analysis_label(name):
+    u"""Libelle d'affichage (traduit) d'une analyse.
+
+    L'identifiant interne (nom non traduit) reste la cle utilisee
+    partout (registre, lookup, sauvegarde) ; seul l'affichage est
+    traduit. Pour la plupart des noms (notation aero CL/CD/alpha...)
+    la traduction est l'identite ; seul 'Finesse(...)' change.
+    """
+    return _(name)
+
 # Disposition par defaut (ordre des analyses dans une grille 2x2)
 DEFAULT_ANALYSES = ['CL(alpha)', 'CD(alpha)', 'Finesse(alpha)', 'CL(CD)']
 
@@ -412,13 +423,17 @@ class ResultCell(QWidget):
         ctrl.setSpacing(4)
 
         self._combo = QComboBox()
-        self._combo.addItems(ANALYSIS_NAMES)
+        # Libelle affiche (traduit) en texte, identifiant en userData.
+        self._combo.blockSignals(True)
+        for nm in ANALYSIS_NAMES:
+            self._combo.addItem(_analysis_label(nm), nm)
+        self._combo.blockSignals(False)
         self._combo.setToolTip(
             _(u"Type d'analyse affiche dans cette cellule.\n"
             u"Polaires : CL(alpha), CD(alpha), CL/CD, Cm(alpha)...\n"
             u"Distributions : -Cp(x), Profil + CL\n"
             u"Couche limite : Ue, Dstar, Theta, Cf, H (vs s ou x)"))
-        self._combo.currentTextChanged.connect(self._on_analysis_changed)
+        self._combo.currentIndexChanged.connect(self._on_analysis_changed)
         ctrl.addWidget(self._combo)
 
         self._chk_current = QCheckBox(_("C"))
@@ -575,7 +590,7 @@ class ResultCell(QWidget):
 
         self._ax.set_xlabel(xlabel, fontsize=8)
         self._ax.set_ylabel(ylabel, fontsize=8)
-        title = self._analysis_name
+        title = _analysis_label(self._analysis_name)
         if is_cp and self._selected_re is not None:
             title += '  %s' % _format_re(self._selected_re)
         if is_profil_bl:
@@ -656,8 +671,11 @@ class ResultCell(QWidget):
     # Slots controles
     # ------------------------------------------------------------------
 
-    def _on_analysis_changed(self, name):
+    def _on_analysis_changed(self, _index=None):
         u"""Appele quand le combo d'analyse change."""
+        name = self._combo.currentData()
+        if name is None:
+            return
         self._analysis_name = name
         self._legend_offset = 0
         needs_re = name in ('-Cp(x)', 'Profil + CL')
@@ -802,7 +820,7 @@ class ResultCell(QWidget):
     def _set_combo_value(self, name):
         u"""Positionne le combo sans declencher le signal."""
         self._combo.blockSignals(True)
-        idx = self._combo.findText(name)
+        idx = self._combo.findData(name)
         if idx >= 0:
             self._combo.setCurrentIndex(idx)
         self._combo.blockSignals(False)

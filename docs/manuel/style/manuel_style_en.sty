@@ -1,0 +1,221 @@
+% Style for the AirfoilTools user manual (English edition).
+% Parallel to manuel_style.sty: same macros, English babel and labels.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{style/manuel_style_en}[2026/05/01 AirfoilTools manual style (EN)]
+
+% --- Encoding and language ---
+\RequirePackage[utf8]{inputenc}
+\RequirePackage[T1]{fontenc}
+\RequirePackage[english]{babel}
+\RequirePackage{lmodern}
+\RequirePackage{textcomp}
+
+% French babel quote macros (\og ... \fg) may survive translation from
+% the French source; under english babel they are undefined, so map
+% them to English double quotes.
+\providecommand{\og}{\textquotedblleft}
+\providecommand{\fg}{\textquotedblright}
+
+% --- Page layout ---
+\RequirePackage[a4paper,margin=2.5cm,headheight=15pt]{geometry}
+\RequirePackage{microtype}
+\RequirePackage{setspace}
+\setstretch{1.05}
+
+% --- Graphics and colours ---
+\RequirePackage{graphicx}
+\RequirePackage{xcolor}
+\RequirePackage{float}
+
+% Colour palette
+\definecolor{airfoilprimary}{HTML}{1F3A5F}
+\definecolor{airfoilsecondary}{HTML}{1F77B4}
+\definecolor{airfoilaccent}{HTML}{D62728}
+\definecolor{airfoilbg}{HTML}{F5F7FA}
+\definecolor{airfoilrule}{HTML}{8DA9C4}
+\definecolor{airfoilcode}{HTML}{2D2D2D}
+\definecolor{airfoilcodebg}{HTML}{F8F8F8}
+
+% --- Tables ---
+\RequirePackage{array}
+\RequirePackage{booktabs}
+\RequirePackage{tabularx}
+\RequirePackage{longtable}
+\RequirePackage{multirow}
+
+% --- Hyperlinks ---
+\RequirePackage[
+    pdftitle={AirfoilTools User Manual},
+    pdfauthor={Nervures},
+    pdfsubject={2D aerodynamic analysis of airfoils},
+    pdfkeywords={XFoil, Bezier, airfoil, aerodynamics, paraglider},
+    colorlinks=true,
+    linkcolor=airfoilprimary,
+    urlcolor=airfoilsecondary,
+    citecolor=airfoilprimary,
+    bookmarks=true,
+    bookmarksnumbered=true,
+    bookmarksopen=true
+]{hyperref}
+
+% --- Headers and footers ---
+\RequirePackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[R]{\small\thepage}
+\fancyhead[L]{\small\itshape\nouppercase{\leftmark}}
+\fancyfoot[C]{\small\textcolor{airfoilprimary}{AirfoilTools --- User Manual}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.2pt}
+
+% Chapter page style
+\fancypagestyle{plain}{%
+    \fancyhf{}
+    \fancyfoot[C]{\small\textcolor{airfoilprimary}{AirfoilTools --- User Manual}}
+    \renewcommand{\headrulewidth}{0pt}
+    \renewcommand{\footrulewidth}{0.2pt}
+}
+
+% --- Heading styles ---
+\RequirePackage{titlesec}
+
+\titleformat{\chapter}[display]
+    {\normalfont\sffamily\huge\bfseries\color{airfoilprimary}}
+    {\filright\textcolor{airfoilrule}{\fontsize{60}{60}\selectfont\thechapter}}
+    {1em}
+    {\filright\Huge}
+    [\vspace{0.2em}{\color{airfoilrule}\titlerule[1pt]}]
+
+\titleformat{\section}
+    {\normalfont\sffamily\Large\bfseries\color{airfoilprimary}}
+    {\thesection}{1em}{}
+
+\titleformat{\subsection}
+    {\normalfont\sffamily\large\bfseries\color{airfoilsecondary}}
+    {\thesubsection}{1em}{}
+
+\titleformat{\subsubsection}
+    {\normalfont\sffamily\bfseries\color{airfoilsecondary}}
+    {}{0em}{}
+
+\titlespacing*{\chapter}{0pt}{-30pt}{30pt}
+\titlespacing*{\section}{0pt}{20pt}{8pt}
+\titlespacing*{\subsection}{0pt}{14pt}{6pt}
+
+% --- Information boxes (tcolorbox) ---
+\RequirePackage[most]{tcolorbox}
+
+\newtcolorbox{noteinfo}[1][]{%
+    colback=airfoilbg,
+    colframe=airfoilsecondary,
+    coltitle=white,
+    fonttitle=\sffamily\bfseries,
+    title=Note,
+    sharp corners=south,
+    arc=2pt,
+    boxrule=0.6pt,
+    leftrule=4pt,
+    left=8pt,right=8pt,top=4pt,bottom=4pt,
+    breakable,
+    #1
+}
+
+\newtcolorbox{astuce}[1][]{%
+    colback=green!5!white,
+    colframe=green!50!black,
+    coltitle=white,
+    fonttitle=\sffamily\bfseries,
+    title=Tip,
+    sharp corners=south,
+    arc=2pt,
+    boxrule=0.6pt,
+    leftrule=4pt,
+    left=8pt,right=8pt,top=4pt,bottom=4pt,
+    breakable,
+    #1
+}
+
+\newtcolorbox{attention}[1][]{%
+    colback=orange!5!white,
+    colframe=orange!75!black,
+    coltitle=white,
+    fonttitle=\sffamily\bfseries,
+    title=Caution,
+    sharp corners=south,
+    arc=2pt,
+    boxrule=0.6pt,
+    leftrule=4pt,
+    left=8pt,right=8pt,top=4pt,bottom=4pt,
+    breakable,
+    #1
+}
+
+\newtcolorbox{important}[1][]{%
+    colback=red!5!white,
+    colframe=red!75!black,
+    coltitle=white,
+    fonttitle=\sffamily\bfseries,
+    title=Important,
+    sharp corners=south,
+    arc=2pt,
+    boxrule=0.6pt,
+    leftrule=4pt,
+    left=8pt,right=8pt,top=4pt,bottom=4pt,
+    breakable,
+    #1
+}
+
+% --- Source code (listings) ---
+\RequirePackage{listings}
+
+\lstdefinestyle{airfoilstyle}{
+    backgroundcolor=\color{airfoilcodebg},
+    basicstyle=\ttfamily\small\color{airfoilcode},
+    keywordstyle=\bfseries\color{airfoilprimary},
+    commentstyle=\itshape\color{gray},
+    stringstyle=\color{airfoilaccent},
+    numberstyle=\tiny\color{gray},
+    numbers=left,
+    numbersep=8pt,
+    frame=l,
+    framesep=6pt,
+    rulecolor=\color{airfoilrule},
+    breaklines=true,
+    captionpos=b,
+    showstringspaces=false,
+    tabsize=4,
+}
+\lstset{style=airfoilstyle}
+
+% --- Utility commands ---
+% Keyboard key
+\newcommand{\touche}[1]{%
+    \tikz[baseline=(K.base)]\node[draw=airfoilrule,thick,rounded corners=2pt,
+        fill=airfoilbg,inner sep=2pt,minimum height=1.6em,
+        font=\sffamily\small](K){\strut #1};}
+\RequirePackage{tikz}
+
+% Menu / path
+\newcommand{\menu}[1]{\textsf{\textcolor{airfoilprimary}{#1}}}
+
+% Button
+\newcommand{\bouton}[1]{\textsf{\textbf{\textcolor{airfoilprimary}{[#1]}}}}
+
+% File path
+\newcommand{\chemin}[1]{\texttt{\textcolor{airfoilprimary}{#1}}}
+
+% File name or command
+\newcommand{\code}[1]{\texttt{#1}}
+
+% Full-width framed figure
+\newcommand{\screenshot}[3]{%
+    \begin{figure}[H]
+        \centering
+        \fbox{\includegraphics[width=#2\textwidth]{images/#1}}
+        \caption{#3}
+        \label{fig:#1}
+    \end{figure}
+}
+
+% Figure reference
+\newcommand{\figref}[1]{figure~\ref{fig:#1}}

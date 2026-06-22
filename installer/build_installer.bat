@@ -6,7 +6,7 @@ REM
 REM  Etapes :
 REM    1. Build PyInstaller -- dist\AirfoilTools\
 REM       (le .spec regenere docs\manuel\version.tex depuis __version__
-REM        et recompile le manuel PDF embarque)
+REM        et recompile les manuels PDF embarques : FR + EN)
 REM    2. Build Inno Setup  -- installer\Output\AirfoilTools-Setup-<version>.exe
 REM ====================================================================
 

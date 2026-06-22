@@ -1,0 +1,251 @@
+\chapter{XFoil Settings Tab}
+\label{chap:xfoil}
+
+The \menu{XFoil Settings} tab gathers all the simulation parameters
+passed to the solver. It is organized into input areas (Reynolds,
+Alpha, XFoil Parameters), a row of run buttons and a
+\menu{Diagnostics} frame.
+
+\screenshot{09_tab_xfoil.png}{1.0}{%
+    \menu{XFoil Settings} tab: input areas, run buttons
+    (including \og Flap only \fg{}) and \og Diagnostics \fg{} frame.}
+
+\begin{noteinfo}
+Default values at startup: Reynolds from 1\,000\,000 to
+2\,000\,000 (step 1\,000\,000), angle of attack from $-5^\circ$ to $+15^\circ$
+(step $0{,}5^\circ$), forced transition XTR~$=0{,}2$, 100~iterations,
+\menu{ASEQ} sweep.
+\end{noteinfo}
+
+\section{Reynolds range}
+
+The \menu{Reynolds} area lets you define a \textbf{range} of
+Reynolds numbers for the sweep. For each Reynolds, a
+complete polar is computed. Three fields:
+
+\begin{tabularx}{\linewidth}{l X}
+    \toprule
+    \textbf{Field} & \textbf{Description} \\
+    \midrule
+    Min  & Minimum Reynolds of the sweep. \\
+    Max  & Maximum Reynolds of the sweep. \\
+    Step & Increment between two consecutive values. To
+           compute a single Reynolds only, choose
+           \texttt{Step $\geq$ Max - Min}. \\
+    \bottomrule
+\end{tabularx}
+
+
+
+\section{Angle of attack range (Alpha)}
+
+The \menu{Alpha (deg)} area defines the sweep in angle of attack
+$\alpha$ for each polar:
+
+\begin{tabularx}{\linewidth}{l X}
+    \toprule
+    \textbf{Field} & \textbf{Description} \\
+    \midrule
+    Min  & Minimum angle of attack (in degrees, may be negative). \\
+    Max  & Maximum angle of attack. \\
+    Step & Increment between two points of the polar. Smaller~=~finer
+           polar, but longer simulation.\\
+    \bottomrule
+\end{tabularx}
+
+\subsection*{\menu{ASEQ} mode}
+
+The \menu{ASEQ} checkbox controls the \textbf{sweep strategy}
+in angle of attack:
+
+\begin{itemize}
+    \item \textbf{Checked} (default): XFoil runs the
+        \texttt{ASEQ} command which automatically sweeps the range
+        starting from the minimum. This is the historical \emph{fast} mode.
+    \item \textbf{Unchecked}: AirfoilTools sends a succession of
+        individual \texttt{ALFA} commands, starting from
+        $\alpha=0$ towards the maximum, then from $-\Delta$ towards the
+        minimum (with an \texttt{INIT} command between the two).
+        This mode is more \emph{robust} for convergence at
+        high angles or for difficult airfoils.
+\end{itemize}
+
+\begin{astuce}
+If XFoil does not converge for certain high angles, disable
+\menu{ASEQ} to try the bidirectional sweep. This
+often improves convergence by initializing each branch
+from the solution at $\alpha=0$.
+\end{astuce}
+
+\subsection*{\menu{Reset on failure} option}
+
+When an angle-of-attack point does not converge (message
+\texttt{VISCAL: Convergence failed}), the running sweep may
+\textbf{abandon the entire remainder} of the branch (cascade effect).
+The \menu{Reset on failure} checkbox adds a \textbf{second pass}
+that replays each angle of attack from a clean state (\texttt{INIT}
+command before each \texttt{ALFA}), in order to recover the missed
+points without degrading the running sweep (the
+postprocessor keeps the solution obtained while running when it
+exists).
+
+\begin{attention}
+The \menu{Reset on failure} option implies the individual \texttt{ALFA}
+mode (incompatible with \menu{ASEQ}) and \textbf{roughly doubles}
+the computation time. Remember to increase the \menu{Timeout}
+accordingly. It is \textbf{unchecked by default}.
+\end{attention}
+
+\section{Advanced XFoil parameters}
+
+The \menu{XFoil Parameters} area gathers the options of the solver
+itself.
+
+\subsection{Viscosity}
+
+\begin{itemize}
+    \item Checked (\menu{With}): \textbf{viscous} analysis
+        (XFoil's \texttt{VISC} command), with boundary layer.
+        \textbf{Recommended for any realistic polar.}
+    \item Unchecked: inviscid analysis (potential, without
+        friction). Useful only for quick geometric
+        comparisons.
+\end{itemize}
+
+\subsection{NCRIT}
+
+Boundary layer transition criterion by the $e^N$ method
+(amplification of Tollmien-Schlichting waves).
+
+\begin{tabularx}{\linewidth}{c X}
+    \toprule
+    \textbf{NCRIT} & \textbf{Flow type} \\
+    \midrule
+    9       & Standard free flow (default value). \\
+    4--7    & Very turbulent flow (closed wind tunnels,
+              high ambient turbulence). \\
+    12--14  & Very calm flow (glider flight in
+              perfectly laminar air). \\
+    \bottomrule
+\end{tabularx}
+
+\subsection{XTR Top and XTR Bot}
+
+Position of \textbf{forced transition} of the boundary layer,
+respectively on the upper surface (\emph{top}) and lower surface
+(\emph{bottom}), expressed as a fraction of chord ($x/c$).
+
+\begin{itemize}
+    \item Value 1{,}0: free transition, computed by the
+        NCRIT criterion. This is the standard mode.
+    \item Value $<1{,}0$: forced transition at the indicated position
+        (simulates a turbulent \emph{trip}: turbulator, roughness,
+        insect impacts\dots).
+\end{itemize}
+
+\begin{important}
+The minimum value is \textbf{0{,}05}. Forcing the transition too
+close to the leading edge (for example 0{,}01) \textbf{destabilizes
+the XFoil boundary layer}: the transition routine diverges
+(\texttt{NaN}) and enters a near-infinite loop, until the
+\menu{Timeout} expires. The default value is
+\textbf{0{,}2}.
+\end{important}
+
+\subsection{Repanel and NPanel}
+
+\begin{itemize}
+    \item \menu{Repanel}: if checked, XFoil runs the
+        \texttt{PANE} command which re-samples the airfoil with a
+        curvature-based adaptive criterion. Recommended for
+        airfoils with non-uniform sampling or for
+        very high resolution airfoils.
+    \item \menu{NPanel}: number of panels after re-sampling
+        (default 200). More = more accurate but slower.
+\end{itemize}
+
+\subsection{Timeout}
+
+Maximum execution time of XFoil for the computation of one polar,
+in seconds (default 30~s). Beyond that, the process is killed.
+This prevents the application from staying blocked if XFoil enters
+a non-convergence loop.
+
+\begin{attention}
+Increase the timeout (for example to 120~s) if you sweep a
+very wide range of angles of attack ($\Delta \alpha > 30^\circ$), if you
+compute several Reynolds, if the \menu{Reset on failure} option
+is active (doubled time), or if your airfoils converge slowly.
+\end{attention}
+
+\subsection{Iterations}
+
+Maximum number of Newton iterations per point (XFoil's
+\texttt{ITER} command), default 100. \textbf{Increase} this
+value (200--300) when a specific point does not converge
+(\texttt{VISCAL: Convergence failed}), a typical situation near
+stall or with a flap hinge.
+
+\section{Run buttons}
+
+Four buttons at the bottom of the parameters area let you run
+the simulation:
+
+\begin{itemize}
+    \item \bouton{Run all}: simulates all active airfoils ---
+        current, reference and, if the flap is enabled, the airfoil
+        with flap.
+    \item \bouton{Current only}: simulates only the current airfoil
+        (blue).
+    \item \bouton{Reference only}: simulates only the reference
+        airfoil (red).
+    \item \bouton{Flap only}: simulates only the airfoil with flap
+        (green). Requires the flap to be enabled in the
+        \menu{Profils} tab.
+\end{itemize}
+
+During the simulation, the tab controls are disabled,
+and the status bar shows the progress. At the end, the
+\menu{Results} tab is selected automatically.
+
+\begin{important}
+If you re-run a simulation for \textbf{only one} of the airfoils,
+the previous results of the other airfoils are \emph{kept}
+(merge). This allows, for example, fast iteration on the current
+airfoil while keeping the reference fixed for comparison.
+\end{important}
+
+\section{Diagnostics}
+\label{sec:diagnostic}
+
+The \menu{Diagnostics} frame, at the bottom of the tab, gives access
+to the internal files of the last simulation of each airfoil
+(\bouton{Current}, \bouton{Reference}, \bouton{Flap}). The
+buttons remain inactive as long as no simulation has been run
+for the corresponding airfoil.
+
+\screenshot{17_dialog_diagnostic.png}{0.85}{%
+    Diagnostics window: access to the working directory and the
+    simulation files. The \chemin{diagnostic.log} log
+    summarizes the course of the computation.}
+
+The diagnostics window lets you:
+
+\begin{itemize}
+    \item browse the simulation \textbf{files}: the
+        \chemin{diagnostic.log} log (summary of the course: steps,
+        warnings, convergence report), the XFoil console log
+        (\chemin{xfoil\_alpha.cmd.log}), the command script,
+        polars, pressure distributions;
+    \item \textbf{open the working folder} in the system file
+        explorer.
+\end{itemize}
+
+\begin{astuce}
+In case of failure or incomplete results, first open
+\chemin{diagnostic.log}: it clearly indicates whether the problem
+comes from a non-convergence (\og NO point converged\dots\fg{}),
+a \emph{timeout}, or an empty polar. The XFoil console log
+then provides the detail angle of attack by angle of attack. The log is
+saved \textbf{even in case of timeout}.
+\end{astuce}

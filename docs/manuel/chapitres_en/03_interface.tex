@@ -1,0 +1,211 @@
+\chapter{General interface}
+\label{chap:interface}
+
+\section{Overview}
+
+The main window of AirfoilTools is organised into four
+areas (\figref{01_main_window.png}):
+
+\begin{enumerate}
+    \item the \textbf{menu bar} (\menu{File}, \menu{Edit},
+        \menu{View}, \menu{Options}, \menu{Help});
+    \item the \textbf{tab selector} (\menu{Airfoils},
+        \menu{XFoil Settings}, \menu{Results});
+    \item the \textbf{work area}, which changes depending on the
+        selected tab;
+    \item the \textbf{status bar}, at the bottom of the window, where
+        information messages and simulation progress are
+        displayed.
+\end{enumerate}
+
+\section{Tooltips}
+
+Each control (checkbox, input field, button, menu action)
+has a \textbf{tooltip} that appears when the mouse
+cursor hovers over it for a moment. These tooltips describe the role
+of the control and the typical values.
+
+\begin{astuce}
+Hover over a control whose function is not obvious:
+the tooltip appears after about a second.
+For menu actions, the help is displayed at the bottom of
+the window in the status bar when hovering over the
+menu entry.
+\end{astuce}
+
+\section{\menu{File} menu}
+
+\begin{tabularx}{\linewidth}{l l X}
+    \toprule
+    \textbf{Entry} & \textbf{Shortcut} & \textbf{Action} \\
+    \midrule
+    Open current airfoil\dots
+        & \touche{Ctrl}+\touche{O}
+        & Loads an airfoil into the current position (blue).
+          Accepted formats: \chemin{.dat} (Selig/Lednicer),
+          \chemin{.bspl} (AirfoilTools spline), \chemin{.bez}
+          (AirfoilTools Bézier), \chemin{.csv}.\\
+    Open reference airfoil\dots
+        & \touche{Ctrl}+\touche{Shift}+\touche{O}
+        & Loads an airfoil into the reference position (red).\\
+    From the UIUC database / Current airfoil\dots
+        & ---
+        & Opens a search dialog in the online UIUC (Selig)
+          database and downloads the selected airfoil.
+          See section~\ref{sec:uiuc}, page~\pageref{sec:uiuc}.\\
+    From the UIUC database / Reference airfoil\dots
+        & ---
+        & Same for the reference airfoil.\\
+    NACA airfoil / Current airfoil\dots
+        & ---
+        & Generates a NACA airfoil (4 or 5 digits) as the current airfoil.
+          Prompts for the digits and then for the number of points. See
+          section~\ref{sec:naca}, page~\pageref{sec:naca}.\\
+    NACA airfoil / Reference airfoil\dots
+        & ---
+        & Same for the reference airfoil.\\
+    Save airfoil\dots
+        & \touche{Ctrl}+\touche{S}
+        & Saves the current airfoil. A first dialog lets you
+          save the \emph{full airfoil}, the \emph{upper surface}
+          only or the \emph{lower surface} only; the format is then
+          selected from the filter of the file dialog.\\
+    Save airfoil with flap\dots
+        & ---
+        & Saves the airfoil with the flap deflected (green), in the same
+          way as the current airfoil. Requires the flap to be
+          active. See section~\ref{sec:flap}, page~\pageref{sec:flap}.\\
+    Open project\dots
+        & \touche{Ctrl}+\touche{Shift}+\touche{P}
+        & Opens an AirfoilTools project (\chemin{.aftproj}):
+          restores the current and reference airfoils as well as
+          the tracing image and its transformation. See
+          chapter~\ref{chap:formats}.\\
+    Save project\dots
+        & \touche{Ctrl}+\touche{Alt}+\touche{S}
+        & Saves the whole session (airfoils + tracing
+          image) to a \chemin{.aftproj} file.\\
+    Load tracing image\dots
+        & ---
+        & Loads an image (jpg, png, tif, bmp) in the background to
+          trace an airfoil. See section~\ref{sec:calque},
+          page~\pageref{sec:calque}.\\
+    Remove tracing image
+        & ---
+        & Removes the tracing image from the current session.\\
+    Quit
+        & \touche{Ctrl}+\touche{Q}
+        & Closes the application.\\
+    \bottomrule
+\end{tabularx}
+
+\section{\menu{Edit} menu}
+
+\begin{tabularx}{\linewidth}{l l X}
+    \toprule
+    \textbf{Entry} & \textbf{Shortcut} & \textbf{Action} \\
+    \midrule
+    Convert to Spline
+        & \touche{Ctrl}+\touche{B}
+        & Converts the current airfoil (discrete points mode)
+          to multi-segment spline mode. See the section
+          \emph{Conversion to spline}, page~\pageref{sec:convertspline}.\\
+    Sampling / Current airfoil\dots
+        & ---
+        & Changes the number of sampling points of the
+          current airfoil. Available only in Spline mode.\\
+    Sampling / Reference airfoil\dots
+        & ---
+        & Same for the reference airfoil.\\
+    \bottomrule
+\end{tabularx}
+
+\section{\menu{View} menu}
+
+\begin{tabularx}{\linewidth}{l l X}
+    \toprule
+    \textbf{Entry} & \textbf{Shortcut} & \textbf{Action} \\
+    \midrule
+    Fit zoom
+        & \touche{Ctrl}+\touche{0}
+        & Reframes the \menu{Airfoils} canvas view on all
+          visible airfoils.\\
+    Layout / 1$\times$1, 1$\times$2, \dots
+        & ---
+        & Configures the grid of the \menu{Results} tab
+          (rows $\times$ columns).\\
+    \bottomrule
+\end{tabularx}
+
+\section{\menu{Options} menu}
+
+\begin{tabularx}{\linewidth}{l l X}
+    \toprule
+    \textbf{Entry} & \textbf{Shortcut} & \textbf{Action} \\
+    \midrule
+    Deviation / Vertical (thickness)
+        & ---
+        & Computes the deviation between airfoils as a
+          thickness difference measured \textbf{vertically} (along the $z$ axis),
+          at constant abscissa. Default mode.\\
+    Deviation / Normal (perpendicular)
+        & ---
+        & Computes the deviation \textbf{perpendicularly} to the
+          surface of the current airfoil (distance along the normal).
+          See section~\ref{sec:deviation},
+          page~\pageref{sec:deviation}.\\
+    \bottomrule
+\end{tabularx}
+
+\begin{noteinfo}
+The two deviation modes are \textbf{exclusive}: choosing one
+automatically unchecks the other. The change is reflected
+immediately on the plot of the \menu{Airfoils} tab.
+\end{noteinfo}
+
+\section{\menu{Help} menu}
+
+\begin{tabularx}{\linewidth}{l l X}
+    \toprule
+    \textbf{Entry} & \textbf{Shortcut} & \textbf{Action} \\
+    \midrule
+    User manual
+        & \touche{F1}
+        & Opens this manual (PDF file) with the system's default
+          viewer. The PDF is embedded in the
+          \chemin{.exe} distribution and remains accessible even
+          offline.\\
+    About\dots
+        & ---
+        & Displays version information and the author.\\
+    \bottomrule
+\end{tabularx}
+
+\begin{noteinfo}
+In development mode (launched via \chemin{run\_gui.py}), the
+manual is read from \chemin{docs/manuel/manuel.pdf} in
+the project tree. In PyInstaller executable mode, it is
+extracted from the internal bundle (folder
+\chemin{\_internal/docs/manuel.pdf} next to the exe).
+\end{noteinfo}
+
+\section{Tabs}
+
+The three tabs are independent: switching tabs does not lose
+any data. The status bar can display contextual messages
+depending on the active tab.
+
+\subsection*{Stale results indicator}
+
+The \menu{Results} tab has a special mechanism:
+when an airfoil is modified after the simulation has been run,
+a \textbf{yellow banner} appears at the top of the tab to indicate
+that the displayed results no longer match the
+current airfoils. It is then recommended to re-run the simulation.
+
+\begin{noteinfo}
+The staleness banner does not block consultation of the
+results: it is merely a visual indicator. The
+banner is removed automatically when a new
+simulation is launched.
+\end{noteinfo}

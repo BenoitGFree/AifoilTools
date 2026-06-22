@@ -1,0 +1,99 @@
+\chapter{Installation and launch}
+\label{chap:installation}
+
+\section{Prerequisites}
+
+\begin{itemize}
+    \item \textbf{Operating system} : Windows 10 or 11
+        (tested), Linux and macOS (compatibility expected, not
+        tested by the developers).
+    \item \textbf{Python} : version 3.10 or higher
+        (recommendation: 3.13).
+    \item \textbf{XFoil solver} : required only for
+        running simulations. On Windows, the executable
+        \chemin{xfoil.exe} is provided in the
+        \chemin{externaltools/xfoil/} folder of the distribution.
+\end{itemize}
+
+\section{Windows executable distribution}
+
+For Windows users who do not wish to install Python,
+a standalone \chemin{.exe} distribution is available. It
+bundles the Python interpreter, all dependencies and the
+XFoil binary.
+
+The application is launched by double-clicking on
+\chemin{AirfoilTools.exe}.
+
+\begin{noteinfo}
+On first launch, Windows may display a
+\emph{SmartScreen} warning because the executable is not signed. Click
+on \og More info \fg{} then \og Run
+anyway \fg{} to allow it to launch.
+\end{noteinfo}
+
+\section{Installation from source}
+
+\subsection{Retrieving the repository}
+
+\begin{lstlisting}[language=bash,caption={Cloning the repository}]
+git clone https://github.com/BenoitGFree/AirfoilTools.git
+cd AirfoilTools
+\end{lstlisting}
+
+\subsection{Creating the Python environment}
+
+\begin{lstlisting}[language=bash,caption={Creating the venv and installing
+the dependencies (Windows)}]
+py -3 -m venv env_py3
+env_py3\Scripts\activate
+pip install -r requirements.txt
+\end{lstlisting}
+
+The \chemin{requirements.txt} file lists the dependencies :
+
+\begin{itemize}
+    \item \code{numpy} --- vector computation ;
+    \item \code{scipy} --- numerical algorithms (interpolation,
+        optimization) ;
+    \item \code{matplotlib} --- 2D plotting ;
+    \item \code{PySide6} --- Qt for Python graphical interface.
+\end{itemize}
+
+\subsection{Launching the application}
+
+\begin{lstlisting}[language=bash,caption={Starting the GUI}]
+env_py3\Scripts\python.exe run_gui.py
+\end{lstlisting}
+
+The application opens on the main window shown in
+\figref{01_main_window.png}.
+
+\section{Verifying the installation}
+
+To verify that the environment is correctly configured, it
+is possible to run the unit test suite :
+
+\begin{lstlisting}[language=bash,caption={Running the tests}]
+env_py3\Scripts\python.exe -c "import unittest; import sys; ^
+sys.path.insert(0, 'sources'); sys.path.insert(0, 'tests'); ^
+from test_bezier import *; ^
+unittest.main(module='test_bezier', exit=False, verbosity=2)"
+\end{lstlisting}
+
+The full suite contains more than 240 tests, all of which must
+pass successfully.
+
+\begin{attention}
+Automatic detection of the XFoil executable depends on
+the location of \chemin{xfoil.exe}. The application looks for it
+in this order :
+\begin{enumerate}
+    \item next to the application executable (PyInstaller
+        \emph{frozen} mode) ;
+    \item in the \chemin{externaltools/xfoil/} folder ;
+    \item in the system PATH.
+\end{enumerate}
+If XFoil is not found, the \menu{XFoil Settings} tab
+works but launching a simulation will fail.
+\end{attention}

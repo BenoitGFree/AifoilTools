@@ -84,6 +84,25 @@ env_py3\Scripts\python.exe tests/test_foil2d.py
 - `setup.py` (`version=...`) est indépendant : c'est la version du
   package pip `airfoiltools`, pas du logiciel.
 
+## Internationalisation (i18n)
+
+- **Langue de l'interface** : FR/EN, menu Options ▸ Langue, persistée
+  via `QSettings`, effet au redémarrage.
+- **Mécanisme** : `sources/gui/i18n.py` — `tr(s)` avec la chaîne
+  française comme clé (fallback français si absente). Toutes les chaînes
+  UI sont enveloppées `_(...)` (alias de `tr`). Traductions EN dans
+  `i18n.py` (base) + `sources/gui/i18n_en.py` (généré). Outils de
+  maintenance dans `tools/` (`i18n_wrap.py`, `i18n_extract.py`,
+  `i18n_assemble.py`).
+- **Noms d'analyses** (résultats) : l'identifiant interne reste non
+  traduit ; seul l'affichage passe par `_analysis_label()` (ex.
+  « Finesse » → « L/D »).
+- **Manuel** : versions FR (`manuel.tex` → `manuel.pdf`) et EN
+  (`manuel_en.tex` → `manuel_en.pdf`, style `manuel_style_en.sty`,
+  chapitres `chapitres_en/`). Le `.spec` recompile les deux au build et
+  embarque l'EN s'il existe. La GUI ouvre le PDF de la langue courante
+  (fallback FR).
+
 ## Key Classes
 
 ### Bezier (`sources/model/bezier.py`)

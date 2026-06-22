@@ -1,0 +1,127 @@
+\chapter{Overview}
+\label{chap:introduction}
+
+\section{About AirfoilTools}
+
+\textbf{AirfoilTools} is a Python library of tools dedicated
+to the 2D aerodynamic design and analysis of airfoils, propellers and other profiled sections.
+It relies on Bézier curves of arbitrary degree and
+multi-segment splines for geometric modeling, and integrates a coupling with the \emph{XFoil} aerodynamic solver
+for performance analysis.
+
+The application combines:
+
+\begin{itemize}
+    \item a \textbf{geometric engine} based on Bézier
+        curves of arbitrary degree and multi-segment splines
+        (BezierSpline) with configurable continuities (C\textsuperscript{0},
+        C\textsuperscript{1}, C\textsuperscript{2});
+    \item a \textbf{coupling with XFoil}, the reference
+        aerodynamic solver for viscous subsonic 2D
+        flows;
+    \item an \textbf{interactive graphical interface} allowing
+        airfoil editing, simulation control and
+        comparative visualization of results;
+    \item a \textbf{tracing mode}: loading a background image
+        (photo, scan, drawing) to reconstruct an airfoil
+        by overlaying the control points onto the silhouette, all
+        of which can be saved in a \textbf{project} file
+        (\chemin{.aftproj});
+    \item a \textbf{NACA airfoil generator} (4 and 5 digits)
+        directly from the interface;
+    \item a \textbf{flap module}: generation of a profile
+        deflected about a hinge axis, which can be simulated and compared
+        to the original airfoil;
+    \item \textbf{geometric comparison tools}: deviation
+        between two airfoils (vertical or normal) and curvature
+        plotting.
+\end{itemize}
+
+\screenshot{01_main_window.png}{1.0}{%
+    General view of the application at startup. The current airfoil
+    (NACA~2412, blue, converted to Bézier) is overlaid on the reference
+    airfoil (NACA~2412, red); the airfoil with deflected flap
+    (green) as well as the curvature and the deviation are displayed by
+    default.}
+
+\section{Who this manual is for}
+
+This manual is intended for the \textbf{users} of the graphical
+application. It covers all the features accessible
+from the interface, from loading an airfoil to
+the comparative analysis of aerodynamic polars.
+
+Developers interested in the Python API of the library
+will find the technical documentation in the source code
+(Sphinx-format docstrings) and in the generated documentation
+(\chemin{docs/} folder).
+
+\begin{noteinfo}
+No prior knowledge of theoretical aerodynamics
+is required to use the application. However, a
+general understanding of aerodynamic quantities (lift
+coefficient $C_L$, drag coefficient $C_D$, lift-to-drag ratio $C_L/C_D$,
+Reynolds number, angle of attack $\alpha$) makes
+interpreting the results easier.
+\end{noteinfo}
+
+\section{Functional architecture}
+
+The application is structured around \textbf{three tabs}
+corresponding to as many logical steps:
+
+\begin{enumerate}
+    \item \menu{Airfoils} --- loading, editing and comparison of
+        geometric airfoils. Two airfoils are handled simultaneously:
+        an editable \emph{current airfoil} (in blue), and a
+        \emph{reference airfoil} (in red) that serves as a
+        comparison.
+    \item \menu{XFoil Settings} --- entry of the simulation
+        parameters: Reynolds range, angle-of-attack sweep,
+        boundary layer parameters, panel options.
+    \item \menu{Results} --- graphical presentation of the results
+        as a \emph{configurable grid of analysis
+        cells}, each displaying an independent plot
+        (polar $C_L(\alpha)$, $C_D(\alpha)$, lift-to-drag ratio, pressure
+        distribution $-C_p(x)$, boundary layer profile, etc.).
+\end{enumerate}
+
+\section{Airfoil representation}
+
+AirfoilTools offers two airfoil representation modes:
+
+\subsection*{Discrete points mode}
+
+The airfoil is defined by a sequence of points in the
+\textbf{Selig} convention (running from the trailing edge to the upper surface, then
+the leading edge, then the lower surface, and back to the trailing edge).
+This is the most common format of airfoil libraries
+(for example \chemin{airfoiltools.com}).
+
+\subsection*{Spline mode (multi-segment Bézier)}
+
+The airfoil is defined by two \textbf{BezierSpline} (upper surface and
+lower surface), each composed of several Bézier segments
+joined with C\textsuperscript{1} continuity. This mode allows:
+
+\begin{itemize}
+    \item \emph{interactive editing} by moving the
+        control points;
+    \item \emph{on-demand resampling} with a freely
+        chosen point density;
+    \item the \emph{exact computation of the curvature and tangents}
+        at any point;
+    \item the \emph{splitting of a segment} into two at an arbitrary point
+        (De Casteljau algorithm, mathematically exact).
+\end{itemize}
+
+Switching from one mode to the other is done via the
+\menu{Edit $\rightarrow$ Convert to Spline} menu or by loading
+a file in \chemin{.bspl} or \chemin{.bez} format.
+
+\begin{astuce}
+To fully benefit from the interactive editing
+features and curvature plotting, it is recommended
+to \textbf{convert your airfoils to Spline mode} as soon as they are
+loaded. The following chapters detail this procedure.
+\end{astuce}

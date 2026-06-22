@@ -1,0 +1,191 @@
+\chapter{Results Tab}
+\label{chap:resultats}
+
+The \menu{Results} tab presents simulation results
+as a \textbf{configurable grid of analysis
+cells}. Each cell displays an independent plot type
+(polar, pressure distribution, boundary layer profile,
+etc.).
+
+\screenshot{10_tab_results_empty.png}{1.0}{%
+    \menu{Results} tab before any simulation. The grid
+    defaults to a $2\times2$ layout, i.e.
+    four empty cells.}
+
+\screenshot{18_tab_results.png}{1.0}{%
+    \menu{Results} tab after simulating the current airfoil
+    (blue), the reference (red) and the airfoil with flap (green).
+    The four cells here display $C_L(\alpha)$, the
+    $C_L(C_D)$ polar, the lift-to-drag ratio $C_L/C_D$ as a function of $C_L$ and the
+    $C_M(C_L)$ moment.}
+
+\section{Grid configuration}
+
+The grid is configurable via the
+\menu{View $\rightarrow$ Layout} menu. Five preconfigured
+layouts are available: $1\times1$, $1\times2$,
+$2\times2$ (default), $2\times3$, $3\times3$.
+
+\begin{noteinfo}
+When the layout is changed, the analyses already
+selected in existing cells are kept.
+New cells are initialized with the default
+analyses.
+\end{noteinfo}
+
+\section{Analysis cell}
+
+Each cell features a \textbf{control bar} and a
+\textbf{matplotlib canvas}.
+
+\subsection{Control bar}
+
+\begin{tabularx}{\linewidth}{l X}
+    \toprule
+    \textbf{Element} & \textbf{Role} \\
+    \midrule
+    Drop-down list (analysis)
+        & Choice of the analysis type to display in the cell
+          (see \emph{Analysis types}, below). \\
+    \menu{C} checkbox
+        & Shows / hides the current airfoil curves (blue). \\
+    \menu{R} checkbox
+        & Shows / hides the reference airfoil curves (red). \\
+    \menu{F} checkbox
+        & Shows / hides the airfoil with flap curves (green). \\
+    \menu{Reynolds} list
+        & For analyses that depend on a particular Reynolds
+          ($-C_p(x)$, airfoil~+~CL, boundary layer), selects the
+          Reynolds to display. Hidden if not relevant. \\
+    \menu{Alpha} list
+        & For point-by-point analyses, selects the angle of attack
+          $\alpha$ to display. Hidden if not relevant. \\
+    Coordinates
+        & Real-time display of the cursor coordinates
+          in the plot frame. \\
+    \bottomrule
+\end{tabularx}
+
+\subsection{Mouse interactions}
+
+The interactions available on the matplotlib canvas are
+identical to those of the \menu{Airfoils} tab:
+
+\begin{itemize}
+    \item Left click + drag: rectangle zoom;
+    \item Wheel: zoom centered on the cursor;
+    \item Middle click: pan;
+    \item Left click on the legend: hides / shows the
+        corresponding curve.
+\end{itemize}
+
+\subsection{Interactive and scrollable legend}
+
+When a cell contains many curves (for example
+several Reynolds combined with several airfoils), the legend can
+become too long to be displayed entirely. A \textbf{scroll
+bar} appears automatically beyond 15~entries.
+
+\begin{astuce}
+To quickly compare two curves, it is more efficient
+to \textbf{hide} the interfering curves by clicking on their
+entry in the legend, rather than zooming or adding
+an extra cell.
+\end{astuce}
+
+\section{Available analysis types}
+
+\subsection{Polars (as a function of Alpha)}
+
+\begin{tabularx}{\linewidth}{l X}
+    \toprule
+    \textbf{Analysis} & \textbf{Description} \\
+    \midrule
+    $C_L(\alpha)$  & Lift coefficient as a function of
+                     the angle of attack. One curve per Reynolds.\\
+    $C_D(\alpha)$  & Drag coefficient as a function of
+                     the angle of attack.\\
+    $C_M(\alpha)$  & Pitching moment coefficient
+                     (quarter-chord reference).\\
+    $C_L/C_D$~$(\alpha)$ & \emph{Lift-to-drag ratio} as a function of
+                     the angle of attack. Allows the
+                     angle of attack of maximum lift-to-drag ratio to be determined.\\
+    $C_L/C_D$~$(C_L)$ & \emph{Lift-to-drag ratio} as a function of the lift
+                     coefficient. Convenient for reading the lift-to-drag ratio at
+                     the targeted cruise $C_L$.\\
+    $C_M(C_L)$     & Moment coefficient as a function of the
+                     lift. The slope indicates stability;
+                     the effect of a flap is very readable here.\\
+    $C_D(C_L)$ \emph{(Lilienthal polar)}
+                   & Classic polar: drag on the x-axis
+                     vs lift on the y-axis. The tangent
+                     from the origin gives the maximum lift-to-drag ratio.\\
+    Transition top, bot
+                   & Position $x/c$ of the boundary layer
+                     transition on the upper / lower surface, as a function
+                     of $\alpha$. Indicates the effective
+                     roughness and laminar separation.\\
+    \bottomrule
+\end{tabularx}
+
+\subsection{Distributions along the airfoil}
+
+\begin{tabularx}{\linewidth}{l X}
+    \toprule
+    \textbf{Analysis} & \textbf{Description} \\
+    \midrule
+    $-C_p(x)$ & Distribution of the pressure coefficient along
+               the chord, at a given Reynolds and angle of attack.
+               Convention: $-C_p$ upward (upper surface on top). \\
+    Airfoil + CL & Combined visualization: airfoil rotated by
+               the angle of attack + plot of the boundary layer
+               edge (displacement thickness $\delta^*$).\\
+    \bottomrule
+\end{tabularx}
+
+\subsection{Boundary layer}
+
+Six boundary layer quantities can be plotted as a function
+of the curvilinear abscissa $s$ or the Cartesian abscissa $x$:
+
+\begin{tabularx}{\linewidth}{l X}
+    \toprule
+    \textbf{Quantity} & \textbf{Description} \\
+    \midrule
+    $U_e(s)$, $U_e(x)$
+        & Velocity at the edge of the boundary layer,
+          normalized by the upstream free-stream velocity.\\
+    $\delta^*(s)$, $\delta^*(x)$
+        & Displacement thickness.\\
+    $\theta(s)$, $\theta(x)$
+        & Momentum thickness.\\
+    $C_f(s)$, $C_f(x)$
+        & Local skin friction coefficient.\\
+    $H(s)$, $H(x)$
+        & Shape factor $H = \delta^*/\theta$ ($H \approx 2{,}6$
+          at the transition point, $H \approx 4$ at separation).\\
+    \bottomrule
+\end{tabularx}
+
+\section{Stale results banner}
+
+When the user returns to the \menu{Airfoils} tab and modifies
+an airfoil after simulation (moving a control point,
+changing the degree, conversion\dots), a yellow banner appears
+at the top of the \menu{Results} tab:
+
+\begin{quote}
+\textcolor{orange!75!black}{$\triangle$
+\emph{The current airfoil has been modified since the last
+simulation. Re-run to update.}}
+\end{quote}
+
+This banner disappears automatically at the next simulation.
+
+\begin{important}
+The results displayed in the cells are \emph{not}
+recomputed automatically after an airfoil is modified.
+The banner is a simple visual indicator: it is up
+to the user to re-run the simulation from the
+\menu{XFoil Settings} tab.
+\end{important}

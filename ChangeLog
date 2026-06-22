@@ -1,5 +1,22 @@
 # Changelog
 
+## [Non publié] - 2026-06-22 22:00
+
+### Added (Ajouté)
+- **Manuel utilisateur en anglais** : traduction fidèle des 8 chapitres
+  (`docs/manuel/chapitres_en/`), fichier maître `manuel_en.tex` et
+  style `manuel_style_en.sty` (babel english, boîtes Note/Tip/Caution/
+  Important). Produit `manuel_en.pdf`
+- Le build (`AirfoilTools.spec`) recompile les deux manuels (FR + EN)
+  et embarque `manuel_en.pdf` s'il existe ; la GUI ouvre le PDF de la
+  langue courante (fallback FR)
+
+### Changed (Modifié)
+- **Noms d'analyses traduits sans casser les identifiants**
+  (`result_cell.py`) : le combo stocke l'identifiant en `userData` et
+  affiche un libellé traduit (`_analysis_label`) ; « Finesse(alpha) » /
+  « Finesse(CL) » s'affichent « L/D(alpha) » / « L/D(CL) » en anglais
+
 ## [Non publié] - 2026-06-22 21:15
 
 ### Added (Ajouté)

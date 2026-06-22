@@ -1,0 +1,226 @@
+\chapter{File formats}
+\label{chap:formats}
+
+AirfoilTools can read and write several airfoil formats, which
+fall into two families: the \emph{discrete points} formats
+(originating from the aeronautics field) and the \emph{spline}
+formats specific to AirfoilTools.
+
+\section{Discrete points formats}
+
+\subsection{Selig format (\chemin{.dat})}
+
+The most widespread historical format, popularized by the
+University of Illinois (UIUC) database. It is the default format
+on \chemin{airfoiltools.com}.
+
+\begin{itemize}
+    \item First line: airfoil name (free).
+    \item Following lines: \texttt{x y} pairs separated by
+        spaces.
+    \item Traversal in \emph{Selig convention}: from the trailing edge
+        ($x=1$) towards the upper surface (decreasing x), to the leading
+        edge ($x=0$), then towards the lower surface (increasing x)
+        and back to the trailing edge.
+\end{itemize}
+
+\begin{lstlisting}[caption={Example Selig file (NACA~2412)}]
+NACA 2412
+   1.000000   0.001260
+   0.985700   0.003930
+   0.971440   0.006580
+   ...
+   0.014300   0.018780
+   0.000000   0.000000
+   0.014300  -0.014050
+   ...
+   0.985700  -0.001280
+   1.000000  -0.001260
+\end{lstlisting}
+
+\subsection{Lednicer format (\chemin{.dat})}
+
+A variant of Selig where upper surface and lower surface are stored
+separately, each traversed from the leading edge towards the trailing
+edge. A header line indicates the number of points on each
+side.
+
+\begin{lstlisting}[caption={Example Lednicer file}]
+NACA 2412
+65.0   65.0
+
+   0.000000   0.000000
+   0.001425   0.005700
+   ...
+   1.000000   0.001260
+
+   0.000000   0.000000
+   0.001425  -0.005720
+   ...
+   1.000000  -0.001260
+\end{lstlisting}
+
+\subsection{CSV format (\chemin{.csv})}
+
+A tabular format with header \chemin{x,y}. Convenient for
+importing into spreadsheets or for sharing with
+non-aeronautical tools.
+
+\begin{lstlisting}[caption={Example CSV file}]
+x,y
+1.000000,0.001260
+0.985700,0.003930
+...
+\end{lstlisting}
+
+\subsection{GNU format (\chemin{.gnu})}
+
+A raw points format compatible with the \textbf{Axile} software and
+directly usable by \textbf{gnuplot}. It is a simple
+text file of two columns \texttt{x~y}, without header or airfoil name.
+
+\begin{itemize}
+    \item One line per point, two columns \texttt{x y}.
+    \item Each number in scientific notation with 18 decimals
+        (\texttt{\%.18e}), separated by a single space.
+    \item \texttt{LF} line endings (including after the last point),
+        guaranteed even on Windows.
+    \item No header, comment or third column.
+\end{itemize}
+
+\begin{lstlisting}[caption={Example GNU file (.gnu)}]
+1.000000000000000000e+00 0.000000000000000000e+00
+9.754952615109063752e-01 6.041608209341215764e-03
+0.000000000000000000e+00 0.000000000000000000e+00
+\end{lstlisting}
+
+This format is produced identically by \code{numpy.savetxt} and
+readable back by \code{numpy.loadtxt} (array of shape $(n, 2)$).
+
+\begin{noteinfo}
+The \chemin{.gnu} format is offered as \textbf{write-only}
+(save of the current airfoil). To re-import points,
+use a \chemin{.dat} (Selig) or \chemin{.csv} file.
+\end{noteinfo}
+
+\section{AirfoilTools spline formats}
+
+\subsection{\chemin{.bspl} format}
+
+A complete save of an airfoil in \textbf{multi-segment
+spline} mode. It preserves the entire Bézier definition:
+control points, degrees, continuities at junctions, sampling
+parameters.
+
+This is the \textbf{recommended} format to keep the editing
+work on an airfoil and re-open it without loss of information.
+
+\begin{noteinfo}
+The \chemin{.bspl} format is a structured text format (JSON
+or similar) specific to AirfoilTools. It is not
+interoperable with other CAD or aerodynamics software.
+For external distribution, re-export to
+\chemin{.dat} (Selig) after adjusting the sampling.
+\end{noteinfo}
+
+\subsection{\chemin{.bez} format}
+
+A simplified variant of the \chemin{.bspl} for airfoils defined
+by a single Bézier curve per side (single-segment mode).
+Kept for compatibility with earlier versions.
+
+\section{Project format (\chemin{.aftproj})}
+\label{sec:aftproj}
+
+The \chemin{.aftproj} format saves the \textbf{entire working
+session} in a single file, where the preceding formats
+only save an isolated airfoil. A project contains:
+
+\begin{itemize}
+    \item the \textbf{current airfoil} and the \textbf{reference
+        airfoil} (with their complete spline definition where
+        applicable);
+    \item the optional \textbf{tracing image}, \emph{embedded}
+        in the file, together with its \textbf{transformation}
+        (position, scale, rotation, visibility).
+\end{itemize}
+
+It is a \textbf{JSON} file (text). The image is encoded
+in base64 and embedded directly: the project is therefore
+\textbf{self-contained and portable}. The tracing image is recovered
+on reopening even if the original image file has been moved or
+deleted.
+
+\begin{itemize}
+    \item Open: \menu{File $\rightarrow$ Open project\dots}
+        (\touche{Ctrl}+\touche{Maj}+\touche{P}).
+    \item Save: \menu{File $\rightarrow$ Save
+        project\dots} (\touche{Ctrl}+\touche{Alt}+\touche{S}).
+\end{itemize}
+
+\begin{important}
+The \chemin{.aftproj} format is the \textbf{only} one that keeps
+the tracing image and its alignment. If your work involves
+tracing (see section~\ref{sec:calque}), save a project
+rather than a simple airfoil.
+\end{important}
+
+\begin{noteinfo}
+Since the image is embedded in base64, a project containing a large
+image produces an \chemin{.aftproj} file larger than the
+sum of the airfoil files. This is the price of portability
+(no dependency on an external image file).
+\end{noteinfo}
+
+\section{NACA generation}
+
+The application can generate NACA airfoils on the fly from
+their designation, without going through a file:
+
+\begin{itemize}
+    \item NACA 4 digits (e.g. \texttt{2412}, \texttt{0012}):
+        maximum camber (\%), position of the max camber
+        (tenths), relative thickness (\%).
+    \item NACA 5 digits (e.g. \texttt{23012}): cambered airfoil
+        with reflex mean line.
+\end{itemize}
+
+This generation happens automatically at application
+startup (NACA~2412 as the current airfoil and as the reference).
+To generate other NACA airfoils during a session, use the
+\menu{File $\rightarrow$ NACA airfoil $\rightarrow$ Current
+airfoil\dots} or \menu{\dots Reference airfoil\dots} menu: a dialog
+asks for the indices, then the number of points. See the detailed
+procedure in section~\ref{sec:naca}, page~\pageref{sec:naca}.
+
+\begin{noteinfo}
+A NACA airfoil not yet modified can be cleanly regenerated at
+another resolution via the \menu{Number of
+points\dots} context menu (right-click), which recalls the analytical
+formula instead of interpolating the points. See section~\ref{sec:naca}.
+\end{noteinfo}
+
+\section{Summary table}
+
+\begin{tabularx}{\linewidth}{l c c X}
+    \toprule
+    \textbf{Format} & \textbf{Read} & \textbf{Write}
+        & \textbf{Preserves the spline?} \\
+    \midrule
+    Selig (\chemin{.dat})    & yes & yes & no \\
+    Lednicer (\chemin{.dat}) & yes & yes & no \\
+    CSV (\chemin{.csv})      & yes & yes & no \\
+    GNU (\chemin{.gnu})      & no & yes & no \\
+    Spline (\chemin{.bspl})  & yes & yes & \textbf{yes} \\
+    Bézier (\chemin{.bez})   & yes & yes & \textbf{yes} (single-segment) \\
+    Project (\chemin{.aftproj}) & yes & yes & \textbf{yes} (+ tracing) \\
+    \bottomrule
+\end{tabularx}
+
+\begin{important}
+When you save an airfoil in \chemin{.dat} or
+\chemin{.csv} format, \textbf{the spline information is lost}:
+only the list of sampled discrete points is written.
+To fully preserve your work, always save
+in \chemin{.bspl}.
+\end{important}
