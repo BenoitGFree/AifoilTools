@@ -1,5 +1,16 @@
 # Changelog
 
+## [Non publié] - 2026-06-22 19:05
+
+### Changed (Modifié)
+- **Passage en version 3.0** du logiciel
+- Centralisation de la version dans une source unique :
+  `__version__` défini dans `sources/gui/__init__.py`, lu par la boîte
+  « À propos » (`main_window.py`) via `% __version__`
+- Alignement des miroirs sur 3.0 avec commentaire de synchronisation :
+  `installer/AirfoilTools.iss` (`#define MyAppVersion`) et
+  `docs/manuel/manuel.tex` (`\manuelversion`)
+
 ## [Non publié] - 2026-06-22 18:30
 
 ### Documentation

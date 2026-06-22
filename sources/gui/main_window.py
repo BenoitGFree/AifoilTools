@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
 
+from . import __version__
 from .tab_profils import TabProfils
 from .tab_xfoil import TabXfoil
 from .tab_results import TabResults
@@ -778,8 +779,8 @@ class MainWindow(QMainWindow):
             self, "AirfoilTools",
             u"AirfoilTools - Analyse a\u00e9rodynamique 2D\n"
             u"Courbes de B\u00e9zier, profils, XFoil\n\n"
-            u"Version 2.0\n"
-            u"Premi\u00e8re version : 2022\n\n"
+            u"Version %s\n"
+            u"Premi\u00e8re version : 2022\n\n" % __version__ +
             u"Auteur : Beno\u00eet Gagnaire"
         )
 
