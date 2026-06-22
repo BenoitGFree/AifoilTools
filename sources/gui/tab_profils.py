@@ -307,6 +307,15 @@ class TabProfils(QWidget):
         self._canvas.set_show_deviation(
             state == Qt.Checked.value)
 
+    def set_deviation_mode(self, mode):
+        u"""Choisit le mode de deviation : 'vertical' ou 'normal'."""
+        self._canvas.set_deviation_mode(mode)
+
+    @property
+    def deviation_mode(self):
+        u"""Mode de deviation courant ('vertical' ou 'normal')."""
+        return self._canvas.deviation_mode
+
     def _on_toggle_image(self, state):
         """Affiche/masque l'image de calque."""
         self._canvas.set_background_visible(

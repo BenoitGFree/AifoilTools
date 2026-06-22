@@ -268,6 +268,37 @@ class MainWindow(QMainWindow):
             disp_menu.addAction(act)
             self._disp_actions.append((rows, cols, act))
 
+        # --- Options ---
+        from PySide6.QtGui import QActionGroup
+        options_menu = menubar.addMenu("&Options")
+
+        dev_menu = options_menu.addMenu(u"Déviation")
+        dev_menu.setStatusTip(
+            u"Mode de calcul de la deviation entre profil courant et"
+            u" reference")
+        self._dev_mode_group = QActionGroup(self)
+        self._dev_mode_group.setExclusive(True)
+
+        act_dev_vert = QAction(u"Verticale (épaisseur)", self)
+        act_dev_vert.setCheckable(True)
+        act_dev_vert.setChecked(True)
+        act_dev_vert.setStatusTip(
+            u"Ecart mesure verticalement (selon z), a abscisse constante")
+        act_dev_vert.triggered.connect(
+            lambda: self._on_set_deviation_mode('vertical'))
+        self._dev_mode_group.addAction(act_dev_vert)
+        dev_menu.addAction(act_dev_vert)
+
+        act_dev_norm = QAction(u"Normale (perpendiculaire)", self)
+        act_dev_norm.setCheckable(True)
+        act_dev_norm.setStatusTip(
+            u"Ecart mesure perpendiculairement a la surface du profil"
+            u" courant")
+        act_dev_norm.triggered.connect(
+            lambda: self._on_set_deviation_mode('normal'))
+        self._dev_mode_group.addAction(act_dev_norm)
+        dev_menu.addAction(act_dev_norm)
+
         # --- Aide ---
         help_menu = menubar.addMenu("&Aide")
 
@@ -372,6 +403,15 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Erreur de chargement", info)
             self.statusBar().showMessage(
                 u"Echec du chargement depuis UIUC")
+
+    def _on_set_deviation_mode(self, mode):
+        u"""Change le mode de calcul de la deviation (vertical / normal).
+
+        :param mode: 'vertical' ou 'normal'
+        """
+        self._tab_profils.set_deviation_mode(mode)
+        label = u"verticale" if mode == 'vertical' else u"normale"
+        self.statusBar().showMessage(u"Déviation : %s" % label)
 
     def _on_new_naca(self, role):
         u"""Genere un profil NACA a partir d'indices saisis par l'utilisateur.

@@ -160,6 +160,7 @@ class ProfilCanvas(FigureCanvasQTAgg):
         self._show_deviation = False
         self._deviation_scale = 1.0
         self._deviation_n_quills = 200
+        self._deviation_mode = 'vertical'  # 'vertical' ou 'normal'
 
         self._dev_ext = LineCollection(
             [], colors=COLOR_DEVIATION, linewidths=0.7)
@@ -172,6 +173,13 @@ class ProfilCanvas(FigureCanvasQTAgg):
             [], [], '-', color=COLOR_DEVIATION, linewidth=0.8)
         self._dev_env_int, = self._ax.plot(
             [], [], '-', color=COLOR_DEVIATION, linewidth=0.8)
+
+        # Quills de deviation maximale (par segment si spline, sinon par
+        # cote) : traces en rouge, avec la valeur en mm au bout.
+        self._dev_max = LineCollection(
+            [], colors='red', linewidths=1.6)
+        self._ax.add_collection(self._dev_max)
+        self._dev_max_texts = []   # annotations matplotlib
 
         # --- Drag state ---
         self._dragging = False
@@ -300,6 +308,24 @@ class ProfilCanvas(FigureCanvasQTAgg):
         """Affiche/masque la deviation entre profils."""
         self._show_deviation = visible
         self._update_deviation()
+
+    def set_deviation_mode(self, mode):
+        u"""Definit le mode de calcul de la deviation.
+
+        :param mode: 'vertical' (ecart d'epaisseur selon z) ou 'normal'
+            (distance perpendiculaire a la surface)
+        :type mode: str
+        """
+        if mode not in ('vertical', 'normal'):
+            return
+        if mode != self._deviation_mode:
+            self._deviation_mode = mode
+            self._update_deviation()
+
+    @property
+    def deviation_mode(self):
+        u"""Mode de deviation courant ('vertical' ou 'normal')."""
+        return self._deviation_mode
         self.draw_idle()
 
     def zoom_fit(self):
@@ -697,32 +723,127 @@ class ProfilCanvas(FigureCanvasQTAgg):
 
         from model.profil_spline import ProfilSpline
         n = self._deviation_n_quills
-        dev = ProfilSpline.deviation(p_cur, p_ref, n_points=n)
+        dev = ProfilSpline.deviation(
+            p_cur, p_ref, n_points=n, mode=self._deviation_mode)
         scale = self._deviation_scale
 
-        # Extrados
-        x_ext = dev['x_ext']
-        y_cur_ext = dev['y_current_ext']
-        dy_ext = dev['y_reference_ext'] - y_cur_ext
-        tips_y_ext = y_cur_ext - dy_ext * scale
+        # Vider les annotations max precedentes
+        self._clear_deviation_max_texts()
+        max_segments = []   # segments [base, tip] des quills max (rouge)
 
-        bases_ext = np.column_stack([x_ext, y_cur_ext])
-        tips_ext = np.column_stack([x_ext, tips_y_ext])
+        # Extrados : pointe = base - dev * echelle
+        bases_ext = dev['ext_base']
+        tips_ext = bases_ext - dev['ext_dev'] * scale
         self._dev_ext.set_segments(
             np.stack([bases_ext, tips_ext], axis=1))
-        self._dev_env_ext.set_data(x_ext, tips_y_ext)
+        self._dev_env_ext.set_data(tips_ext[:, 0], tips_ext[:, 1])
+        max_segments += self._deviation_max_markers(
+            bases_ext, tips_ext, dev['ext_dev'],
+            self._spline_for_side(p_cur, 'ext'))
 
         # Intrados
-        x_int = dev['x_int']
-        y_cur_int = dev['y_current_int']
-        dy_int = dev['y_reference_int'] - y_cur_int
-        tips_y_int = y_cur_int - dy_int * scale
-
-        bases_int = np.column_stack([x_int, y_cur_int])
-        tips_int = np.column_stack([x_int, tips_y_int])
+        bases_int = dev['int_base']
+        tips_int = bases_int - dev['int_dev'] * scale
         self._dev_int.set_segments(
             np.stack([bases_int, tips_int], axis=1))
-        self._dev_env_int.set_data(x_int, tips_y_int)
+        self._dev_env_int.set_data(tips_int[:, 0], tips_int[:, 1])
+        max_segments += self._deviation_max_markers(
+            bases_int, tips_int, dev['int_dev'],
+            self._spline_for_side(p_cur, 'int'))
+
+        self._dev_max.set_segments(max_segments)
+        self._dev_max.set_zorder(20)
+
+    @staticmethod
+    def _spline_for_side(profil, side):
+        u"""Retourne la BezierSpline d'un cote, ou None si profil discret."""
+        if profil is None or not getattr(profil, 'has_splines', False):
+            return None
+        return (profil.spline_extrados if side == 'ext'
+                else profil.spline_intrados)
+
+    def _deviation_max_markers(self, bases, tips, devs, spline):
+        u"""Quills de deviation max (par segment si spline, sinon global).
+
+        Trace la valeur (mm) au bout du quill max et retourne la liste
+        des segments [base, tip] a dessiner en rouge.
+
+        :returns: liste de paires [base, tip]
+        :rtype: list
+        """
+        mags = np.linalg.norm(devs, axis=1)
+        if len(mags) == 0:
+            return []
+
+        # Groupes : un par segment de spline, sinon un seul global
+        groups = self._segment_groups(bases[:, 0], spline)
+
+        segments = []
+        for idx_group in groups:
+            if len(idx_group) == 0:
+                continue
+            local = idx_group[int(np.argmax(mags[idx_group]))]
+            base = bases[local]
+            tip = tips[local]
+            value = float(mags[local])
+            segments.append([base, tip])
+            self._add_deviation_max_text(base, tip, value)
+        return segments
+
+    @staticmethod
+    def _segment_groups(x_grid, spline):
+        u"""Indices des points de la grille regroupes par segment de spline.
+
+        :param x_grid: abscisses des points (croissantes)
+        :param spline: BezierSpline ou None (profil discret -> 1 groupe)
+        :returns: liste de tableaux d'indices
+        :rtype: list[numpy.ndarray]
+        """
+        n = len(x_grid)
+        all_idx = np.arange(n)
+        if spline is None:
+            return [all_idx]
+        try:
+            segs = spline._segments
+            bounds = [float(segs[0].control_points[0][0])]
+            for s in segs:
+                bounds.append(float(s.control_points[-1][0]))
+            bounds = np.array(bounds)
+        except Exception:
+            return [all_idx]
+        if len(bounds) < 3:        # un seul segment
+            return [all_idx]
+        # Affecter chaque x a un segment via les bornes internes
+        seg_id = np.clip(
+            np.searchsorted(bounds[1:-1], x_grid, side='right'),
+            0, len(segs) - 1)
+        return [all_idx[seg_id == k] for k in range(len(segs))]
+
+    def _add_deviation_max_text(self, base, tip, value):
+        u"""Annote la valeur (mm) au bout d'un quill max."""
+        # Decaler legerement le texte au-dela de la pointe
+        d = tip - base
+        norm = float(np.hypot(d[0], d[1]))
+        if norm > 1e-9:
+            off = d / norm * 6.0
+        else:
+            off = np.array([0.0, 6.0])
+        txt = self._ax.annotate(
+            "%.2f mm" % value,
+            xy=(tip[0], tip[1]),
+            xytext=(tip[0] + off[0], tip[1] + off[1]),
+            color='red', fontsize=7, ha='center', va='center',
+            zorder=21)
+        self._dev_max_texts.append(txt)
+
+    def _clear_deviation_max_texts(self):
+        u"""Supprime les annotations de deviation max."""
+        for txt in self._dev_max_texts:
+            try:
+                txt.remove()
+            except Exception:
+                pass
+        self._dev_max_texts = []
 
     def _clear_deviation_artists(self):
         """Vide les artists de deviation."""
@@ -730,6 +851,8 @@ class ProfilCanvas(FigureCanvasQTAgg):
         self._dev_int.set_segments([])
         self._dev_env_ext.set_data([], [])
         self._dev_env_int.set_data([], [])
+        self._dev_max.set_segments([])
+        self._clear_deviation_max_texts()
 
     # ==================================================================
     # Drag & drop des points de controle

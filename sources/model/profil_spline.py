@@ -336,11 +336,21 @@ class ProfilSpline(object):
         return float(max_camber / c)
 
     @staticmethod
-    def deviation(p_current, p_reference, n_points=200):
+    def deviation(p_current, p_reference, n_points=200, mode='vertical'):
         u"""Calcule la deviation entre deux profils.
 
-        Interpole extrados et intrados des deux profils sur une grille
-        commune en x, puis retourne les coordonnees interpolees.
+        Deux modes :
+
+        - ``'vertical'`` (defaut) : ecart d'epaisseur mesure verticalement
+          (selon l'axe z/y), a abscisse x constante.
+        - ``'normal'`` : ecart mesure perpendiculairement a la surface du
+          profil courant (distance le long de la normale, signee positive
+          si la reference est vers l'exterieur).
+
+        Le resultat fournit, pour chaque cote, ``*_base`` (point de depart
+        sur le profil courant) et ``*_dev`` (vecteur de deviation), tels
+        que la pointe d'un quill vaut ``base - dev * echelle`` (convention
+        historique : la pointe s'eloigne du cote de la reference).
 
         :param p_current: profil courant
         :type p_current: ProfilSpline
@@ -348,9 +358,12 @@ class ProfilSpline(object):
         :type p_reference: ProfilSpline
         :param n_points: nombre de points de la grille commune
         :type n_points: int
-        :returns: dict avec cles 'x_ext', 'y_current_ext',
-            'y_reference_ext', 'x_int', 'y_current_int',
-            'y_reference_int'
+        :param mode: ``'vertical'`` ou ``'normal'``
+        :type mode: str
+        :returns: dict avec cles de compatibilite (``x_ext``,
+            ``y_current_ext``, ``y_reference_ext``, equivalents ``_int``)
+            plus ``ext_base``, ``ext_dev``, ``int_base``, ``int_dev``
+            (ndarray (n, 2)).
         :rtype: dict
         """
         cur_ext = p_current.extrados    # BA -> BF, x croissant
@@ -372,6 +385,27 @@ class ProfilSpline(object):
         y_cur_int = np.interp(x_int, cur_int[:, 0], cur_int[:, 1])
         y_ref_int = np.interp(x_int, ref_int[:, 0], ref_int[:, 1])
 
+        base_ext = np.column_stack([x_ext, y_cur_ext])
+        base_int = np.column_stack([x_int, y_cur_int])
+
+        if mode == 'normal':
+            # Normales sortantes du profil courant (extrados vers le haut,
+            # intrados vers le bas) -> distance signee a la reference.
+            n_ext = ProfilSpline._outward_normals(x_ext, y_cur_ext, +1.0)
+            n_int = ProfilSpline._outward_normals(x_int, y_cur_int, -1.0)
+            d_ext = ProfilSpline._signed_normal_distance(
+                base_ext, n_ext, ref_ext)
+            d_int = ProfilSpline._signed_normal_distance(
+                base_int, n_int, ref_int)
+            dev_ext = d_ext[:, None] * n_ext
+            dev_int = d_int[:, None] * n_int
+        else:
+            # Mode vertical : deviation purement selon y
+            dev_ext = np.column_stack(
+                [np.zeros_like(x_ext), y_ref_ext - y_cur_ext])
+            dev_int = np.column_stack(
+                [np.zeros_like(x_int), y_ref_int - y_cur_int])
+
         return {
             'x_ext': x_ext,
             'y_current_ext': y_cur_ext,
@@ -379,7 +413,63 @@ class ProfilSpline(object):
             'x_int': x_int,
             'y_current_int': y_cur_int,
             'y_reference_int': y_ref_int,
+            'ext_base': base_ext,
+            'ext_dev': dev_ext,
+            'int_base': base_int,
+            'int_dev': dev_int,
         }
+
+    @staticmethod
+    def _outward_normals(x, y, side_sign):
+        u"""Normales unitaires sortantes le long d'une surface (x croissant).
+
+        :param x: abscisses (grille reguliere)
+        :param y: ordonnees de la surface
+        :param side_sign: +1 pour l'extrados (normale vers le haut),
+            -1 pour l'intrados (normale vers le bas)
+        :returns: normales unitaires sortantes, ndarray (n, 2)
+        """
+        m = np.gradient(np.asarray(y, dtype=float),
+                        np.asarray(x, dtype=float))
+        # Tangente (1, m) -> normale (-m, 1) (orientee vers le haut)
+        nx = -m
+        ny = np.ones_like(m)
+        norm = np.hypot(nx, ny)
+        norm[norm < 1e-12] = 1.0
+        n = np.column_stack([nx / norm, ny / norm])
+        return n * side_sign
+
+    @staticmethod
+    def _signed_normal_distance(base, normals, ref_poly):
+        u"""Distance signee de chaque point au point le plus proche d'une
+        polyligne de reference.
+
+        Signe + si la reference est dans le sens de la normale sortante.
+
+        :param base: points de depart, ndarray (n, 2)
+        :param normals: normales sortantes unitaires, ndarray (n, 2)
+        :param ref_poly: polyligne de reference, ndarray (m, 2)
+        :returns: distances signees, ndarray (n,)
+        """
+        ref = np.asarray(ref_poly, dtype=float)
+        a = ref[:-1]
+        b = ref[1:]
+        ab = b - a
+        L2 = np.sum(ab * ab, axis=1)
+        L2[L2 < 1e-12] = 1e-12
+        out = np.empty(len(base))
+        for i in range(len(base)):
+            P = base[i]
+            ap = P - a
+            t = np.clip(np.sum(ap * ab, axis=1) / L2, 0.0, 1.0)
+            proj = a + t[:, None] * ab
+            diff = proj - P
+            d2 = np.sum(diff * diff, axis=1)
+            k = int(np.argmin(d2))
+            dist = math.sqrt(d2[k])
+            sign = 1.0 if np.dot(proj[k] - P, normals[i]) >= 0 else -1.0
+            out[i] = sign * dist
+        return out
 
     # ------------------------------------------------------------------
     #  Methodes de transformation (in-place, retournent self)

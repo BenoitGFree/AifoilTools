@@ -1,5 +1,26 @@
 # Changelog
 
+## [Non publié] - 2026-06-22 17:30
+
+### Added (Ajouté)
+- **Menu Options › Déviation** : choix du mode de calcul de la déviation
+  entre profil courant et référence (`gui/main_window.py`)
+  - **Verticale (épaisseur)** : écart selon z, à abscisse constante
+    (comportement historique)
+  - **Normale (perpendiculaire)** : distance perpendiculaire à la surface
+    du profil courant
+- **Déviation maximale mise en évidence** : le quill de déviation max est
+  tracé en rouge avec sa valeur en mm annotée au bout — par segment si le
+  profil courant est une spline, sinon par côté (extrados/intrados)
+  (`gui/profil_canvas.py`)
+- `ProfilSpline.deviation(..., mode=)` renvoie désormais des quills
+  unifiés `*_base` / `*_dev` ; helpers `_outward_normals` et
+  `_signed_normal_distance` (`model/profil_spline.py`)
+
+### Changed (Modifié)
+- `_update_deviation` calcule la déviation selon le mode choisi et met en
+  évidence le maximum par groupe (`gui/profil_canvas.py`)
+
 ## [Non publié] - 2026-06-22 16:00
 
 ### Added (Ajouté)
