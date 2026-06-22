@@ -129,6 +129,14 @@ class MainWindow(QMainWindow):
         act_save.triggered.connect(self._on_save)
         file_menu.addAction(act_save)
 
+        act_save_flap = QAction(u"Sauvegarder profil avec &volet...", self)
+        act_save_flap.setStatusTip(
+            u"Sauvegarder le profil avec volet braque (vert), de la meme"
+            u" maniere que le profil courant (complet, extrados ou"
+            u" intrados). Necessite le volet active.")
+        act_save_flap.triggered.connect(self._on_save_flap)
+        file_menu.addAction(act_save_flap)
+
         file_menu.addSeparator()
 
         # --- Projet (.aftproj) ---
@@ -357,6 +365,22 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Erreur de sauvegarde", info)
             self.statusBar().showMessage("Echec de la sauvegarde")
 
+    def _on_save_flap(self):
+        """Sauvegarde le profil avec volet (comme le profil courant)."""
+        ok, info = self._tab_profils.save_flap_profil()
+        if ok is None:
+            if info:
+                from PySide6.QtWidgets import QMessageBox
+                QMessageBox.information(self, "Profil avec volet", info)
+            return
+        if ok:
+            self.statusBar().showMessage(
+                "Profil avec volet sauvegarde : %s" % info)
+        else:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Erreur de sauvegarde", info)
+            self.statusBar().showMessage("Echec de la sauvegarde")
+
     def _on_open_project(self):
         """Ouvre un projet AirfoilTools (.aftproj)."""
         from PySide6.QtWidgets import QFileDialog, QMessageBox
@@ -532,8 +556,10 @@ class MainWindow(QMainWindow):
             profils['current'] = self._tab_profils.profil_current
         if target in ('both', 'reference'):
             profils['reference'] = self._tab_profils.profil_reference
+        if target in ('both', 'flap'):
+            profils['flap'] = self._tab_profils.profil_flap
 
-        # Retirer les None
+        # Retirer les None (ex. volet inactif)
         profils = {k: v for k, v in profils.items() if v is not None}
         if not profils:
             self.statusBar().showMessage("Aucun profil a simuler")

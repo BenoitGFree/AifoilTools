@@ -23,6 +23,7 @@ from matplotlib.patches import Rectangle
 # Couleurs (coherentes avec profil_canvas et tab_results)
 COLOR_CURRENT = '#1f77b4'      # bleu
 COLOR_REFERENCE = '#d62728'    # rouge
+COLOR_FLAP = '#2ca02c'         # vert (profil avec volet)
 
 # Styles de ligne par Reynolds (cyclique)
 RE_LINESTYLES = ['-', '--', '-.', ':']
@@ -351,6 +352,7 @@ class ResultCell(QWidget):
         self._results = {}          # {'current': SimulationResults, ...}
         self._show_current = True
         self._show_reference = True
+        self._show_flap = True
         self._analysis_name = analysis_name
 
         # Pan state
@@ -412,6 +414,14 @@ class ResultCell(QWidget):
         self._chk_reference.stateChanged.connect(
             self._on_toggle_reference)
         ctrl.addWidget(self._chk_reference)
+
+        self._chk_flap = QCheckBox("F")
+        self._chk_flap.setChecked(True)
+        self._chk_flap.setToolTip(
+            u"Afficher les courbes du profil avec volet (vert)")
+        self._chk_flap.setStyleSheet("color: %s;" % COLOR_FLAP)
+        self._chk_flap.stateChanged.connect(self._on_toggle_flap)
+        ctrl.addWidget(self._chk_flap)
 
         # Combo Reynolds (visible pour -Cp(x) et Profil + CL)
         self._combo_re = QComboBox()
@@ -520,10 +530,14 @@ class ResultCell(QWidget):
             if role == 'reference' \
                     and not self._show_reference:
                 continue
-            color = COLOR_CURRENT if role == 'current' \
-                else COLOR_REFERENCE
-            label_base = "Courant" if role == 'current' \
-                else u"R\u00e9f."
+            if role == 'flap' and not self._show_flap:
+                continue
+            color = {'current': COLOR_CURRENT,
+                     'reference': COLOR_REFERENCE,
+                     'flap': COLOR_FLAP}.get(role, COLOR_CURRENT)
+            label_base = {'current': 'Courant',
+                          'reference': u'R\u00e9f.',
+                          'flap': 'Flap'}.get(role, role)
             if is_cp:
                 plot_fn(self._ax, sim_results, color,
                         label_base, self._selected_re)
@@ -643,6 +657,10 @@ class ResultCell(QWidget):
 
     def _on_toggle_reference(self, state):
         self._show_reference = (state == Qt.Checked.value)
+        self._replot()
+
+    def _on_toggle_flap(self, state):
+        self._show_flap = (state == Qt.Checked.value)
         self._replot()
 
     def _on_pick_legend(self, event):

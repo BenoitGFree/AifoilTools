@@ -1,5 +1,29 @@
 # Changelog
 
+## [Non publié] - 2026-06-22 10:14
+
+### Added (Ajouté)
+- **Simulation et tracés du profil avec volet** (homogène avec courant
+  et référence) :
+  - Le profil braqué (vert) est désormais simulable par XFoil ;
+    collecte du rôle `flap` dans `main_window._on_run_simulations`,
+    exposé via `TabProfils.profil_flap`
+  - Onglet Paramétrage XFoil : bouton « Flap seul » et « Lancer tout »
+    inclut le volet s'il est actif (`gui/tab_xfoil.py`)
+  - Onglet Résultats : case à cocher « F » (verte), couleur et légende
+    « Flap », libellé « Volet » dans le résumé et le bandeau
+    d'obsolescence (`gui/result_cell.py`, `gui/tab_results.py`)
+  - Résultats du volet marqués obsolètes quand le profil courant ou les
+    paramètres du volet changent
+- **Sauvegarde du profil avec volet** comme le profil courant
+  (`Fichier › Sauvegarder profil avec volet`), avec choix
+  complet/extrados/intrados et formats Selig/Lednicer/Spline/CSV/GNU
+
+### Changed (Modifié)
+- Factorisation de la sauvegarde de profil dans
+  `TabProfils._save_profil_dialog()`, partagée par le profil courant et
+  le profil avec volet
+
 ## [Non publié] - 2026-06-22 10:00
 
 ### Added (Ajouté)

@@ -21,6 +21,7 @@ _STALE_STYLE = (
 _ROLE_LABELS = {
     'current': 'courant',
     'reference': u'r\u00e9f\u00e9rence',
+    'flap': 'volet',
 }
 
 
@@ -193,9 +194,10 @@ class TabResults(QWidget):
             return
 
         summaries = []
+        _labels = {'current': 'Courant', 'reference': u'R\u00e9f\u00e9rence',
+                   'flap': 'Volet'}
         for role, sim_results in self._results.items():
-            label = "Courant" if role == 'current' \
-                else u"R\u00e9f\u00e9rence"
+            label = _labels.get(role, role)
             n = sim_results.n_converged
             n_re = len(sim_results.re_list)
             summaries.append(

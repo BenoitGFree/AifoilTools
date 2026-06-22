@@ -25,6 +25,7 @@ class TabProfils(QWidget):
         # Profils
         self._profil_current = None
         self._profil_reference = None
+        self._profil_flap = None
 
         self._build_ui()
         self._load_default_profiles()
@@ -310,19 +311,23 @@ class TabProfils(QWidget):
         """Construit (ou retire) le profil braque selon l'etat des controles."""
         if (not self._chk_flap.isChecked()
                 or self._profil_current is None):
+            self._profil_flap = None
             self._canvas.set_flap_profil(None)
             return
         from model.flap import apply_flap
         try:
-            flap_profil = apply_flap(
+            self._profil_flap = apply_flap(
                 self._profil_current,
                 self._spin_xf.value(),
                 self._spin_delta.value())
         except Exception:
             # Echec geometrique : ne pas planter, masquer le profil braque
+            self._profil_flap = None
             self._canvas.set_flap_profil(None)
             return
-        self._canvas.set_flap_profil(flap_profil)
+        self._canvas.set_flap_profil(self._profil_flap)
+        # Les resultats XFoil du volet (s'il y en a) deviennent obsoletes
+        self.profil_changed.emit('flap')
 
     # ------------------------------------------------------------------
     # Image de calque
@@ -528,16 +533,18 @@ class TabProfils(QWidget):
         self.profil_changed.emit('current')
         return True, p.name
 
-    def save_current_profil(self):
-        """Sauvegarde le profil courant via un dialogue fichier.
+    def _save_profil_dialog(self, profil, title):
+        """Sauvegarde un profil via les dialogues partie + format.
 
-        :returns: (None, None) si annule/pas de profil,
-                  (True, chemin) si ok, (False, message) si erreur
+        Mutualise le code entre profil courant et profil avec volet.
+
+        :param profil: profil a enregistrer
+        :type profil: ProfilSpline
+        :param title: titre du dialogue de sauvegarde
+        :type title: str
+        :returns: (None, None) si annule, (True, info), (False, message)
         :rtype: tuple
         """
-        if self._profil_current is None:
-            return None, None
-
         from PySide6.QtWidgets import QFileDialog, QInputDialog
 
         # 1) Choix de la partie a enregistrer
@@ -559,13 +566,9 @@ class TabProfils(QWidget):
             flt = u"Selig (*.dat);;CSV (*.csv);;GNU (*.gnu)"
             suffix = '_%s' % part
 
-        default = "%s%s.dat" % (self._profil_current.name, suffix)
+        default = "%s%s.dat" % (profil.name, suffix)
         filepath, selected_filter = QFileDialog.getSaveFileName(
-            self,
-            "Sauvegarder le profil courant",
-            default,
-            flt
-        )
+            self, title, default, flt)
         if not filepath:
             return None, None
 
@@ -581,13 +584,37 @@ class TabProfils(QWidget):
             fmt = 'selig'
 
         try:
-            self._profil_current.write(filepath, fmt=fmt, part=part)
+            profil.write(filepath, fmt=fmt, part=part)
         except Exception as e:
             return False, str(e)
 
         label = {'full': 'complet', 'extrados': 'extrados',
                  'intrados': 'intrados'}[part]
         return True, "%s (%s)" % (filepath, label)
+
+    def save_current_profil(self):
+        """Sauvegarde le profil courant via un dialogue fichier.
+
+        :returns: (None, None) si annule/pas de profil,
+                  (True, chemin) si ok, (False, message) si erreur
+        :rtype: tuple
+        """
+        if self._profil_current is None:
+            return None, None
+        return self._save_profil_dialog(
+            self._profil_current, "Sauvegarder le profil courant")
+
+    def save_flap_profil(self):
+        """Sauvegarde le profil avec volet (meme procedure que le courant).
+
+        :returns: (None, message) si flap inactif, (None, None) si annule,
+                  (True, chemin) si ok, (False, message) si erreur
+        :rtype: tuple
+        """
+        if not self._chk_flap.isChecked() or self._profil_flap is None:
+            return None, u"Aucun profil avec volet actif (cocher « Flap »)."
+        return self._save_profil_dialog(
+            self._profil_flap, "Sauvegarder le profil avec volet")
 
     @property
     def profil_current(self):
@@ -598,6 +625,13 @@ class TabProfils(QWidget):
     def profil_reference(self):
         """Retourne le profil de reference (ou None)."""
         return self._profil_reference
+
+    @property
+    def profil_flap(self):
+        """Retourne le profil avec volet braque (ou None si flap inactif)."""
+        if not self._chk_flap.isChecked():
+            return None
+        return self._profil_flap
 
     def change_sampling(self, role='current'):
         """Change le nombre de points d'echantillonnage d'un profil Bezier.

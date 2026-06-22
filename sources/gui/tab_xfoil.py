@@ -216,10 +216,11 @@ class TabXfoil(QWidget):
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
 
-        self._btn_run_both = QPushButton("Lancer les 2")
+        self._btn_run_both = QPushButton("Lancer tout")
         self._btn_run_both.setToolTip(
-            u"Lance la simulation XFoil sur le profil courant ET le"
-            u" profil de reference avec les parametres ci-dessus.\n"
+            u"Lance la simulation XFoil sur tous les profils actifs :"
+            u" courant, reference et, si le volet est active, le profil"
+            u" avec volet.\n"
             u"Les resultats apparaitront dans l'onglet Resultats.")
         self._btn_run_both.clicked.connect(
             lambda: self.run_requested.emit('both'))
@@ -240,6 +241,15 @@ class TabXfoil(QWidget):
         self._btn_run_reference.clicked.connect(
             lambda: self.run_requested.emit('reference'))
         btn_layout.addWidget(self._btn_run_reference)
+
+        self._btn_run_flap = QPushButton("Flap seul")
+        self._btn_run_flap.setToolTip(
+            u"Lance la simulation uniquement sur le profil avec volet"
+            u" (vert).\nNecessite que le volet soit active dans l'onglet"
+            u" Profils.")
+        self._btn_run_flap.clicked.connect(
+            lambda: self.run_requested.emit('flap'))
+        btn_layout.addWidget(self._btn_run_flap)
 
         btn_layout.addStretch()
         layout.addLayout(btn_layout)
