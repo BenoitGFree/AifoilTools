@@ -83,9 +83,11 @@ def _wrap_file(path, apply):
             ok = False
             if prev_t is not None and prev_t.type == tokenize.OP \
                     and prev_t.string in ('(', ','):
-                # Argument complet : suivi de ')' ou ','
+                # Argument complet suivi de ')' ou ',', ou gabarit de
+                # format suivi de '%' (on enveloppe le gabarit :
+                # _(u"...%s") % x = traduire puis formater).
                 if next_t is not None and next_t.type == tokenize.OP \
-                        and next_t.string in (')', ','):
+                        and next_t.string in (')', ',', '%'):
                     if prev_t.string == '(':
                         call = name_before_paren(sig[start_k - 1])
                     else:

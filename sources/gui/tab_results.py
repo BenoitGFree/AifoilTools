@@ -12,6 +12,7 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QLabel
 from PySide6.QtCore import Qt
 
 from .result_cell import ResultCell, DEFAULT_ANALYSES
+from .i18n import tr as _
 
 _STALE_STYLE = (
     "background-color: #fff3cd; color: #856404; "
@@ -54,17 +55,17 @@ class TabResults(QWidget):
         self._stale_label.setWordWrap(True)
         self._stale_label.setVisible(False)
         self._stale_label.setToolTip(
-            u"Indique que les resultats affiches ne correspondent plus"
+            _(u"Indique que les resultats affiches ne correspondent plus"
             u" au profil courant. Relancez la simulation pour les"
-            u" mettre a jour.")
+            u" mettre a jour."))
         self._main_layout.addWidget(self._stale_label)
 
         # Label resume
-        self._label = QLabel("Aucun resultat. Lancez une simulation.")
+        self._label = QLabel(_("Aucun resultat. Lancez une simulation."))
         self._label.setAlignment(Qt.AlignCenter)
         self._label.setToolTip(
-            u"Resume du nombre de Reynolds simules et de points alpha"
-            u" converges, par profil.")
+            _(u"Resume du nombre de Reynolds simules et de points alpha"
+            u" converges, par profil."))
         self._main_layout.addWidget(self._label)
 
         # Conteneur pour la grille
@@ -182,15 +183,15 @@ class TabResults(QWidget):
         names = [_ROLE_LABELS.get(r, r) for r in sorted(self._stale_roles)]
         profils_txt = " et ".join(names)
         self._stale_label.setText(
-            u"\u26a0 Le profil %s a \u00e9t\u00e9 modifi\u00e9 "
+            _(u"\u26a0 Le profil %s a \u00e9t\u00e9 modifi\u00e9 "
             u"depuis la derni\u00e8re simulation. "
-            u"Relancez pour mettre \u00e0 jour." % profils_txt)
+            u"Relancez pour mettre \u00e0 jour.") % profils_txt)
         self._stale_label.setVisible(True)
 
     def _update_label(self):
         u"""Met a jour le label de resume."""
         if not self._results:
-            self._label.setText("Aucun resultat.")
+            self._label.setText(_("Aucun resultat."))
             return
 
         summaries = []

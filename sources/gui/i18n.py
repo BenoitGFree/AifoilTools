@@ -229,3 +229,9 @@ _TR = {
             u"Error while opening the PDF:\n\n%s",
     },
 }
+
+# Traductions Phase 2 (onglets / dialogues), generees dans i18n_en.py
+# par tools/i18n_assemble.py. Fusionnees ici dans la table EN.
+from .i18n_en import EN_PHASE2 as _EN_PHASE2  # noqa: E402
+
+_TR['en'].update(_EN_PHASE2)

@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal, QThread
 
 from model.uiuc_loader import UIUCLoader
+from .i18n import tr as _
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +77,7 @@ class DialogUIUC(QDialog):
     def __init__(self, parent=None, role_label=u"courant"):
         super().__init__(parent)
         self.setWindowTitle(
-            u"Charger un profil UIUC (%s)" % role_label)
+            _(u"Charger un profil UIUC (%s)") % role_label)
         self.resize(560, 460)
 
         self._loader = UIUCLoader()
@@ -97,20 +98,20 @@ class DialogUIUC(QDialog):
 
         # Ligne de recherche
         line = QHBoxLayout()
-        line.addWidget(QLabel(u"Recherche :"))
+        line.addWidget(QLabel(_(u"Recherche :")))
         self._edit_search = QLineEdit()
         self._edit_search.setPlaceholderText(
-            u"naca, eppler, fx, sd...")
+            _(u"naca, eppler, fx, sd..."))
         self._edit_search.textChanged.connect(self._on_filter_changed)
         self._edit_search.setToolTip(
-            u"Filtre la liste des profils par nom ou description.\n"
-            u"La recherche est insensible a la casse.")
+            _(u"Filtre la liste des profils par nom ou description.\n"
+            u"La recherche est insensible a la casse."))
         line.addWidget(self._edit_search, 1)
 
-        self._btn_refresh = QPushButton(u"Rafraichir")
+        self._btn_refresh = QPushButton(_(u"Rafraichir"))
         self._btn_refresh.setToolTip(
-            u"Re-telecharge l'index UIUC depuis le serveur (ignore"
-            u" le cache local).")
+            _(u"Re-telecharge l'index UIUC depuis le serveur (ignore"
+            u" le cache local)."))
         self._btn_refresh.clicked.connect(
             lambda: self._refresh_index(force=True))
         line.addWidget(self._btn_refresh)
@@ -119,14 +120,14 @@ class DialogUIUC(QDialog):
         # Liste des profils
         self._list = QListWidget()
         self._list.setToolTip(
-            u"Liste des profils UIUC. Cliquer pour selectionner ;"
-            u" double-cliquer pour charger directement.")
+            _(u"Liste des profils UIUC. Cliquer pour selectionner ;"
+            u" double-cliquer pour charger directement."))
         self._list.currentItemChanged.connect(self._on_selection)
         self._list.itemDoubleClicked.connect(self._on_double_click)
         layout.addWidget(self._list, 1)
 
         # Description du profil selectionne
-        self._lbl_desc = QLabel(u"Aucun profil selectionne")
+        self._lbl_desc = QLabel(_(u"Aucun profil selectionne"))
         self._lbl_desc.setWordWrap(True)
         self._lbl_desc.setStyleSheet(
             "color: #555; font-style: italic; padding: 4px;")
@@ -140,7 +141,7 @@ class DialogUIUC(QDialog):
         # Boutons OK / Annuler
         self._buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        self._buttons.button(QDialogButtonBox.Ok).setText(u"Charger")
+        self._buttons.button(QDialogButtonBox.Ok).setText(_(u"Charger"))
         self._buttons.button(QDialogButtonBox.Ok).setEnabled(False)
         self._buttons.accepted.connect(self._on_accept)
         self._buttons.rejected.connect(self.reject)
@@ -164,15 +165,15 @@ class DialogUIUC(QDialog):
         self._populate_list(entries)
         self._set_busy(False)
         self._lbl_count.setText(
-            u"%d profils dans l'index" % len(entries))
+            _(u"%d profils dans l'index") % len(entries))
 
     def _on_index_error(self, msg):
         self._set_busy(False)
         QMessageBox.warning(
-            self, u"Erreur de telechargement",
-            u"Impossible de telecharger l'index UIUC.\n\n%s\n\n"
+            self, _(u"Erreur de telechargement"),
+            _(u"Impossible de telecharger l'index UIUC.\n\n%s\n\n"
             u"Verifiez votre connexion internet ou utilisez un\n"
-            u"profil deja present dans le cache local."
+            u"profil deja present dans le cache local.")
             % msg)
 
     def _populate_list(self, entries):
@@ -197,7 +198,7 @@ class DialogUIUC(QDialog):
                 n_visible += 1
         if self._entries:
             self._lbl_count.setText(
-                u"%d / %d profils visibles"
+                _(u"%d / %d profils visibles")
                 % (n_visible, len(self._entries)))
 
     # ------------------------------------------------------------------
@@ -207,7 +208,7 @@ class DialogUIUC(QDialog):
     def _on_selection(self, current, _previous):
         if current is None:
             self._selected_entry = None
-            self._lbl_desc.setText(u"Aucun profil selectionne")
+            self._lbl_desc.setText(_(u"Aucun profil selectionne"))
             self._buttons.button(
                 QDialogButtonBox.Ok).setEnabled(False)
             return
@@ -238,8 +239,8 @@ class DialogUIUC(QDialog):
     def _on_dat_error(self, msg):
         self._set_busy(False)
         QMessageBox.warning(
-            self, u"Erreur de telechargement",
-            u"Impossible de telecharger le profil %s.\n\n%s"
+            self, _(u"Erreur de telechargement"),
+            _(u"Impossible de telecharger le profil %s.\n\n%s")
             % (self._selected_entry.name, msg))
 
     # ------------------------------------------------------------------

@@ -264,8 +264,8 @@ class MainWindow(QMainWindow):
             act = QAction(label, self)
             act.setCheckable(True)
             act.setStatusTip(
-                u"Disposer les analyses en grille %d ligne(s) x %d"
-                u" colonne(s)" % (rows, cols))
+                _(u"Disposer les analyses en grille %d ligne(s) x %d"
+                u" colonne(s)") % (rows, cols))
             if rows == 2 and cols == 2:
                 act.setChecked(True)
             act.triggered.connect(
@@ -389,7 +389,7 @@ class MainWindow(QMainWindow):
 
         ok, info = self._tab_profils.load_profil_from_file(filepath, role)
         if ok:
-            self.statusBar().showMessage("Profil %s charge : %s" % (label, info))
+            self.statusBar().showMessage(_("Profil %s charge : %s") % (label, info))
         else:
             from PySide6.QtWidgets import QMessageBox
             QMessageBox.warning(self, _("Erreur de chargement"), info)
@@ -418,7 +418,7 @@ class MainWindow(QMainWindow):
             dlg.selected_path, role)
         if ok:
             self.statusBar().showMessage(
-                u"Profil %s charge depuis UIUC : %s" % (label, info))
+                _(u"Profil %s charge depuis UIUC : %s") % (label, info))
         else:
             from PySide6.QtWidgets import QMessageBox
             QMessageBox.warning(self, _("Erreur de chargement"), info)
@@ -432,7 +432,7 @@ class MainWindow(QMainWindow):
         """
         self._tab_profils.set_deviation_mode(mode)
         label = u"verticale" if mode == 'vertical' else u"normale"
-        self.statusBar().showMessage(u"Déviation : %s" % label)
+        self.statusBar().showMessage(_(u"Déviation : %s") % label)
 
     def _on_new_naca(self, role):
         u"""Genere un profil NACA a partir d'indices saisis par l'utilisateur.
@@ -450,8 +450,8 @@ class MainWindow(QMainWindow):
         if not (designation.isdigit() and len(designation) in (4, 5)):
             QMessageBox.warning(
                 self, _(u"Indices NACA invalides"),
-                u"Saisissez 4 ou 5 chiffres (ex. 2412 ou 23012).\n"
-                u"Reçu : « %s »" % text)
+                _(u"Saisissez 4 ou 5 chiffres (ex. 2412 ou 23012).\n"
+                u"Reçu : « %s »") % text)
             return
         n_points, ok = QInputDialog.getInt(
             self, u"Profil NACA — %s" % label,
@@ -462,7 +462,7 @@ class MainWindow(QMainWindow):
             designation, role, n_points=n_points)
         if res_ok:
             self.statusBar().showMessage(
-                u"Profil %s généré : %s" % (label, info))
+                _(u"Profil %s généré : %s") % (label, info))
         else:
             QMessageBox.warning(self, _(u"Erreur de génération NACA"), info)
             self.statusBar().showMessage(_(u"Echec de la génération NACA"))
@@ -473,7 +473,7 @@ class MainWindow(QMainWindow):
         if ok is None:
             return  # annule ou pas de profil
         if ok:
-            self.statusBar().showMessage("Profil sauvegarde : %s" % info)
+            self.statusBar().showMessage(_("Profil sauvegarde : %s") % info)
         else:
             from PySide6.QtWidgets import QMessageBox
             QMessageBox.warning(self, _("Erreur de sauvegarde"), info)
@@ -489,7 +489,7 @@ class MainWindow(QMainWindow):
             return
         if ok:
             self.statusBar().showMessage(
-                "Profil avec volet sauvegarde : %s" % info)
+                _("Profil avec volet sauvegarde : %s") % info)
         else:
             from PySide6.QtWidgets import QMessageBox
             QMessageBox.warning(self, _("Erreur de sauvegarde"), info)
@@ -508,7 +508,7 @@ class MainWindow(QMainWindow):
         ok, info = self._tab_profils.open_project(filepath)
         if ok:
             self._tabs.setCurrentWidget(self._tab_profils)
-            self.statusBar().showMessage(u"Projet ouvert : %s" % info)
+            self.statusBar().showMessage(_(u"Projet ouvert : %s") % info)
         else:
             QMessageBox.warning(self, _("Erreur d'ouverture du projet"), info)
             self.statusBar().showMessage(_(u"Echec de l'ouverture du projet"))
@@ -520,7 +520,7 @@ class MainWindow(QMainWindow):
         if ok is None:
             return
         if ok:
-            self.statusBar().showMessage(u"Projet enregistre : %s" % info)
+            self.statusBar().showMessage(_(u"Projet enregistre : %s") % info)
         else:
             QMessageBox.warning(self, _("Erreur d'enregistrement"), info)
             self.statusBar().showMessage(_(u"Echec de l'enregistrement"))
@@ -538,8 +538,8 @@ class MainWindow(QMainWindow):
         ok, info = self._tab_profils.load_background_image(filepath)
         if ok:
             self.statusBar().showMessage(
-                u"Image de calque chargee : %s "
-                u"(maintenir « i » + souris pour ajuster)" % info)
+                _(u"Image de calque chargee : %s "
+                u"(maintenir « i » + souris pour ajuster)") % info)
         else:
             QMessageBox.warning(
                 self, _("Erreur de chargement de l'image"), info)
@@ -557,7 +557,7 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage(info or "")
         elif ok:
             self.statusBar().showMessage(
-                u"\u00c9chantillonnage : %s" % info)
+                _(u"\u00c9chantillonnage : %s") % info)
         else:
             from PySide6.QtWidgets import QMessageBox
             QMessageBox.warning(
@@ -645,7 +645,7 @@ class MainWindow(QMainWindow):
                 _(u"Pas de profil ou d\u00e9j\u00e0 en mode Spline"))
         elif ok:
             self.statusBar().showMessage(
-                "Profil '%s' converti en Spline" % info)
+                _("Profil '%s' converti en Spline") % info)
         else:
             from PySide6.QtWidgets import QMessageBox
             QMessageBox.warning(
@@ -712,7 +712,7 @@ class MainWindow(QMainWindow):
         n_profils = len(results)
         total_pts = sum(r.n_converged for r in results.values())
         self.statusBar().showMessage(
-            "Terminees : %d profil(s), %d pts converges"
+            _("Terminees : %d profil(s), %d pts converges")
             % (n_profils, total_pts))
 
         # Merge partiel ou remplacement complet
@@ -738,8 +738,8 @@ class MainWindow(QMainWindow):
         from PySide6.QtWidgets import QMessageBox
         QMessageBox.warning(
             self, _("Erreur de simulation"),
-            u"%s\n\nUtilisez les boutons « Diagnostic » de l'onglet"
-            u" Paramétrage XFoil pour consulter le log." % error_msg)
+            _(u"%s\n\nUtilisez les boutons « Diagnostic » de l'onglet"
+            u" Paramétrage XFoil pour consulter le log.") % error_msg)
         self.statusBar().showMessage(_("Echec de la simulation"))
 
     def _on_diagnostic(self, role):
@@ -754,7 +754,7 @@ class MainWindow(QMainWindow):
         label = labels.get(role, role)
         if not work_dir:
             self.statusBar().showMessage(
-                u"Aucune simulation pour le profil %s" % label)
+                _(u"Aucune simulation pour le profil %s") % label)
             return
         from .diagnostic_dialog import DiagnosticDialog
         dlg = DiagnosticDialog(work_dir, title=label, parent=self)
@@ -807,7 +807,7 @@ class MainWindow(QMainWindow):
         """Affiche la boite A propos."""
         from PySide6.QtWidgets import QMessageBox
         QMessageBox.about(
-            self, "AirfoilTools",
+            self, _("AirfoilTools"),
             _(u"AirfoilTools - Analyse a\u00e9rodynamique 2D\n"
               u"Courbes de B\u00e9zier, profils, XFoil\n\n")
             + (u"Version %s\n" % __version__)

@@ -18,6 +18,7 @@ from PySide6.QtCore import Qt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.patches import Rectangle
+from .i18n import tr as _
 
 
 # Couleurs (coherentes avec profil_canvas et tab_results)
@@ -413,35 +414,35 @@ class ResultCell(QWidget):
         self._combo = QComboBox()
         self._combo.addItems(ANALYSIS_NAMES)
         self._combo.setToolTip(
-            u"Type d'analyse affiche dans cette cellule.\n"
+            _(u"Type d'analyse affiche dans cette cellule.\n"
             u"Polaires : CL(alpha), CD(alpha), CL/CD, Cm(alpha)...\n"
             u"Distributions : -Cp(x), Profil + CL\n"
-            u"Couche limite : Ue, Dstar, Theta, Cf, H (vs s ou x)")
+            u"Couche limite : Ue, Dstar, Theta, Cf, H (vs s ou x)"))
         self._combo.currentTextChanged.connect(self._on_analysis_changed)
         ctrl.addWidget(self._combo)
 
-        self._chk_current = QCheckBox("C")
+        self._chk_current = QCheckBox(_("C"))
         self._chk_current.setChecked(True)
         self._chk_current.setToolTip(
-            u"Afficher les courbes du profil courant (bleu)")
+            _(u"Afficher les courbes du profil courant (bleu)"))
         self._chk_current.setStyleSheet("color: %s;" % COLOR_CURRENT)
         self._chk_current.stateChanged.connect(self._on_toggle_current)
         ctrl.addWidget(self._chk_current)
 
-        self._chk_reference = QCheckBox("R")
+        self._chk_reference = QCheckBox(_("R"))
         self._chk_reference.setChecked(True)
         self._chk_reference.setToolTip(
-            u"Afficher les courbes du profil de reference (rouge)")
+            _(u"Afficher les courbes du profil de reference (rouge)"))
         self._chk_reference.setStyleSheet(
             "color: %s;" % COLOR_REFERENCE)
         self._chk_reference.stateChanged.connect(
             self._on_toggle_reference)
         ctrl.addWidget(self._chk_reference)
 
-        self._chk_flap = QCheckBox("F")
+        self._chk_flap = QCheckBox(_("F"))
         self._chk_flap.setChecked(True)
         self._chk_flap.setToolTip(
-            u"Afficher les courbes du profil avec volet (vert)")
+            _(u"Afficher les courbes du profil avec volet (vert)"))
         self._chk_flap.setStyleSheet("color: %s;" % COLOR_FLAP)
         self._chk_flap.stateChanged.connect(self._on_toggle_flap)
         ctrl.addWidget(self._chk_flap)
@@ -449,8 +450,8 @@ class ResultCell(QWidget):
         # Combo Reynolds (visible pour -Cp(x) et Profil + CL)
         self._combo_re = QComboBox()
         self._combo_re.setToolTip(
-            u"Choix du Reynolds pour les analyses dependant d'un seul"
-            u" Reynolds (-Cp(x), Profil+CL, couche limite).")
+            _(u"Choix du Reynolds pour les analyses dependant d'un seul"
+            u" Reynolds (-Cp(x), Profil+CL, couche limite)."))
         self._combo_re.setMinimumWidth(90)
         self._combo_re.currentTextChanged.connect(
             self._on_re_changed)
@@ -460,8 +461,8 @@ class ResultCell(QWidget):
         # Combo Alpha (visible pour Profil + CL)
         self._combo_alpha = QComboBox()
         self._combo_alpha.setToolTip(
-            u"Choix de l'angle d'incidence (alpha) pour les analyses"
-            u" point-par-point (-Cp, Profil+CL, couche limite).")
+            _(u"Choix de l'angle d'incidence (alpha) pour les analyses"
+            u" point-par-point (-Cp, Profil+CL, couche limite)."))
         self._combo_alpha.setMinimumWidth(70)
         self._combo_alpha.currentTextChanged.connect(
             self._on_alpha_changed)
@@ -471,7 +472,7 @@ class ResultCell(QWidget):
         self._lbl_cursor = QLabel("")
         self._lbl_cursor.setStyleSheet("font-size: 9px; color: #666;")
         self._lbl_cursor.setToolTip(
-            u"Coordonnees du curseur souris dans le repere du graphique.")
+            _(u"Coordonnees du curseur souris dans le repere du graphique."))
         ctrl.addWidget(self._lbl_cursor)
 
         ctrl.addStretch()
@@ -711,8 +712,8 @@ class ResultCell(QWidget):
             return
 
         menu = QMenu(self._canvas)
-        act_show = menu.addAction("Tout afficher")
-        act_hide = menu.addAction("Tout masquer")
+        act_show = menu.addAction(_("Tout afficher"))
+        act_hide = menu.addAction(_("Tout masquer"))
 
         act_show.triggered.connect(self._on_show_all_curves)
         act_hide.triggered.connect(self._on_hide_all_curves)
@@ -780,7 +781,7 @@ class ResultCell(QWidget):
                             alpha_set.add(float(a))
         for a in sorted(alpha_set):
             self._combo_alpha.addItem(
-                u'%.1f\u00b0' % a, a)
+                _(u'%.1f\u00b0') % a, a)
         idx = self._combo_alpha.findText(old_text)
         if idx >= 0:
             self._combo_alpha.setCurrentIndex(idx)
@@ -891,7 +892,7 @@ class ResultCell(QWidget):
         # Affichage coordonnees curseur
         if event.inaxes == self._ax and event.xdata is not None:
             self._lbl_cursor.setText(
-                "x=%.4g  y=%.4g" % (event.xdata, event.ydata))
+                _("x=%.4g  y=%.4g") % (event.xdata, event.ydata))
         else:
             self._lbl_cursor.setText("")
 

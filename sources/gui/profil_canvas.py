@@ -22,6 +22,7 @@ from matplotlib.image import AxesImage
 from matplotlib.transforms import Affine2D
 
 from PySide6.QtCore import Signal, Qt
+from .i18n import tr as _
 
 
 # Couleurs
@@ -55,14 +56,14 @@ class ProfilCanvas(FigureCanvasQTAgg):
         self._fig.tight_layout()
 
         self.setToolTip(
-            u"Interactions souris :\n"
+            _(u"Interactions souris :\n"
             u"  - Clic gauche + drag : zoom rectangle (selection d'une"
             u" zone)\n"
             u"  - Clic gauche sur un point de controle : deplacement\n"
             u"  - Molette : zoom centre sur le curseur\n"
             u"  - Clic milieu / Shift+clic gauche : pan (translation)\n"
             u"  - Clic droit : menu contextuel (split, echelle"
-            u" porcupines, deviation...)")
+            u" porcupines, deviation...)"))
 
         # Donnees modele
         self._profil_current = None
@@ -1204,7 +1205,7 @@ class ProfilCanvas(FigureCanvasQTAgg):
                 and event.ydata is not None):
             self._info_event_xy = np.array(
                 [event.xdata, event.ydata])
-            act_info = menu.addAction("Info point...")
+            act_info = menu.addAction(_("Info point..."))
             act_info.triggered.connect(self._on_info_point)
             menu.addSeparator()
 
@@ -1218,45 +1219,45 @@ class ProfilCanvas(FigureCanvasQTAgg):
                           else p.spline_intrados)
                 if getattr(spl_ba, 'ba_vertical', True):
                     act_ba = menu.addAction(
-                        u"Libérer la contrainte de tangence "
-                        u"verticale au bord d'attaque")
+                        _(u"Libérer la contrainte de tangence "
+                        u"verticale au bord d'attaque"))
                 else:
                     act_ba = menu.addAction(
-                        u"Rétablir la tangence verticale "
-                        u"au bord d'attaque")
+                        _(u"Rétablir la tangence verticale "
+                        u"au bord d'attaque"))
                 act_ba.triggered.connect(self._on_toggle_ba_vertical)
                 menu.addSeparator()
 
         # --- Echelle courbure ---
         act_scale = menu.addAction(
-            "Echelle courbure (%.2f)..." % self._porcupine_scale)
+            _("Echelle courbure (%.2f)...") % self._porcupine_scale)
         act_scale.triggered.connect(self._on_change_porcupine_scale)
 
         # --- Densite porcupines ---
         density_menu = menu.addMenu(
-            u"Densit\u00e9 (%d quills)" % self._porcupine_n_quills)
-        act_density_up = density_menu.addAction(u"Densit\u00e9 \u00d72")
+            _(u"Densit\u00e9 (%d quills)") % self._porcupine_n_quills)
+        act_density_up = density_menu.addAction(_(u"Densit\u00e9 \u00d72"))
         act_density_up.triggered.connect(self._on_density_double)
-        act_density_down = density_menu.addAction(u"Densit\u00e9 \u00f72")
+        act_density_down = density_menu.addAction(_(u"Densit\u00e9 \u00f72"))
         act_density_down.triggered.connect(self._on_density_halve)
 
         menu.addSeparator()
 
         # --- Echelle deviation ---
         act_dev_scale = menu.addAction(
-            u"\u00c9chelle d\u00e9viation (%.2f)..."
+            _(u"\u00c9chelle d\u00e9viation (%.2f)...")
             % self._deviation_scale)
         act_dev_scale.triggered.connect(
             self._on_change_deviation_scale)
 
         # --- Densite deviation ---
         dev_menu = menu.addMenu(
-            u"Densit\u00e9 d\u00e9viation (%d)"
+            _(u"Densit\u00e9 d\u00e9viation (%d)")
             % self._deviation_n_quills)
-        act_dev_up = dev_menu.addAction(u"Densit\u00e9 \u00d72")
+        act_dev_up = dev_menu.addAction(_(u"Densit\u00e9 \u00d72"))
         act_dev_up.triggered.connect(
             self._on_deviation_density_double)
-        act_dev_down = dev_menu.addAction(u"Densit\u00e9 \u00f72")
+        act_dev_down = dev_menu.addAction(_(u"Densit\u00e9 \u00f72"))
         act_dev_down.triggered.connect(
             self._on_deviation_density_halve)
 
@@ -1268,7 +1269,7 @@ class ProfilCanvas(FigureCanvasQTAgg):
             menu.addSeparator()
             n_cur = len(p.points)
             act_naca_n = menu.addAction(
-                "Nombre de points (%d)..." % n_cur)
+                _("Nombre de points (%d)...") % n_cur)
             act_naca_n.triggered.connect(self._on_change_naca_npoints)
 
         # --- Split spline ---
@@ -1277,10 +1278,10 @@ class ProfilCanvas(FigureCanvasQTAgg):
             menu.addSeparator()
             self._split_event_xy = np.array(
                 [event.xdata, event.ydata])
-            act_split_ext = menu.addAction("Split extrados")
+            act_split_ext = menu.addAction(_("Split extrados"))
             act_split_ext.triggered.connect(
                 self._on_split_extrados)
-            act_split_int = menu.addAction("Split intrados")
+            act_split_int = menu.addAction(_("Split intrados"))
             act_split_int.triggered.connect(
                 self._on_split_intrados)
 
@@ -1309,18 +1310,18 @@ class ProfilCanvas(FigureCanvasQTAgg):
 
             # Sous-menu global (spline entiere)
             param_menu = menu.addMenu(
-                u"Param\u00e8tres %s" % self._param_side)
+                _(u"Param\u00e8tres %s") % self._param_side)
             act_npts = param_menu.addAction(
-                "Nombre de points (%d)..." % spl.n_points)
+                _("Nombre de points (%d)...") % spl.n_points)
             act_npts.triggered.connect(self._on_change_spline_npoints)
             method_menu = param_menu.addMenu(
-                u"M\u00e9thode (%s)" % spl.sample_mode)
-            act_curvi = method_menu.addAction("Curviligne")
+                _(u"M\u00e9thode (%s)") % spl.sample_mode)
+            act_curvi = method_menu.addAction(_("Curviligne"))
             act_curvi.setCheckable(True)
             act_curvi.setChecked(spl.sample_mode == 'curvilinear')
             act_curvi.triggered.connect(
                 lambda: self._on_set_spline_method('curvilinear'))
-            act_adapt = method_menu.addAction("Adaptatif")
+            act_adapt = method_menu.addAction(_("Adaptatif"))
             act_adapt.setCheckable(True)
             act_adapt.setChecked(spl.sample_mode == 'adaptive')
             act_adapt.triggered.connect(
@@ -1332,31 +1333,31 @@ class ProfilCanvas(FigureCanvasQTAgg):
             seg_degree = spl._segments[k].degree
             seg_label = "Segment %d/%d" % (k + 1, spl.n_segments)
             seg_menu = menu.addMenu(
-                u"Param\u00e8tres %s \u2013 %s"
+                _(u"Param\u00e8tres %s \u2013 %s")
                 % (self._param_side, seg_label))
             act_seg_degree = seg_menu.addAction(
-                u"Degr\u00e9 (%d)..." % seg_degree)
+                _(u"Degr\u00e9 (%d)...") % seg_degree)
             act_seg_degree.triggered.connect(
                 self._on_change_segment_degree)
             act_seg_npts = seg_menu.addAction(
-                "Nombre de points (%d)..." % seg_npts)
+                _("Nombre de points (%d)...") % seg_npts)
             act_seg_npts.triggered.connect(
                 self._on_change_segment_npoints)
             seg_method_menu = seg_menu.addMenu(
-                u"M\u00e9thode (%s)" % seg_mode)
-            act_seg_curvi = seg_method_menu.addAction("Curviligne")
+                _(u"M\u00e9thode (%s)") % seg_mode)
+            act_seg_curvi = seg_method_menu.addAction(_("Curviligne"))
             act_seg_curvi.setCheckable(True)
             act_seg_curvi.setChecked(seg_mode == 'curvilinear')
             act_seg_curvi.triggered.connect(
                 lambda: self._on_set_segment_method('curvilinear'))
-            act_seg_adapt = seg_method_menu.addAction("Adaptatif")
+            act_seg_adapt = seg_method_menu.addAction(_("Adaptatif"))
             act_seg_adapt.setCheckable(True)
             act_seg_adapt.setChecked(seg_mode == 'adaptive')
             act_seg_adapt.triggered.connect(
                 lambda: self._on_set_segment_method('adaptive'))
             seg_menu.addSeparator()
             act_seg_reset = seg_menu.addAction(
-                u"R\u00e9initialiser le segment")
+                _(u"R\u00e9initialiser le segment"))
             act_seg_reset.triggered.connect(
                 self._on_reset_segment_overrides)
 
@@ -1512,7 +1513,7 @@ class ProfilCanvas(FigureCanvasQTAgg):
             len(pts_ext), len(pts_int),
         )
 
-        QMessageBox.information(self, "Info point", text)
+        QMessageBox.information(self, _("Info point"), text)
 
     # ==================================================================
     # Contrainte tangente verticale au bord d'attaque

@@ -12,6 +12,7 @@ from PySide6.QtCore import Qt, Signal
 
 from model.profil_spline import ProfilSpline
 from .profil_canvas import ProfilCanvas
+from .i18n import tr as _
 
 
 class TabProfils(QWidget):
@@ -53,36 +54,36 @@ class TabProfils(QWidget):
         h_cur.setContentsMargins(8, 2, 8, 2)
 
         # Checkbox profil courant
-        self._chk_current = QCheckBox("Profil courant")
+        self._chk_current = QCheckBox(_("Profil courant"))
         self._chk_current.setChecked(True)
         self._chk_current.setToolTip(
-            u"Affiche / masque le profil courant (bleu) sur le graphique.")
+            _(u"Affiche / masque le profil courant (bleu) sur le graphique."))
         self._chk_current.stateChanged.connect(self._on_toggle_current)
         h_cur.addWidget(self._chk_current)
 
-        self._lbl_current = QLabel("NACA 2412")
+        self._lbl_current = QLabel(_("NACA 2412"))
         self._lbl_current.setStyleSheet("color: #1f77b4; font-weight: bold;")
         self._lbl_current.setToolTip(
-            u"Nom du profil courant.\n"
-            u"Modifiable via Fichier \u203a Charger profil courant.")
+            _(u"Nom du profil courant.\n"
+            u"Modifiable via Fichier \u203a Charger profil courant."))
         h_cur.addWidget(self._lbl_current)
 
-        self._chk_porc_current = QCheckBox("Courbure")
+        self._chk_porc_current = QCheckBox(_("Courbure"))
         self._chk_porc_current.setChecked(False)
         self._chk_porc_current.setToolTip(
-            u"Affiche les porcupines de courbure (segments perpendiculaires"
+            _(u"Affiche les porcupines de courbure (segments perpendiculaires"
             u" de longueur proportionnelle a la courbure locale).\n"
-            u"Necessite que le profil courant soit en mode Spline.")
+            u"Necessite que le profil courant soit en mode Spline."))
         self._chk_porc_current.stateChanged.connect(
             self._on_toggle_porc_current)
         h_cur.addWidget(self._chk_porc_current)
 
-        self._chk_sample_pts = QCheckBox("Pts")
+        self._chk_sample_pts = QCheckBox(_("Pts"))
         self._chk_sample_pts.setChecked(False)
         self._chk_sample_pts.setToolTip(
-            u"Affiche les points effectivement echantillonnes sur les"
+            _(u"Affiche les points effectivement echantillonnes sur les"
             u" splines (marqueurs x).\n"
-            u"Utile pour controler la densite et la repartition.")
+            u"Utile pour controler la densite et la repartition."))
         self._chk_sample_pts.stateChanged.connect(
             self._on_toggle_sample_pts)
         h_cur.addWidget(self._chk_sample_pts)
@@ -97,26 +98,26 @@ class TabProfils(QWidget):
         h_ref.setContentsMargins(8, 2, 8, 2)
 
         # Checkbox profil reference
-        self._chk_reference = QCheckBox(u"Profil r\u00e9f\u00e9rence")
+        self._chk_reference = QCheckBox(_(u"Profil r\u00e9f\u00e9rence"))
         self._chk_reference.setChecked(True)
         self._chk_reference.setToolTip(
-            u"Affiche / masque le profil de reference (rouge) sur le"
-            u" graphique.")
+            _(u"Affiche / masque le profil de reference (rouge) sur le"
+            u" graphique."))
         self._chk_reference.stateChanged.connect(self._on_toggle_reference)
         h_ref.addWidget(self._chk_reference)
 
-        self._lbl_reference = QLabel("NACA 0012")
+        self._lbl_reference = QLabel(_("NACA 0012"))
         self._lbl_reference.setStyleSheet("color: #d62728; font-weight: bold;")
         self._lbl_reference.setToolTip(
-            u"Nom du profil de reference.\n"
-            u"Modifiable via Fichier \u203a Charger profil reference.")
+            _(u"Nom du profil de reference.\n"
+            u"Modifiable via Fichier \u203a Charger profil reference."))
         h_ref.addWidget(self._lbl_reference)
 
-        self._chk_porc_reference = QCheckBox("Courbure")
+        self._chk_porc_reference = QCheckBox(_("Courbure"))
         self._chk_porc_reference.setChecked(False)
         self._chk_porc_reference.setToolTip(
-            u"Affiche les porcupines de courbure du profil de reference.\n"
-            u"Necessite que le profil de reference soit en mode Spline.")
+            _(u"Affiche les porcupines de courbure du profil de reference.\n"
+            u"Necessite que le profil de reference soit en mode Spline."))
         self._chk_porc_reference.stateChanged.connect(
             self._on_toggle_porc_reference)
         h_ref.addWidget(self._chk_porc_reference)
@@ -131,29 +132,29 @@ class TabProfils(QWidget):
         h_glob = QHBoxLayout(grp_global)
         h_glob.setContentsMargins(8, 2, 8, 2)
 
-        self._chk_deviation = QCheckBox(u"D\u00e9viation")
+        self._chk_deviation = QCheckBox(_(u"D\u00e9viation"))
         self._chk_deviation.setChecked(False)
         self._chk_deviation.setToolTip(
-            u"Affiche les porcupines de deviation entre profil courant"
+            _(u"Affiche les porcupines de deviation entre profil courant"
             u" et reference (segments noirs verticaux + enveloppe).\n"
             u"Echelle et densite reglables via le menu contextuel"
-            u" (clic droit sur le canvas).")
+            u" (clic droit sur le canvas)."))
         self._chk_deviation.stateChanged.connect(
             self._on_toggle_deviation)
         h_glob.addWidget(self._chk_deviation)
 
-        self._chk_image = QCheckBox("Image")
+        self._chk_image = QCheckBox(_("Image"))
         self._chk_image.setChecked(False)
         self._chk_image.setEnabled(False)
         self._chk_image.setToolTip(
-            u"Affiche / masque l'image de calque (en arrière-plan).\n"
+            _(u"Affiche / masque l'image de calque (en arrière-plan).\n"
             u"Charger une image via Fichier › Charger image de"
             u" calque.\n\n"
             u"Manipulation (maintenir la touche « i ») :\n"
             u"  - i + clic gauche glisser : déplacer l'image\n"
             u"  - i + molette : mettre à l'échelle\n"
             u"  - i + clic droit glisser : tourner autour de (0,0)\n"
-            u"  - Maj enfoncée : ajustements fins (ratio 10)")
+            u"  - Maj enfoncée : ajustements fins (ratio 10)"))
         self._chk_image.stateChanged.connect(self._on_toggle_image)
         h_glob.addWidget(self._chk_image)
 
@@ -166,39 +167,39 @@ class TabProfils(QWidget):
         h_flap = QHBoxLayout(grp_flap)
         h_flap.setContentsMargins(8, 2, 8, 2)
 
-        self._chk_flap = QCheckBox("Flap")
+        self._chk_flap = QCheckBox(_("Flap"))
         self._chk_flap.setChecked(True)
         self._chk_flap.setToolTip(
-            u"Cree et affiche un profil avec volet braque (vert, non"
+            _(u"Cree et affiche un profil avec volet braque (vert, non"
             u" modifiable), en plus du courant et de la reference.\n"
-            u"Le profil braque est construit a partir du profil courant.")
+            u"Le profil braque est construit a partir du profil courant."))
         self._chk_flap.stateChanged.connect(self._on_toggle_flap)
         h_flap.addWidget(self._chk_flap)
 
-        h_flap.addWidget(QLabel("Xf"))
+        h_flap.addWidget(QLabel(_("Xf")))
         self._spin_xf = QDoubleSpinBox()
         self._spin_xf.setRange(5.0, 95.0)
         self._spin_xf.setValue(70.0)
         self._spin_xf.setDecimals(1)
         self._spin_xf.setSingleStep(1.0)
-        self._spin_xf.setSuffix(" %")
+        self._spin_xf.setSuffix(_(" %"))
         self._spin_xf.setToolTip(
-            u"Position de l'axe d'articulation, en pourcent de corde"
-            u" depuis le bord d'attaque.")
+            _(u"Position de l'axe d'articulation, en pourcent de corde"
+            u" depuis le bord d'attaque."))
         self._spin_xf.valueChanged.connect(self._on_flap_params)
         h_flap.addWidget(self._spin_xf)
 
-        h_flap.addWidget(QLabel("Braquage"))
+        h_flap.addWidget(QLabel(_("Braquage")))
         self._spin_delta = QDoubleSpinBox()
         self._spin_delta.setRange(-45.0, 45.0)
         self._spin_delta.setValue(-10.0)
         self._spin_delta.setDecimals(1)
         self._spin_delta.setSingleStep(1.0)
-        self._spin_delta.setSuffix(u" °")
+        self._spin_delta.setSuffix(_(u" °"))
         self._spin_delta.setToolTip(
-            u"Angle de braquage du volet en degres.\n"
+            _(u"Angle de braquage du volet en degres.\n"
             u"  positif = bord de fuite vers le haut\n"
-            u"  negatif = bord de fuite vers le bas")
+            u"  negatif = bord de fuite vers le bas"))
         self._spin_delta.valueChanged.connect(self._on_flap_params)
         h_flap.addWidget(self._spin_delta)
 
@@ -302,13 +303,13 @@ class TabProfils(QWidget):
         """Affiche un avertissement : courbure necessite mode spline."""
         QMessageBox.information(
             self,
-            u"Courbure indisponible",
-            u"La courbure ne peut etre tracee que sur des profils "
+            _(u"Courbure indisponible"),
+            _(u"La courbure ne peut etre tracee que sur des profils "
             u"definis par des Beziers (splines).\n\n"
             u"Solutions :\n"
             u"  - Convertir le profil courant via le menu "
             u"« Edition › Convertir en Spline »\n"
-            u"  - Charger un profil au format .bspl ou .bez")
+            u"  - Charger un profil au format .bspl ou .bez"))
 
     def _on_toggle_deviation(self, state):
         """Affiche/masque la deviation entre profils."""

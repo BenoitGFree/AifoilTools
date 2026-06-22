@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QDesktopServices, QFont, QTextCursor
+from .i18n import tr as _
 
 
 # Ordre de priorite d'affichage : le bilan Python d'abord (le plus
@@ -45,7 +46,7 @@ class DiagnosticDialog(QDialog):
         """
         super().__init__(parent)
         self._work_dir = work_dir
-        self.setWindowTitle(u"Diagnostic XFoil — %s" % title)
+        self.setWindowTitle(_(u"Diagnostic XFoil — %s") % title)
         self.resize(820, 600)
         self._build_ui()
         self._populate_files()
@@ -55,32 +56,32 @@ class DiagnosticDialog(QDialog):
 
         # En-tete : chemin du repertoire
         path_row = QHBoxLayout()
-        lbl = QLabel(u"Dossier :")
+        lbl = QLabel(_(u"Dossier :"))
         path_row.addWidget(lbl)
         self._path_label = QLabel(self._work_dir or u"(indisponible)")
         self._path_label.setTextInteractionFlags(
             Qt.TextSelectableByMouse)
         self._path_label.setStyleSheet("color: #555;")
         path_row.addWidget(self._path_label, stretch=1)
-        self._btn_open = QPushButton(u"Ouvrir le dossier")
+        self._btn_open = QPushButton(_(u"Ouvrir le dossier"))
         self._btn_open.setToolTip(
-            u"Ouvre le repertoire de travail dans l'explorateur de"
-            u" fichiers.")
+            _(u"Ouvre le repertoire de travail dans l'explorateur de"
+            u" fichiers."))
         self._btn_open.clicked.connect(self._open_folder)
         path_row.addWidget(self._btn_open)
         layout.addLayout(path_row)
 
         # Selecteur de fichier
         file_row = QHBoxLayout()
-        file_row.addWidget(QLabel(u"Fichier :"))
+        file_row.addWidget(QLabel(_(u"Fichier :")))
         self._combo = QComboBox()
         self._combo.setToolTip(
-            u"Choisissez le fichier a inspecter.\n"
+            _(u"Choisissez le fichier a inspecter.\n"
             u"Le log console XFoil (.cmd.log) contient les messages de"
-            u" convergence et d'erreur.")
+            u" convergence et d'erreur."))
         self._combo.currentIndexChanged.connect(self._show_selected)
         file_row.addWidget(self._combo, stretch=1)
-        self._btn_refresh = QPushButton(u"Rafraîchir")
+        self._btn_refresh = QPushButton(_(u"Rafraîchir"))
         self._btn_refresh.clicked.connect(self._populate_files)
         file_row.addWidget(self._btn_refresh)
         layout.addLayout(file_row)
@@ -98,7 +99,7 @@ class DiagnosticDialog(QDialog):
         # Bouton fermer
         btn_row = QHBoxLayout()
         btn_row.addStretch()
-        self._btn_close = QPushButton(u"Fermer")
+        self._btn_close = QPushButton(_(u"Fermer"))
         self._btn_close.clicked.connect(self.accept)
         btn_row.addWidget(self._btn_close)
         layout.addLayout(btn_row)

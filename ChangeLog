@@ -1,5 +1,22 @@
 # Changelog
 
+## [Non publié] - 2026-06-22 21:15
+
+### Added (Ajouté)
+- **Traduction anglaise de toute l'interface (Phase 2)** : onglets,
+  dialogues, messages de statut, info-bulles et libellés sont
+  désormais traduits en anglais (267 entrées). Plus aucune chaîne UI
+  non traduite en mode anglais
+- `sources/gui/i18n_en.py` : table de traduction EN (générée)
+- Outils i18n dans `tools/` : `i18n_wrap.py` (wrapping des chaînes UI,
+  y compris gabarits de format `_(...) % x`), `i18n_addimport.py`,
+  `i18n_extract.py`, `i18n_assemble.py`
+
+### Changed (Modifié)
+- Chaînes UI de tous les fichiers GUI enveloppées par `tr()`
+  (`tab_profils`, `tab_xfoil`, `tab_results`, `result_cell`,
+  `profil_canvas`, `dialog_uiuc`, `diagnostic_dialog`)
+
 ## [Non publié] - 2026-06-22 20:30
 
 ### Added (Ajouté)
