@@ -62,6 +62,22 @@ def _plot_finesse_alpha(ax, sim_results, color, label_base):
         ax.plot(alpha, finesse, color=color, linestyle=ls, label=lbl)
 
 
+def _plot_finesse_cl(ax, sim_results, color, label_base):
+    """Finesse (CL/CD) en fonction de CL."""
+    re_list = sim_results.re_list
+    single = (len(re_list) == 1)
+    for i, re_val in enumerate(re_list):
+        polar = sim_results.get_polar(re_val)
+        if polar is None:
+            continue
+        ls = '-' if single else RE_LINESTYLES[i % len(RE_LINESTYLES)]
+        lbl = label_base if single else '%s %s' % (label_base, _format_re(re_val))
+        cl = polar['CL']
+        cd = polar['CD']
+        finesse = np.where(cd > 1e-8, cl / cd, 0.0)
+        ax.plot(cl, finesse, color=color, linestyle=ls, label=lbl)
+
+
 def _plot_cl_cd(ax, sim_results, color, label_base):
     """CL en fonction de CD (trainee polaire)."""
     _plot_polar_xy(ax, sim_results, color, label_base, 'CD', 'CL')
@@ -70,6 +86,11 @@ def _plot_cl_cd(ax, sim_results, color, label_base):
 def _plot_cm_alpha(ax, sim_results, color, label_base):
     """CM en fonction de alpha."""
     _plot_polar_xy(ax, sim_results, color, label_base, 'alpha', 'CM')
+
+
+def _plot_cm_cl(ax, sim_results, color, label_base):
+    """CM en fonction de CL."""
+    _plot_polar_xy(ax, sim_results, color, label_base, 'CL', 'CM')
 
 
 def _plot_xtr_alpha(ax, sim_results, color, label_base):
@@ -307,9 +328,11 @@ ANALYSIS_REGISTRY = [
     ('CL(alpha)',      _plot_cl_alpha,      'alpha (deg)', 'CL'),
     ('CD(alpha)',      _plot_cd_alpha,      'alpha (deg)', 'CD'),
     ('Finesse(alpha)', _plot_finesse_alpha, 'alpha (deg)', 'CL/CD'),
+    ('Finesse(CL)',    _plot_finesse_cl,    'CL',          'CL/CD'),
     ('CL(CD)',         _plot_cl_cd,         'CD',          'CL'),
     ('-Cp(x)',         _plot_cp_x,          'x/c',         '-Cp'),
     ('CM(alpha)',      _plot_cm_alpha,      'alpha (deg)', 'CM'),
+    ('CM(CL)',         _plot_cm_cl,         'CL',          'CM'),
     ('Xtr(alpha)',     _plot_xtr_alpha,     'alpha (deg)', 'Xtr'),
     ('CDp(alpha)',     _plot_cdp_alpha,     'alpha (deg)', 'CDp'),
     ('Ue(s)',          _plot_ue_s,          's',           'Ue/Vinf'),

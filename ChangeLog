@@ -1,5 +1,13 @@
 # Changelog
 
+## [Non publié] - 2026-06-22 14:30
+
+### Added (Ajouté)
+- **Analyse « Finesse(CL) »** (CL/CD en fonction de CL) dans l'onglet
+  Résultats (`gui/result_cell.py`)
+- **Analyse « CM(CL) »** (moment Cm en fonction de CL) dans l'onglet
+  Résultats (`gui/result_cell.py`)
+
 ## [Non publié] - 2026-06-22 12:15
 
 ### Fixed (Corrigé)
