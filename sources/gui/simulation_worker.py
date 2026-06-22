@@ -24,15 +24,19 @@ class SimulationWorker(QThread):
     finished_ok = Signal(dict)
     finished_error = Signal(str)
 
-    def __init__(self, profils, params, parent=None):
+    def __init__(self, profils, params, parent=None, no_normalize_roles=None):
         u"""
         :param profils: dict {'current': Profil, 'reference': Profil}
                         (les valeurs peuvent etre None)
         :param params: dict de parametres XFoil
+        :param no_normalize_roles: ensemble de roles a NE PAS normaliser
+                        avant XFoil (ex. {'flap'} pour conserver le
+                        braquage dans le repere du profil courant)
         """
         super().__init__(parent)
         self._profils = profils
         self._params = params
+        self._no_normalize_roles = set(no_normalize_roles or ())
 
     def run(self):
         u"""Execute les simulations (dans le thread)."""
@@ -45,7 +49,9 @@ class SimulationWorker(QThread):
                 self.progress.emit("Simulation '%s'..." % label)
                 logger.info("Lancement simulation %s (%s)", role, label)
 
-                sim = Simulation(profil, params=self._params)
+                normalize = role not in self._no_normalize_roles
+                sim = Simulation(profil, params=self._params,
+                                 normalize=normalize)
                 sim_results = sim.run()
                 results[role] = sim_results
 

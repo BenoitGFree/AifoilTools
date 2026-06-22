@@ -633,6 +633,31 @@ class TabProfils(QWidget):
             return None
         return self._profil_flap
 
+    def profil_flap_normalized(self):
+        u"""Profil avec volet construit dans le repere normalise du courant.
+
+        Le courant est normalise (BA en (0,0), corde 1000, calage 0)
+        AVANT d'appliquer le braquage. Le profil resultant est destine a
+        XFoil avec ``normalize=False`` : XFoil ne renormalise ni ne
+        redresse le braquage, on ne voit donc que l'effet du volet par
+        rapport au profil courant.
+
+        :returns: profil braque ou None si flap inactif / echec
+        :rtype: ProfilSpline or None
+        """
+        if not self._chk_flap.isChecked() or self._profil_current is None:
+            return None
+        from model.flap import apply_flap
+        base = type(self._profil_current)(
+            self._profil_current.points.copy(),
+            name=self._profil_current.name)
+        base.normalize()
+        try:
+            return apply_flap(base, self._spin_xf.value(),
+                              self._spin_delta.value())
+        except Exception:
+            return None
+
     def change_sampling(self, role='current'):
         """Change le nombre de points d'echantillonnage d'un profil Bezier.
 

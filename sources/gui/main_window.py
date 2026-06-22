@@ -552,12 +552,16 @@ class MainWindow(QMainWindow):
             return
 
         profils = {}
+        no_normalize = set()
         if target in ('both', 'current'):
             profils['current'] = self._tab_profils.profil_current
         if target in ('both', 'reference'):
             profils['reference'] = self._tab_profils.profil_reference
         if target in ('both', 'flap'):
-            profils['flap'] = self._tab_profils.profil_flap
+            # Volet construit dans le repere normalise du courant : XFoil
+            # ne doit ni renormaliser ni redresser le braquage.
+            profils['flap'] = self._tab_profils.profil_flap_normalized()
+            no_normalize.add('flap')
 
         # Retirer les None (ex. volet inactif)
         profils = {k: v for k, v in profils.items() if v is not None}
@@ -569,7 +573,8 @@ class MainWindow(QMainWindow):
         params = self._tab_xfoil.get_params()
 
         from .simulation_worker import SimulationWorker
-        self._sim_worker = SimulationWorker(profils, params, parent=self)
+        self._sim_worker = SimulationWorker(
+            profils, params, parent=self, no_normalize_roles=no_normalize)
         self._sim_worker.progress.connect(self._on_sim_progress)
         self._sim_worker.finished_ok.connect(self._on_sim_finished)
         self._sim_worker.finished_error.connect(self._on_sim_error)

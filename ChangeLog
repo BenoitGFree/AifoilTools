@@ -1,5 +1,28 @@
 # Changelog
 
+## [Non publié] - 2026-06-22 10:30
+
+### Fixed (Corrigé)
+- **Profil avec volet : XFoil ne renormalise ni ne redresse le braquage.**
+  Auparavant `Simulation.run()` normalisait chaque profil indépendamment
+  (BA en (0,0), corde 1000, calage 0), ce qui redressait le bord de fuite
+  braqué et effaçait l'effet du volet. Le volet est désormais construit
+  dans le repère normalisé du courant puis simulé tel quel, de sorte que
+  seul l'effet du braquage par rapport au courant est visible.
+
+### Added (Ajouté)
+- Paramètre `normalize` (défaut `True`) sur `Simulation` : à `False`, le
+  profil est envoyé au solveur sans redressement ni mise à l'échelle
+  (`model/simulation.py`, `run()` et `prepare_only()`)
+- `TabProfils.profil_flap_normalized()` : construit le profil braqué dans
+  le repère normalisé du courant (`gui/tab_profils.py`)
+- Paramètre `no_normalize_roles` sur `SimulationWorker` pour désactiver la
+  normalisation par rôle (`gui/simulation_worker.py`)
+
+### Changed (Modifié)
+- `main_window._on_run_simulations` utilise `profil_flap_normalized()` et
+  marque le rôle `flap` comme non normalisé
+
 ## [Non publié] - 2026-06-22 10:14
 
 ### Added (Ajouté)

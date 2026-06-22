@@ -535,7 +535,8 @@ class Simulation(object):
     DONE = 'done'
     FAILED = 'failed'
 
-    def __init__(self, profil, params=None, solver='xfoil', work_dir=None):
+    def __init__(self, profil, params=None, solver='xfoil', work_dir=None,
+                 normalize=True):
         u"""
         :param profil: profil a analyser
         :type profil: Profil
@@ -545,6 +546,12 @@ class Simulation(object):
         :type solver: str
         :param work_dir: repertoire de travail (None = temporaire)
         :type work_dir: str or None
+        :param normalize: si True (defaut), le profil est normalise (BA en
+            (0,0), corde 1000, calage 0) avant d'etre envoye au solveur.
+            Mettre a False pour un profil deja exprime dans le repere
+            voulu (ex. profil avec volet, pour que le solveur ne
+            renormalise ni ne redresse le braquage).
+        :type normalize: bool
         """
         from .profil import Profil
         from .profil_spline import ProfilSpline
@@ -555,6 +562,7 @@ class Simulation(object):
 
         self._profil = profil
         self._solver = solver
+        self._normalize = normalize
         self._state = self.IDLE
         self._results = None
         self._error = None
@@ -650,12 +658,19 @@ class Simulation(object):
             from .profil import Profil
             from .pipeline import FoilAnalysisPipeline
 
-            # Copier et normaliser le profil pour le solveur
-            p_temp = Profil(self._profil.points.copy(),
-                            name=self._profil.name)
-            p_temp.normalize()
+            if self._normalize:
+                # Copier et normaliser le profil pour le solveur
+                p_temp = Profil(self._profil.points.copy(),
+                                name=self._profil.name)
+                p_temp.normalize()
+                pts_src = p_temp.points
+            else:
+                # Profil deja dans le repere voulu : ne pas redresser
+                # ni rescaler (ex. profil avec volet, pour ne voir que
+                # l'effet du braquage par rapport au courant).
+                pts_src = np.asarray(self._profil.points, dtype=float)
             # Convertir mm -> coordonnees normalisees [0, 1]
-            pts_norm = p_temp.points / 1000.0
+            pts_norm = pts_src / 1000.0
 
             logger.info(u"Simulation '%s' avec %s (Re=%s)",
                         self._profil.name, self._solver,
@@ -689,10 +704,14 @@ class Simulation(object):
         from .profil import Profil
         from .pipeline import FoilAnalysisPipeline
 
-        p_temp = Profil(self._profil.points.copy(),
-                        name=self._profil.name)
-        p_temp.normalize()
-        pts_norm = p_temp.points / 1000.0
+        if self._normalize:
+            p_temp = Profil(self._profil.points.copy(),
+                            name=self._profil.name)
+            p_temp.normalize()
+            pts_src = p_temp.points
+        else:
+            pts_src = np.asarray(self._profil.points, dtype=float)
+        pts_norm = pts_src / 1000.0
 
         pipeline = FoilAnalysisPipeline(
             solver=self._solver,
