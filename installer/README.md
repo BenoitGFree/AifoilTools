@@ -13,6 +13,21 @@ PyInstaller. La `<version>` provient de `__version__`
 2. **Build PyInstaller** déjà produit dans `dist/AirfoilTools/`
    (cf. `AirfoilTools.spec` à la racine)
 
+## Méthode rapide (recommandée)
+
+Depuis la racine du projet, un script enchaîne les deux builds
+(PyInstaller puis Inno Setup) en un seul appel :
+
+```bash
+installer\build_installer.bat
+```
+
+Il vérifie la présence du venv `env_py3\` et détecte `ISCC.exe`
+(Inno Setup 6, 32 ou 64 bits). Résultat dans `installer\Output\`.
+
+La procédure manuelle ci-dessous reste utile pour comprendre chaque
+étape ou en exécuter une seule.
+
 ## Procédure complète
 
 ### Étape 1 : Build PyInstaller
@@ -71,7 +86,7 @@ La **source unique** de la version est `__version__` dans
 `sources/gui/__init__.py` :
 
 ```python
-__version__ = "3.0"
+__version__ = "3.1"
 ```
 
 Elle alimente automatiquement :
@@ -86,7 +101,7 @@ d'outils Inno Setup, sans accès à Python) — reporter la même valeur
 dans `AirfoilTools.iss` :
 
 ```ini
-#define MyAppVersion "3.0"
+#define MyAppVersion "3.1"
 ```
 
 **Important** : ne pas changer `AppId` entre deux versions —
