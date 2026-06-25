@@ -157,7 +157,7 @@ EN_PHASE2 = {
     "Tolérance :": "Tolerance:",
     "Tout afficher": "Show all",
     "Tout masquer": "Hide all",
-    "Type d'analyse affiche dans cette cellule.\nPolaires : CL(alpha), CD(alpha), CL/CD, Cm(alpha)...\nDistributions : -Cp(x), Profil + CL\nCouche limite : Ue, Dstar, Theta, Cf, H (vs s ou x)": "Analysis type displayed in this cell.\nPolars: CL(alpha), CD(alpha), CL/CD, Cm(alpha)...\nDistributions: -Cp(x), Airfoil + CL\nBoundary layer: Ue, Dstar, Theta, Cf, H (vs s or x)",
+    "Type d'analyse affiche dans cette cellule.\nPolaires : CL(alpha), CD(alpha), CL/CD, Cm(alpha)...\nDistributions : -Cp(x), Cp + Profil, Profil + CL\nCouche limite : Ue, Dstar, Theta, Cf, H (vs s ou x)": "Analysis type displayed in this cell.\nPolars: CL(alpha), CD(alpha), CL/CD, Cm(alpha)...\nDistributions: -Cp(x), Cp + Airfoil, Airfoil + CL\nBoundary layer: Ue, Dstar, Theta, Cf, H (vs s or x)",
     "Viscosité :": "Viscosity:",
     "Volet": "Flap",
     "XTR Bot :": "XTR Bot:",

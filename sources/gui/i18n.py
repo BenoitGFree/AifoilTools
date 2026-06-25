@@ -232,6 +232,32 @@ _TR = {
         # notation aero internationale. Identifiant interne inchange.
         u"Finesse(alpha)": u"L/D(alpha)",
         u"Finesse(CL)": u"L/D(CL)",
+        u"Cp + Profil": u"Cp + Airfoil",
+
+        # Onglet « Cp / Couche limite »
+        u"Cp / Couche limite": u"Cp / Boundary layer",
+        u"Cp + couche limite": u"Cp + boundary layer",
+        u"Profil :": u"Airfoil:",
+        u"Re :": u"Re:",
+        u"α :": u"α:",
+        u"Référence": u"Reference",
+        u"Extrados": u"Upper",
+        u"Intrados": u"Lower",
+        u"Non visqueux": u"Inviscid",
+        u"Profil": u"Airfoil",
+        u"δ* extrados": u"δ* upper",
+        u"δ* intrados": u"δ* lower",
+        u"Calcul indisponible.": u"Calculation unavailable.",
+        u"Pas de Cp ni de couche limite pour ce calcul.":
+            u"No Cp nor boundary layer for this calculation.",
+        u"Profil a visualiser : courant (bleu), reference (rouge)"
+        u" ou volet (vert).":
+            u"Airfoil to display: current (blue), reference (red)"
+            u" or flap (green).",
+        u"Nombre de Reynolds du calcul.":
+            u"Reynolds number of the calculation.",
+        u"Incidence (degres) du calcul.":
+            u"Angle of attack (degrees) of the calculation.",
     },
 }
 

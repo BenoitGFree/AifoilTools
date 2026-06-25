@@ -55,11 +55,13 @@ Each cell features a \textbf{control bar} and a
         & Shows / hides the airfoil with flap curves (green). \\
     \menu{Reynolds} list
         & For analyses that depend on a particular Reynolds
-          ($-C_p(x)$, airfoil~+~CL, boundary layer), selects the
+          ($-C_p(x)$, Cp~+~Airfoil, airfoil~+~CL), selects the
           Reynolds to display. Hidden if not relevant. \\
     \menu{Alpha} list
-        & For point-by-point analyses, selects the angle of attack
-          $\alpha$ to display. Hidden if not relevant. \\
+        & For analyses that depend on an angle of attack
+          (Cp~+~Airfoil, airfoil~+~CL and the boundary layer
+          quantities), selects the angle of attack $\alpha$ to
+          display. Hidden if not relevant. \\
     Coordinates
         & Real-time display of the cursor coordinates
           in the plot frame. \\
@@ -137,6 +139,12 @@ an extra cell.
     $-C_p(x)$ & Distribution of the pressure coefficient along
                the chord, at a given Reynolds and angle of attack.
                Convention: $-C_p$ upward (upper surface on top). \\
+    Cp + Airfoil & Combined \emph{XFoil}-style plot: $-C_p$ on top and
+               the airfoil redrawn below, for a (Reynolds, angle of
+               attack) pair. An inset summarizes the coefficients
+               ($C_L$, $C_M$, $C_D$, lift-to-drag ratio). For a fuller
+               dedicated view (inviscid $C_p$ and boundary layer), see
+               chapter~\ref{chap:cp}. \\
     Airfoil + CL & Combined visualization: airfoil rotated by
                the angle of attack + plot of the boundary layer
                edge (displacement thickness $\delta^*$).\\
@@ -145,8 +153,11 @@ an extra cell.
 
 \subsection{Boundary layer}
 
-Six boundary layer quantities can be plotted as a function
-of the curvilinear abscissa $s$ or the Cartesian abscissa $x$:
+Five boundary layer quantities can be plotted as a function
+of the curvilinear abscissa $s$ or the Cartesian abscissa $x$. They
+are evaluated at the \textbf{selected angle of attack} (\menu{Alpha}
+list) — the boundary layer being computed for each $\alpha$ — and each
+curve compares the available Reynolds numbers:
 
 \begin{tabularx}{\linewidth}{l X}
     \toprule

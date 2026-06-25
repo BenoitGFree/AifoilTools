@@ -1,0 +1,102 @@
+\chapter{Onglet Cp / Couche limite}
+\label{chap:cp}
+
+L'onglet \menu{Cp / Couche limite} offre une vue détaillée, façon
+\emph{XFoil}, d'un \textbf{calcul précis} : un profil, un Reynolds et
+une incidence. Il réunit dans une même fenêtre la distribution de
+pression (visqueuse \emph{et} non visqueuse) et la géométrie du profil
+entourée de sa couche limite.
+
+\screenshot{20_tab_cp.png}{1.0}{%
+    Onglet \menu{Cp / Couche limite} pour un NACA~2412 à
+    $Re = 10^6$ et $\alpha = 6\textdegree$. En haut : le coefficient
+    de pression $C_p$ (extrados en jaune, intrados en cyan) et sa
+    valeur non visqueuse (pointillé blanc). En bas : le profil à
+    l'échelle, avec les frontières de couche limite $\delta^*$
+    extrados (jaune) et intrados (cyan). L'encart résume les
+    coefficients au point choisi.}
+
+\section{Sélection du calcul}
+
+Une barre de contrôle, en haut de l'onglet, permet de cibler le
+calcul à visualiser :
+
+\begin{tabularx}{\linewidth}{l X}
+    \toprule
+    \textbf{Liste} & \textbf{Rôle} \\
+    \midrule
+    \menu{Profil}
+        & Profil à afficher : courant (bleu), référence (rouge) ou
+          volet (vert). Seuls les profils effectivement simulés sont
+          proposés. \\
+    \menu{Re}
+        & Nombre de Reynolds du calcul. \\
+    \menu{$\alpha$}
+        & Incidence (en degrés) du calcul. \\
+    \bottomrule
+\end{tabularx}
+
+Les listes sont \textbf{en cascade} : changer de profil met à jour la
+liste des Reynolds disponibles, puis celle des incidences.
+
+\begin{noteinfo}
+Contrairement à l'onglet \menu{Résultats} qui superpose les profils,
+cet onglet affiche \textbf{un seul calcul à la fois}, pour une lecture
+fine de la pression et de la couche limite.
+\end{noteinfo}
+
+\section{Tracé supérieur : coefficient de pression}
+
+Le tracé du haut reprend la convention \emph{XFoil} : l'axe vertical
+porte le coefficient de pression $C_p$ \textbf{orienté vers le bas}
+— la succion ($C_p < 0$) est donc dirigée vers le \emph{haut}. Trois
+courbes y sont superposées :
+
+\begin{itemize}
+    \item l'\textbf{extrados} (jaune) ;
+    \item l'\textbf{intrados} (cyan) ;
+    \item le $C_p$ \textbf{non visqueux} (pointillé blanc), issu d'un
+        calcul XFoil sans couche limite (méthode des panneaux,
+        indépendant du Reynolds).
+\end{itemize}
+
+L'écart entre le $C_p$ visqueux et le $C_p$ non visqueux matérialise
+l'effet de la couche limite : faible aux petites incidences, il se
+creuse près du bord de fuite (recompression) et en cas de
+décollement.
+
+\section{Tracé inférieur : profil et couche limite}
+
+Le tracé du bas affiche le profil \textbf{à l'échelle de la corde}
+(repère isométrique : les proportions du profil sont respectées).
+Autour de la surface (en blanc) sont tracées les \textbf{frontières de
+couche limite} — la surface décalée de l'épaisseur de déplacement
+$\delta^*$ le long de la normale extérieure :
+
+\begin{itemize}
+    \item extrados en jaune ;
+    \item intrados en cyan.
+\end{itemize}
+
+L'épaississement de ces frontières vers le bord de fuite traduit la
+croissance de la couche limite ; un renflement marqué annonce un
+décollement. Le sillage, en aval du bord de fuite, est exclu du tracé.
+
+\section{Encart de coefficients}
+
+Un encart, en haut à droite, rappelle les coefficients intégraux au
+point sélectionné : Reynolds, incidence $\alpha$, portance $C_L$,
+moment $C_M$, traînée $C_D$ et finesse $C_L/C_D$.
+
+\begin{astuce}
+Comparez le $C_p$ visqueux au pointillé non visqueux pour évaluer
+d'un coup d'œil l'influence de la viscosité à l'incidence choisie ;
+inspectez ensuite les frontières $\delta^*$ pour repérer un
+décollement amorcé au bord de fuite.
+\end{astuce}
+
+\begin{noteinfo}
+Le $C_p$ non visqueux est calculé par une passe XFoil distincte (sans
+couche limite). Cette passe est très rapide et peut être désactivée
+par le paramètre \code{INVISCID\_CP} (activée par défaut).
+\end{noteinfo}

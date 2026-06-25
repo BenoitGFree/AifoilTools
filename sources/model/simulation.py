@@ -50,7 +50,8 @@ class SimulationResults(object):
     - des methodes de trace composables pour la comparaison
     """
 
-    def __init__(self, polars=None, cp=None, bl=None, warnings=None):
+    def __init__(self, polars=None, cp=None, bl=None, warnings=None,
+                 cpi=None):
         u"""
         :param polars: polaires par Reynolds
         :type polars: dict or None
@@ -60,9 +61,12 @@ class SimulationResults(object):
         :type bl: dict or None
         :param warnings: messages d'avertissement
         :type warnings: list or None
+        :param cpi: distributions Cp non visqueux par alpha
+        :type cpi: dict or None
         """
         self._polars = polars if polars is not None else {}
         self._cp = cp if cp is not None else {}
+        self._cpi = cpi if cpi is not None else {}
         self._bl = bl if bl is not None else {}
         self._warnings = warnings if warnings is not None else []
 
@@ -78,6 +82,7 @@ class SimulationResults(object):
         return cls(
             polars=copy.deepcopy(results_dict.get('polars', {})),
             cp=copy.deepcopy(results_dict.get('cp', {})),
+            cpi=copy.deepcopy(results_dict.get('cpi', {})),
             bl=copy.deepcopy(results_dict.get('bl', {})),
             warnings=list(results_dict.get('warnings', []))
         )
@@ -97,8 +102,26 @@ class SimulationResults(object):
         return self._cp
 
     @property
+    def cpi(self):
+        u"""Distributions Cp non visqueux : dict {alpha: ndarray(n,3)}.
+
+        Independantes du Reynolds (solution non visqueuse, methode des
+        panneaux). Format [x, y, Cp] comme les distributions visqueuses.
+        """
+        return self._cpi
+
+    @property
+    def has_cpi(self):
+        u"""True si au moins une distribution Cp non visqueux disponible."""
+        return len(self._cpi) > 0
+
+    @property
     def bl(self):
-        u"""Donnees couche limite : dict {Re: dict or None}."""
+        u"""Donnees couche limite : dict {Re: {alpha: dict}}.
+
+        Chaque entree alpha est un dict de numpy arrays
+        ('s', 'x', 'y', 'Ue_Vinf', 'Dstar', 'Theta', 'Cf', 'H').
+        """
         return self._bl
 
     @property
@@ -127,7 +150,7 @@ class SimulationResults(object):
     @property
     def has_bl(self):
         u"""True si au moins une donnee de couche limite disponible."""
-        return any(v is not None for v in self._bl.values())
+        return any(bool(alphas) for alphas in self._bl.values())
 
     @property
     def n_converged(self):
@@ -188,6 +211,50 @@ class SimulationResults(object):
         if re_val not in self._cp:
             return None
         return self._cp[re_val].get(alpha, None)
+
+    def get_cpi(self, alpha=None):
+        u"""Retourne la distribution Cp non visqueux pour une incidence.
+
+        :param alpha: incidence ; si None ou absente, l'alpha disponible
+            le plus proche est retourne.
+        :returns: ndarray(n, 3) [x, y, Cp] (ou (n,2)) ou None
+        :rtype: numpy.ndarray or None
+        """
+        if not self._cpi:
+            return None
+        if alpha is not None and alpha in self._cpi:
+            return self._cpi[alpha]
+        keys = sorted(self._cpi.keys())
+        if alpha is None:
+            return self._cpi[keys[0]]
+        nearest = min(keys, key=lambda a: abs(a - alpha))
+        return self._cpi[nearest]
+
+    def get_bl(self, re, alpha=None):
+        u"""Retourne les donnees de couche limite pour (Re, alpha).
+
+        :param re: Reynolds
+        :type re: float
+        :param alpha: incidence ; si None ou absente, l'alpha disponible
+            le plus proche est retourne.
+        :type alpha: float or None
+        :returns: dict ('s', 'x', 'y', 'Ue_Vinf', 'Dstar', 'Theta',
+            'Cf', 'H') ou None
+        :rtype: dict or None
+        """
+        re_val = float(re)
+        alphas = self._bl.get(re_val)
+        if not alphas:
+            return None
+        if alpha is not None and alpha in alphas:
+            return alphas[alpha]
+        keys = sorted(alphas.keys())
+        if not keys:
+            return None
+        if alpha is None:
+            return alphas[keys[0]]
+        nearest = min(keys, key=lambda a: abs(a - alpha))
+        return alphas[nearest]
 
     def alpha_range(self, re=None):
         u"""Retourne (alpha_min, alpha_max) pour un Re donne.
@@ -456,7 +523,8 @@ class SimulationResults(object):
             re_tag = self._format_re(re_val)
             lbl = label if (label and single) else (
                 '%s %s' % (label, re_tag) if label else re_tag)
-            ax.plot(cp_data[:, 0], cp_data[:, 1],
+            # Cp en derniere colonne ([x, Cp] ou [x, y, Cp])
+            ax.plot(cp_data[:, 0], cp_data[:, -1],
                     color=color, linestyle=ls, label=lbl)
         ax.set_xlabel(u'x/c')
         ax.set_ylabel(u'Cp')

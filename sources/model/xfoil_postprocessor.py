@@ -7,7 +7,7 @@ Postprocesseur XFoil : parse les fichiers de sortie XFoil.
 Lit les fichiers generes par XFoil :
 - polar_Re*.dat : polaires (alpha, CL, CD, CDp, CM, Top_Xtr, Bot_Xtr)
 - cp_Re*_a*.dat : distributions de pression Cp(x)
-- bl_Re*.dat : donnees de couche limite
+- bl_Re*_a*.dat : donnees de couche limite (une par alpha)
 
 @author: Nervures
 @date: 2026-02
@@ -51,13 +51,20 @@ class XFoilPostprocessor(AbstractPostprocessor):
                 },
                 'cp': {
                     500000: {
-                        -5.0: ndarray(n, 2),  # [x, Cp]
-                        -4.5: ndarray(n, 2),
+                        -5.0: ndarray(n, 3),  # [x, y, Cp] (y si dispo)
+                        -4.5: ndarray(n, 3),
                         ...
                     }
                 },
+                'cpi': {                  # Cp non visqueux (par alpha)
+                    -5.0: ndarray(n, 3),  # [x, y, Cp]
+                    ...
+                },
                 'bl': {
-                    500000: ndarray ou None
+                    500000: {
+                        -5.0: {'s','x','y','Ue_Vinf','Dstar',...},
+                        ...
+                    }
                 },
                 'warnings': [str, ...]
             }
@@ -65,6 +72,7 @@ class XFoilPostprocessor(AbstractPostprocessor):
         results = {
             'polars': {},
             'cp': {},
+            'cpi': {},
             'bl': {},
             'warnings': []
         }
@@ -108,8 +116,8 @@ class XFoilPostprocessor(AbstractPostprocessor):
         cp_files = sorted(f for f in files
                           if f.startswith('cp_') and f.endswith('.dat'))
         for cf in cp_files:
-            re_val, alpha = self._extract_re_alpha_from_cp_filename(cf)
-            if re_val is not None:
+            re_val, alpha = self._extract_re_alpha_from_filename(cf)
+            if re_val is not None and alpha is not None:
                 if re_val not in results['cp']:
                     results['cp'][re_val] = {}
                 filepath = os.path.join(work_dir, cf)
@@ -117,21 +125,42 @@ class XFoilPostprocessor(AbstractPostprocessor):
                 if cp_data is not None:
                     results['cp'][re_val][alpha] = cp_data
 
-        # Parse des couches limites
+        # Parse des Cp non visqueux (independants du Reynolds : par alpha)
+        cpi_files = sorted(f for f in files
+                           if f.startswith('cpi_') and f.endswith('.dat'))
+        for cf in cpi_files:
+            alpha = self._extract_alpha_from_filename(cf)
+            if alpha is None:
+                continue
+            cpi_data = self._parse_cp_file(os.path.join(work_dir, cf))
+            if cpi_data is not None:
+                results['cpi'][alpha] = cpi_data
+
+        # Parse des couches limites (une par couple Re, alpha)
         bl_files = sorted(f for f in files
                           if f.startswith('bl_') and f.endswith('.dat'))
         for bf in bl_files:
-            re_val = self._extract_re_from_filename(bf)
-            if re_val is not None:
+            re_val, alpha = self._extract_re_alpha_from_filename(bf)
+            if re_val is None:
+                # Compatibilite : ancien format bl_Re<re>.dat (sans alpha)
+                re_val = self._extract_re_from_filename(bf)
+                alpha = 0.0
+            if re_val is not None and alpha is not None:
                 filepath = os.path.join(work_dir, bf)
                 bl_data = self._parse_bl_file(filepath)
-                results['bl'][re_val] = bl_data
+                if bl_data is not None:
+                    if re_val not in results['bl']:
+                        results['bl'][re_val] = {}
+                    results['bl'][re_val][alpha] = bl_data
 
         # Bilan
         n_polars = len(results['polars'])
         n_cp = sum(len(v) for v in results['cp'].values())
-        logger.info(u"Resultats parses : %d polaires, %d distributions Cp",
-                    n_polars, n_cp)
+        n_bl = sum(len(v) for v in results['bl'].values())
+        n_cpi = len(results['cpi'])
+        logger.info(u"Resultats parses : %d polaires, %d Cp, %d Cp non"
+                    u" visqueux, %d couches limites",
+                    n_polars, n_cp, n_cpi, n_bl)
 
         return results
 
@@ -156,11 +185,27 @@ class XFoilPostprocessor(AbstractPostprocessor):
                 return None
         return None
 
-    def _extract_re_alpha_from_cp_filename(self, filename):
-        u"""Extrait Re et alpha depuis un nom de fichier Cp.
+    def _extract_alpha_from_filename(self, filename):
+        u"""Extrait alpha d'un nom de fichier sans Reynolds.
+
+        Ex: 'cpi_a2.5.dat' -> 2.5 ; 'cpi_a-4.5.dat' -> -4.5
+
+        :returns: alpha (float) ou None
+        """
+        base = filename.rsplit('.', 1)[0]
+        match = re.search(r'_a([0-9.eE+\-]+)', base)
+        if match:
+            try:
+                return float(match.group(1))
+            except ValueError:
+                return None
+        return None
+
+    def _extract_re_alpha_from_filename(self, filename):
+        u"""Extrait Re et alpha depuis un nom de fichier Cp ou BL.
 
         Ex: 'cp_Re500000_a2.5.dat' -> (500000.0, 2.5)
-            'cp_Re300000_a-4.5.dat' -> (300000.0, -4.5)
+            'bl_Re300000_a-4.5.dat' -> (300000.0, -4.5)
 
         :param filename: nom du fichier
         :type filename: str
@@ -252,9 +297,15 @@ class XFoilPostprocessor(AbstractPostprocessor):
         #    x        y        Cp
         (en-tete eventuel, puis une ligne par point)
 
+        La colonne y (ordonnee de la surface) est conservee lorsqu'elle
+        est presente : elle permet de redessiner le profil sous la courbe
+        de pression (trace combine facon XFoil). Les fichiers a 2 colonnes
+        (x, Cp) restent supportes.
+
         :param filepath: chemin du fichier
         :type filepath: str
-        :returns: ndarray(n, 2) [x, Cp] ou None
+        :returns: ndarray(n, 3) [x, y, Cp] si la geometrie est presente,
+            sinon ndarray(n, 2) [x, Cp] ; None si illisible.
         :rtype: numpy.ndarray or None
         """
         try:
@@ -264,6 +315,7 @@ class XFoilPostprocessor(AbstractPostprocessor):
             return None
 
         data_lines = []
+        ncols = 2
         for line in lines:
             line = line.strip()
             if not line or line.startswith('#'):
@@ -272,8 +324,10 @@ class XFoilPostprocessor(AbstractPostprocessor):
             if len(parts) >= 3:
                 try:
                     x = float(parts[0])
+                    y = float(parts[1])
                     cp = float(parts[2])
-                    data_lines.append([x, cp])
+                    data_lines.append([x, y, cp])
+                    ncols = 3
                 except ValueError:
                     continue
             elif len(parts) == 2:
@@ -286,6 +340,13 @@ class XFoilPostprocessor(AbstractPostprocessor):
 
         if not data_lines:
             return None
+
+        # Homogeneiser : si on a vu des lignes a 3 colonnes, ignorer les
+        # eventuelles lignes a 2 colonnes (incompletes).
+        if ncols == 3:
+            data_lines = [row for row in data_lines if len(row) == 3]
+            if not data_lines:
+                return None
 
         return np.array(data_lines)
 
@@ -307,31 +368,20 @@ class XFoilPostprocessor(AbstractPostprocessor):
         except IOError:
             return None
 
-        # Trouver le debut des donnees
-        data_start = 0
-        for i, line in enumerate(lines):
-            if '----' in line or line.strip().startswith('1'):
-                # Essayer de parser comme donnees
-                parts = line.strip().split()
-                if len(parts) >= 8:
-                    data_start = i
-                    break
-                else:
-                    data_start = i + 1
-                    break
-
+        # Chaque ligne de donnees a 8 colonnes numeriques. On les parse
+        # toutes ; l'en-tete (« #  s  x  y ... ») et les separateurs
+        # echouent au float() et sont ignores. Surtout, NE PAS filtrer
+        # sur le contenu (ex. premiere colonne s) : l'ancienne heuristique
+        # « ligne commencant par 1 » sautait tout l'extrados (s < 1).
         data_lines = []
-        for line in lines[data_start:]:
-            line = line.strip()
-            if not line:
-                continue
+        for line in lines:
             parts = line.split()
-            if len(parts) >= 8:
-                try:
-                    values = [float(x) for x in parts[:8]]
-                    data_lines.append(values)
-                except ValueError:
-                    continue
+            if len(parts) < 8:
+                continue
+            try:
+                data_lines.append([float(v) for v in parts[:8]])
+            except ValueError:
+                continue
 
         if not data_lines:
             return None

@@ -55,11 +55,12 @@ Chaque cellule comporte une \textbf{barre de contrôle} et un
         & Affiche / masque les courbes du profil avec volet (vert). \\
     Liste \menu{Reynolds}
         & Pour les analyses dépendant d'un Reynolds particulier
-          ($-C_p(x)$, profil~+~CL, couche limite), choisit le
+          ($-C_p(x)$, Cp~+~Profil, profil~+~CL), choisit le
           Reynolds à afficher. Masquée si non pertinente. \\
     Liste \menu{Alpha}
-        & Pour les analyses point-par-point, choisit l'incidence
-          $\alpha$ à afficher. Masquée si non pertinente. \\
+        & Pour les analyses dépendant d'une incidence (Cp~+~Profil,
+          profil~+~CL et les grandeurs de couche limite), choisit
+          l'incidence $\alpha$ à afficher. Masquée si non pertinente. \\
     Coordonnées
         & Affichage en temps réel des coordonnées du curseur
           dans le repère du graphique. \\
@@ -137,6 +138,12 @@ une cellule supplémentaire.
     $-C_p(x)$ & Distribution du coefficient de pression le long
                de la corde, à un Reynolds et une incidence donnés.
                Convention : $-C_p$ vers le haut (extrados au-dessus). \\
+    Cp + Profil & Tracé combiné façon \emph{XFoil} : le $-C_p$ en haut
+               et le profil redessiné en dessous, pour un couple
+               (Reynolds, incidence). Un encart résume les coefficients
+               ($C_L$, $C_M$, $C_D$, finesse). Pour une vue dédiée plus
+               complète (Cp non visqueux et couche limite), voir le
+               chapitre~\ref{chap:cp}. \\
     Profil + CL & Visualisation combinée : profil tourné par
                l'incidence + tracé de la frontière de couche
                limite (épaisseur de déplacement $\delta^*$).\\
@@ -145,8 +152,11 @@ une cellule supplémentaire.
 
 \subsection{Couche limite}
 
-Six grandeurs de couche limite peuvent être tracées en fonction
-de l'abscisse curviligne $s$ ou de l'abscisse cartésienne $x$ :
+Cinq grandeurs de couche limite peuvent être tracées en fonction
+de l'abscisse curviligne $s$ ou de l'abscisse cartésienne $x$. Elles
+sont évaluées à l'\textbf{incidence sélectionnée} (liste \menu{Alpha})
+— la couche limite étant calculée pour chaque $\alpha$ — et chaque
+courbe compare les Reynolds disponibles :
 
 \begin{tabularx}{\linewidth}{l X}
     \toprule

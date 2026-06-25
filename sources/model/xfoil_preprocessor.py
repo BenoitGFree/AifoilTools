@@ -74,6 +74,11 @@ class XFoilPreprocessor(AbstractPreprocessor):
         cmd_file = self._write_alpha_commands(re_list)
         generated.append(cmd_file)
 
+        # Cp non visqueux : session XFoil SEPAREE (isolee du calcul
+        # visqueux pour ne pas le perturber). Independante du Reynolds.
+        if self.params.get('INVISCID_CP', True):
+            generated.append(self._write_inviscid_commands())
+
         # Polaire Cl fixe (si demande)
         if 'CL_TARGET' in self.params or 'CL_LIST' in self.params:
             cmd_file = self._write_cl_commands(re_list)
@@ -103,7 +108,7 @@ class XFoilPreprocessor(AbstractPreprocessor):
         Pour chaque Re, genere :
         - un fichier polaire : polar_Re<value>.dat
         - un fichier Cp : cp_Re<value>_a<alpha>.dat (pour chaque alpha)
-        - un fichier BL : bl_Re<value>.dat
+        - un fichier BL : bl_Re<value>_a<alpha>.dat (pour chaque alpha)
 
         Gestion multi-Re : on reste dans OPER et on toggle VISC OFF/ON
         entre chaque Re, avec INIT pour reinitialiser la couche limite.
@@ -175,12 +180,14 @@ class XFoilPreprocessor(AbstractPreprocessor):
                              % (alpha_min, alpha_max, alpha_step))
                 lines.append('PACC')
 
-                # Sauvegarde Cp pour chaque alpha
+                # Sauvegarde Cp et couche limite pour chaque alpha
                 alpha = alpha_min
                 while alpha <= alpha_max + 1e-9:
                     lines.append('ALFA %g' % alpha)
                     cp_file = 'cp_Re%s_a%g.dat' % (re_tag, alpha)
                     lines.append('CPWR %s' % cp_file)
+                    bl_file = 'bl_Re%s_a%g.dat' % (re_tag, alpha)
+                    lines.append('DUMP %s' % bl_file)
                     alpha += alpha_step
             else:
                 # Mode ALFA individuel (airfoiltools-style)
@@ -207,6 +214,11 @@ class XFoilPreprocessor(AbstractPreprocessor):
                     cp_file = 'cp_Re%s_a%g.dat' % (re_tag, a)
                     lines.append('ALFA %g' % a)
                     lines.append('CPWR %s' % cp_file)
+                    # Couche limite a cette incidence (meme convention de
+                    # nom que le Cp : ecrasee par la passe 2 si rejouee,
+                    # comme le fichier Cp).
+                    bl_file = 'bl_Re%s_a%g.dat' % (re_tag, a)
+                    lines.append('DUMP %s' % bl_file)
 
                 # --- Passe 1 : marche continue ---
                 # Chaque point est initialise par le precedent converge :
@@ -236,10 +248,52 @@ class XFoilPreprocessor(AbstractPreprocessor):
 
                 lines.append('PACC')
 
-            # Sauvegarde couche limite pour le dernier alpha
-            lines.append('DUMP bl_Re%s.dat' % re_tag)
-
         # Sortir de OPER et quitter
+        lines.append('')
+        lines.append('QUIT')
+
+        with open(filepath, 'w') as f:
+            f.write('\n'.join(lines))
+        return filepath
+
+    def _write_inviscid_commands(self):
+        u"""Genere le script XFoil pour le Cp NON VISQUEUX.
+
+        Session independante (un fichier xfoil_inviscid.cmd a part) : a
+        l'entree de OPER, XFoil est non visqueux, donc CPWR ecrit le Cp
+        non visqueux. Independant du Reynolds ; un fichier cpi_a<alpha>.dat
+        par incidence. La methode des panneaux converge toujours, un
+        simple balayage suffit.
+
+        :returns: chemin du fichier commande
+        :rtype: str
+        """
+        p = self.params
+        filepath = os.path.join(self.work_dir, 'xfoil_inviscid.cmd')
+        lines = []
+
+        lines.append('LOAD profil.dat')
+        lines.append('Profil_Axile')
+
+        if p.get('REPANEL', True):
+            lines.append('PPAR')
+            lines.append('N %d' % p.get('NPANEL', 200))
+            lines.append('')
+            lines.append('')
+
+        lines.append('OPER')
+        lines.append('MACH %g' % p.get('MACH', 0.0))
+
+        alpha_min = p.get('ALPHA_MIN', -5.0)
+        alpha_max = p.get('ALPHA_MAX', 15.0)
+        alpha_step = p.get('ALPHA_STEP', 0.5)
+        a = alpha_min
+        while a <= alpha_max + 1e-9:
+            ar = round(a, 6)
+            lines.append('ALFA %g' % ar)
+            lines.append('CPWR cpi_a%g.dat' % ar)
+            a += alpha_step
+
         lines.append('')
         lines.append('QUIT')
 

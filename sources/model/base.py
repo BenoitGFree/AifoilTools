@@ -97,8 +97,9 @@ class AbstractPostprocessor(ABC):
         Le dictionnaire retourne doit contenir au minimum :
         - 'polar' : dict avec cles 'alpha', 'CL', 'CD', 'CDp', 'CM',
                      'Top_Xtr', 'Bot_Xtr' (numpy arrays)
-        - 'cp'    : dict alpha -> ndarray(n, 2) [x, Cp] (si disponible)
-        - 'bl'    : dict alpha -> donnees couche limite (si disponible)
+        - 'cp'    : dict Re -> {alpha -> ndarray(n, 3) [x, y, Cp]}
+        - 'cpi'   : dict alpha -> ndarray(n, 3) [x, y, Cp] (non visqueux)
+        - 'bl'    : dict Re -> {alpha -> donnees couche limite}
         - 'warnings' : liste de messages d'avertissement
         """
         pass

@@ -1,0 +1,101 @@
+\chapter{Cp / Boundary Layer Tab}
+\label{chap:cp}
+
+The \menu{Cp / Boundary layer} tab provides a detailed,
+\emph{XFoil}-style view of a \textbf{specific operating point}: one
+airfoil, one Reynolds number and one angle of attack. It gathers in a
+single window the pressure distribution (viscous \emph{and} inviscid)
+and the airfoil geometry surrounded by its boundary layer.
+
+\screenshot{20_tab_cp.png}{1.0}{%
+    \menu{Cp / Boundary layer} tab for a NACA~2412 at
+    $Re = 10^6$ and $\alpha = 6\textdegree$. Top: the pressure
+    coefficient $C_p$ (upper surface in yellow, lower surface in cyan)
+    and its inviscid value (white dashed line). Bottom: the airfoil to
+    scale, with the boundary layer edges $\delta^*$ on the upper
+    surface (yellow) and lower surface (cyan). The inset summarizes the
+    coefficients at the selected point.}
+
+\section{Selecting the operating point}
+
+A control bar at the top of the tab targets the calculation to
+display:
+
+\begin{tabularx}{\linewidth}{l X}
+    \toprule
+    \textbf{List} & \textbf{Role} \\
+    \midrule
+    \menu{Airfoil}
+        & Airfoil to display: current (blue), reference (red) or
+          flap (green). Only the airfoils actually simulated are
+          offered. \\
+    \menu{Re}
+        & Reynolds number of the calculation. \\
+    \menu{$\alpha$}
+        & Angle of attack (in degrees) of the calculation. \\
+    \bottomrule
+\end{tabularx}
+
+The lists are \textbf{cascading}: changing the airfoil updates the
+list of available Reynolds numbers, then that of the angles of attack.
+
+\begin{noteinfo}
+Unlike the \menu{Results} tab, which overlays the airfoils, this tab
+displays \textbf{a single operating point at a time}, for a detailed
+reading of the pressure and the boundary layer.
+\end{noteinfo}
+
+\section{Top plot: pressure coefficient}
+
+The top plot follows the \emph{XFoil} convention: the vertical axis
+carries the pressure coefficient $C_p$ \textbf{pointing downward} —
+suction ($C_p < 0$) is therefore directed \emph{upward}. Three curves
+are overlaid:
+
+\begin{itemize}
+    \item the \textbf{upper surface} (yellow);
+    \item the \textbf{lower surface} (cyan);
+    \item the \textbf{inviscid} $C_p$ (white dashed line), obtained
+        from an XFoil calculation without boundary layer (panel
+        method, Reynolds-independent).
+\end{itemize}
+
+The gap between the viscous and inviscid $C_p$ reveals the effect of
+the boundary layer: small at low angles of attack, it deepens near the
+trailing edge (recompression) and in case of separation.
+
+\section{Bottom plot: airfoil and boundary layer}
+
+The bottom plot shows the airfoil \textbf{to chord scale} (isometric
+frame: the airfoil proportions are preserved). Around the surface (in
+white) are drawn the \textbf{boundary layer edges} — the surface
+offset by the displacement thickness $\delta^*$ along the outward
+normal:
+
+\begin{itemize}
+    \item upper surface in yellow;
+    \item lower surface in cyan.
+\end{itemize}
+
+The thickening of these edges toward the trailing edge reflects the
+growth of the boundary layer; a marked bulge signals separation. The
+wake, downstream of the trailing edge, is excluded from the plot.
+
+\section{Coefficients inset}
+
+An inset, at the top right, recalls the integral coefficients at the
+selected point: Reynolds, angle of attack $\alpha$, lift $C_L$, moment
+$C_M$, drag $C_D$ and lift-to-drag ratio $C_L/C_D$.
+
+\begin{astuce}
+Compare the viscous $C_p$ with the inviscid dashed line to assess at a
+glance the influence of viscosity at the chosen angle of attack; then
+inspect the $\delta^*$ edges to spot separation starting at the
+trailing edge.
+\end{astuce}
+
+\begin{noteinfo}
+The inviscid $C_p$ is computed by a separate XFoil pass (without
+boundary layer). This pass is very fast and can be disabled via the
+\code{INVISCID\_CP} parameter (enabled by default).
+\end{noteinfo}

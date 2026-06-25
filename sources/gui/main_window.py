@@ -19,6 +19,7 @@ from .i18n import tr as _
 from .tab_profils import TabProfils
 from .tab_xfoil import TabXfoil
 from .tab_results import TabResults
+from .tab_cp import TabCp
 
 
 def _find_manuel_pdf(lang='fr'):
@@ -350,10 +351,12 @@ class MainWindow(QMainWindow):
         self._tab_profils = TabProfils()
         self._tab_xfoil = TabXfoil()
         self._tab_results = TabResults()
+        self._tab_cp = TabCp()
 
         self._tabs.addTab(self._tab_profils, _("Profils"))
         self._tabs.addTab(self._tab_xfoil, _(u"Param\u00e9trage XFoil"))
         self._tabs.addTab(self._tab_results, _(u"R\u00e9sultats"))
+        self._tabs.addTab(self._tab_cp, _(u"Cp / Couche limite"))
 
         # Connecter le bouton Lancer
         self._tab_xfoil.run_requested.connect(self._on_run_simulations)
@@ -719,8 +722,10 @@ class MainWindow(QMainWindow):
         target = getattr(self, '_sim_target', 'both')
         if target == 'both':
             self._tab_results.set_results(results)
+            self._tab_cp.set_results(results)
         else:
             self._tab_results.update_results(results)
+            self._tab_cp.update_results(results)
 
         # Basculer sur l'onglet Resultats
         self._tabs.setCurrentWidget(self._tab_results)

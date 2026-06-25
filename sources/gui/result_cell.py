@@ -159,93 +159,111 @@ def _plot_cp_x(ax, sim_results, color, label_base, re_selected=None):
         ls = '-' if n_alpha == 1 else RE_LINESTYLES[
             i % len(RE_LINESTYLES)]
         lbl = u'%s \u03b1=%.1f\u00b0' % (label_base, alpha)
-        ax.plot(cp_data[:, 0], -cp_data[:, 1],
+        # Cp en derniere colonne ([x, Cp] ou [x, y, Cp])
+        ax.plot(cp_data[:, 0], -cp_data[:, -1],
                 color=color, linestyle=ls, linewidth=0.8,
                 label=lbl)
 
 
-def _plot_bl_xy(ax, sim_results, color, label_base, y_key, ylabel):
-    u"""Trace generique d'une variable BL en fonction de s."""
+def _bl_at(alpha_dict, alpha_selected):
+    u"""Selectionne les donnees BL d'un Re pour une incidence donnee.
+
+    :param alpha_dict: dict {alpha: donnees BL} pour un Reynolds
+    :param alpha_selected: incidence demandee (None = premiere dispo)
+    :returns: dict de donnees BL ou None
+    """
+    if not alpha_dict:
+        return None
+    keys = sorted(alpha_dict.keys())
+    if alpha_selected is None:
+        return alpha_dict[keys[0]]
+    if alpha_selected in alpha_dict:
+        return alpha_dict[alpha_selected]
+    nearest = min(keys, key=lambda a: abs(a - alpha_selected))
+    return alpha_dict[nearest]
+
+
+def _plot_bl_var(ax, sim_results, color, label_base, x_key, y_key,
+                 alpha_selected=None):
+    u"""Trace generique d'une variable BL (y_key) en fonction de x_key.
+
+    Compare tous les Reynolds disponibles a l'incidence selectionnee.
+    """
     bl_dict = sim_results.bl
     re_vals = sorted(k for k in bl_dict
-                     if isinstance(k, float) and bl_dict[k] is not None)
+                     if isinstance(k, float) and bl_dict[k])
     if not re_vals:
         return
     single = (len(re_vals) == 1)
     for i, re_val in enumerate(re_vals):
-        bl = bl_dict[re_val]
+        bl = _bl_at(bl_dict[re_val], alpha_selected)
+        if bl is None or x_key not in bl or y_key not in bl:
+            continue
         ls = '-' if single else RE_LINESTYLES[i % len(RE_LINESTYLES)]
         lbl = label_base if single else (
             '%s %s' % (label_base, _format_re(re_val)))
-        ax.plot(bl['s'], bl[y_key],
+        ax.plot(bl[x_key], bl[y_key],
                 color=color, linestyle=ls, label=lbl)
 
 
-def _plot_ue_s(ax, sim_results, color, label_base):
+def _plot_ue_s(ax, sim_results, color, label_base, alpha_selected=None):
     u"""Vitesse de bord de couche limite en fonction de s."""
-    _plot_bl_xy(ax, sim_results, color, label_base, 'Ue_Vinf', 'Ue/Vinf')
+    _plot_bl_var(ax, sim_results, color, label_base, 's', 'Ue_Vinf',
+                 alpha_selected)
 
 
-def _plot_dstar_s(ax, sim_results, color, label_base):
+def _plot_dstar_s(ax, sim_results, color, label_base, alpha_selected=None):
     u"""Epaisseur de deplacement en fonction de s."""
-    _plot_bl_xy(ax, sim_results, color, label_base, 'Dstar', u'\u03b4*')
+    _plot_bl_var(ax, sim_results, color, label_base, 's', 'Dstar',
+                 alpha_selected)
 
 
-def _plot_theta_s(ax, sim_results, color, label_base):
+def _plot_theta_s(ax, sim_results, color, label_base, alpha_selected=None):
     u"""Epaisseur de quantite de mouvement en fonction de s."""
-    _plot_bl_xy(ax, sim_results, color, label_base, 'Theta', u'\u03b8')
+    _plot_bl_var(ax, sim_results, color, label_base, 's', 'Theta',
+                 alpha_selected)
 
 
-def _plot_cf_s(ax, sim_results, color, label_base):
+def _plot_cf_s(ax, sim_results, color, label_base, alpha_selected=None):
     u"""Coefficient de frottement en fonction de s."""
-    _plot_bl_xy(ax, sim_results, color, label_base, 'Cf', 'Cf')
+    _plot_bl_var(ax, sim_results, color, label_base, 's', 'Cf',
+                 alpha_selected)
 
 
-def _plot_h_s(ax, sim_results, color, label_base):
+def _plot_h_s(ax, sim_results, color, label_base, alpha_selected=None):
     u"""Facteur de forme en fonction de s."""
-    _plot_bl_xy(ax, sim_results, color, label_base, 'H', 'H')
+    _plot_bl_var(ax, sim_results, color, label_base, 's', 'H',
+                 alpha_selected)
 
 
-def _plot_bl_x(ax, sim_results, color, label_base, y_key):
-    u"""Trace generique d'une variable BL en fonction de x."""
-    bl_dict = sim_results.bl
-    re_vals = sorted(k for k in bl_dict
-                     if isinstance(k, float) and bl_dict[k] is not None)
-    if not re_vals:
-        return
-    single = (len(re_vals) == 1)
-    for i, re_val in enumerate(re_vals):
-        bl = bl_dict[re_val]
-        ls = '-' if single else RE_LINESTYLES[i % len(RE_LINESTYLES)]
-        lbl = label_base if single else (
-            '%s %s' % (label_base, _format_re(re_val)))
-        ax.plot(bl['x'], bl[y_key],
-                color=color, linestyle=ls, label=lbl)
-
-
-def _plot_ue_x(ax, sim_results, color, label_base):
+def _plot_ue_x(ax, sim_results, color, label_base, alpha_selected=None):
     u"""Vitesse de bord de couche limite en fonction de x."""
-    _plot_bl_x(ax, sim_results, color, label_base, 'Ue_Vinf')
+    _plot_bl_var(ax, sim_results, color, label_base, 'x', 'Ue_Vinf',
+                 alpha_selected)
 
 
-def _plot_dstar_x(ax, sim_results, color, label_base):
+def _plot_dstar_x(ax, sim_results, color, label_base, alpha_selected=None):
     u"""Epaisseur de deplacement en fonction de x."""
-    _plot_bl_x(ax, sim_results, color, label_base, 'Dstar')
+    _plot_bl_var(ax, sim_results, color, label_base, 'x', 'Dstar',
+                 alpha_selected)
 
 
-def _plot_theta_x(ax, sim_results, color, label_base):
+def _plot_theta_x(ax, sim_results, color, label_base, alpha_selected=None):
     u"""Epaisseur de quantite de mouvement en fonction de x."""
-    _plot_bl_x(ax, sim_results, color, label_base, 'Theta')
+    _plot_bl_var(ax, sim_results, color, label_base, 'x', 'Theta',
+                 alpha_selected)
 
 
-def _plot_cf_x(ax, sim_results, color, label_base):
+def _plot_cf_x(ax, sim_results, color, label_base, alpha_selected=None):
     u"""Coefficient de frottement en fonction de x."""
-    _plot_bl_x(ax, sim_results, color, label_base, 'Cf')
+    _plot_bl_var(ax, sim_results, color, label_base, 'x', 'Cf',
+                 alpha_selected)
 
 
-def _plot_h_x(ax, sim_results, color, label_base):
+def _plot_h_x(ax, sim_results, color, label_base, alpha_selected=None):
     u"""Facteur de forme en fonction de x."""
-    _plot_bl_x(ax, sim_results, color, label_base, 'H')
+    _plot_bl_var(ax, sim_results, color, label_base, 'x', 'H',
+                 alpha_selected)
 
 
 def _plot_profil_bl(ax, sim_results, color, label_base,
@@ -264,15 +282,15 @@ def _plot_profil_bl(ax, sim_results, color, label_base,
 
     bl_dict = sim_results.bl
     re_vals = sorted(k for k in bl_dict
-                     if isinstance(k, float)
-                     and bl_dict[k] is not None)
+                     if isinstance(k, float) and bl_dict[k])
     if not re_vals:
         return
     re_val = (re_selected
-              if re_selected in bl_dict
-              and bl_dict.get(re_selected) is not None
+              if re_selected in bl_dict and bl_dict.get(re_selected)
               else re_vals[0])
-    bl = bl_dict[re_val]
+    bl = _bl_at(bl_dict[re_val], alpha_selected)
+    if bl is None:
+        return
 
     x = bl['x']
     y = bl['y']
@@ -310,6 +328,131 @@ def _plot_profil_bl(ax, sim_results, color, label_base,
     ax.set_aspect('equal', adjustable='datalim')
 
 
+def _cp_select(sim_results, re_selected, alpha_selected):
+    u"""Resout (re_val, alpha, cp_data) pour une distribution Cp.
+
+    :returns: tuple (re_val, alpha, cp_data) ou None si indisponible
+    """
+    if not sim_results.has_cp:
+        return None
+    cp_dict = sim_results.cp
+    re_vals = sorted(k for k in cp_dict if isinstance(k, float))
+    if not re_vals:
+        return None
+    re_val = re_selected if re_selected in cp_dict else re_vals[0]
+    alphas = sorted(cp_dict[re_val].keys())
+    if not alphas:
+        return None
+    if alpha_selected is None:
+        alpha = alphas[0]
+    else:
+        # alpha disponible le plus proche de la selection
+        alpha = min(alphas, key=lambda a: abs(a - alpha_selected))
+    cp_data = cp_dict[re_val].get(alpha)
+    if cp_data is None or len(cp_data) == 0:
+        return None
+    return re_val, alpha, cp_data
+
+
+def _coeffs_at(sim_results, re_val, alpha):
+    u"""Retourne (CL, CM, CD, finesse) au point (re, alpha) le plus proche.
+
+    Les valeurs absentes sont renvoyees a None.
+
+    :rtype: dict
+    """
+    out = {'CL': None, 'CM': None, 'CD': None, 'LD': None}
+    polar = sim_results.get_polar(re_val)
+    if polar is None or 'alpha' not in polar or len(polar['alpha']) == 0:
+        return out
+    a_arr = np.asarray(polar['alpha'], dtype=float)
+    idx = int(np.argmin(np.abs(a_arr - alpha)))
+    cl = float(polar['CL'][idx]) if 'CL' in polar else None
+    cd = float(polar['CD'][idx]) if 'CD' in polar else None
+    cm = float(polar['CM'][idx]) if 'CM' in polar else None
+    out['CL'] = cl
+    out['CM'] = cm
+    out['CD'] = cd
+    if cl is not None and cd is not None and cd > 1e-8:
+        out['LD'] = cl / cd
+    return out
+
+
+# Position verticale de l'encart de coefficients selon le role (couleur),
+# pour empiler les profils compares sans chevauchement.
+_CP_BOX_SLOT = {COLOR_CURRENT: 0, COLOR_REFERENCE: 1, COLOR_FLAP: 2}
+
+
+def _plot_cp_xfoil(ax, sim_results, color, label_base,
+                   re_selected=None, alpha_selected=None):
+    u"""Distribution -Cp(x) facon XFoil : pression en haut, profil en bas.
+
+    Reproduit le trace combine classique de XFoil pour un (Re, alpha)
+    donne : la courbe de pression (-Cp, succion vers le haut) et le
+    profil redessine en dessous, a l'echelle de corde. Un encart resume
+    les coefficients au point choisi (CL, CM, CD, L/D).
+
+    :param re_selected: Reynolds selectionne (None = premier dispo)
+    :param alpha_selected: incidence en degres (None = premiere dispo)
+    """
+    sel = _cp_select(sim_results, re_selected, alpha_selected)
+    if sel is None:
+        return
+    re_val, alpha, cp_data = sel
+
+    x = cp_data[:, 0]
+    neg_cp = -cp_data[:, -1]
+
+    # Courbe de pression
+    ax.plot(x, neg_cp, color=color, linewidth=1.0,
+            label=u'%s α=%.1f°' % (label_base, alpha))
+
+    # Profil redessine en bas, a l'echelle de corde (1 unite de corde =
+    # 1 unite de Cp, comme dans la fenetre XFoil). La geometrie (y) n'est
+    # presente que si le fichier Cp a 3 colonnes ; sinon on retombe sur
+    # la couche limite si disponible.
+    xf = yf = None
+    if cp_data.shape[1] >= 3:
+        xf = x
+        yf = cp_data[:, 1]
+    elif sim_results.has_bl:
+        bl = _bl_at(sim_results.bl.get(re_val), alpha)
+        if bl is not None and 'x' in bl and 'y' in bl:
+            xf = bl['x']
+            yf = bl['y']
+    if xf is not None and yf is not None and len(yf) > 0:
+        margin = 0.20
+        # Place le sommet du profil 'margin' sous le bas de la courbe.
+        y_base = float(np.min(neg_cp)) - margin - float(np.max(yf))
+        ax.plot(xf, yf + y_base, color=color, linewidth=1.0)
+
+    # Encart des coefficients
+    coeffs = _coeffs_at(sim_results, re_val, alpha)
+    slot = _CP_BOX_SLOT.get(color, 0)
+    _annotate_coeffs(ax, color, label_base, re_val, alpha, coeffs, slot)
+
+
+def _annotate_coeffs(ax, color, label_base, re_val, alpha, coeffs, slot):
+    u"""Affiche l'encart de coefficients facon XFoil (coin haut-droit)."""
+    def _fmt(v, fmt):
+        return (fmt % v) if v is not None else u'—'
+    lines = [
+        label_base,
+        u'Re  = %s' % _format_re(re_val).replace('Re=', ''),
+        u'α   = %.2f°' % alpha,
+        u'CL  = %s' % _fmt(coeffs['CL'], '%.4f'),
+        u'CM  = %s' % _fmt(coeffs['CM'], '%.4f'),
+        u'CD  = %s' % _fmt(coeffs['CD'], '%.5f'),
+        u'L/D = %s' % _fmt(coeffs['LD'], '%.2f'),
+    ]
+    y0 = 0.98 - slot * 0.30
+    ax.text(0.985, y0, '\n'.join(lines),
+            transform=ax.transAxes, ha='right', va='top',
+            fontsize=6, family='monospace', color=color,
+            bbox=dict(boxstyle='round', facecolor='white',
+                      edgecolor=color, alpha=0.75, linewidth=0.6))
+
+
 def _format_re(re_val):
     u"""Formate un Reynolds pour la legende."""
     if re_val >= 1e6:
@@ -332,6 +475,7 @@ ANALYSIS_REGISTRY = [
     ('Finesse(CL)',    _plot_finesse_cl,    'CL',          'CL/CD'),
     ('CL(CD)',         _plot_cl_cd,         'CD',          'CL'),
     ('-Cp(x)',         _plot_cp_x,          'x/c',         '-Cp'),
+    ('Cp + Profil',    _plot_cp_xfoil,      'x/c',         '-Cp'),
     ('CM(alpha)',      _plot_cm_alpha,      'alpha (deg)', 'CM'),
     ('CM(CL)',         _plot_cm_cl,         'CL',          'CM'),
     ('Xtr(alpha)',     _plot_xtr_alpha,     'alpha (deg)', 'Xtr'),
@@ -351,6 +495,18 @@ ANALYSIS_REGISTRY = [
 
 # Noms pour acces rapide
 ANALYSIS_NAMES = [a[0] for a in ANALYSIS_REGISTRY]
+
+# Analyses de couche limite : tracees pour une incidence donnee, en
+# comparant tous les Reynolds disponibles.
+_BL_ANALYSES = ('Ue(s)', 'Dstar(s)', 'Theta(s)', 'Cf(s)', 'H(s)',
+                'Ue(x)', 'Dstar(x)', 'Theta(x)', 'Cf(x)', 'H(x)')
+
+# Analyses dependant d'un seul Reynolds (combo Re visible) et/ou d'une
+# seule incidence (combo alpha visible). Les analyses de couche limite
+# dependent de l'incidence (depuis le calcul d'un DUMP par alpha) mais
+# pas d'un Reynolds unique (elles les comparent tous).
+_NEEDS_RE = ('-Cp(x)', 'Cp + Profil', 'Profil + CL')
+_NEEDS_ALPHA = ('Cp + Profil', 'Profil + CL') + _BL_ANALYSES
 
 
 def _analysis_label(name):
@@ -431,7 +587,7 @@ class ResultCell(QWidget):
         self._combo.setToolTip(
             _(u"Type d'analyse affiche dans cette cellule.\n"
             u"Polaires : CL(alpha), CD(alpha), CL/CD, Cm(alpha)...\n"
-            u"Distributions : -Cp(x), Profil + CL\n"
+            u"Distributions : -Cp(x), Cp + Profil, Profil + CL\n"
             u"Couche limite : Ue, Dstar, Theta, Cf, H (vs s ou x)"))
         self._combo.currentIndexChanged.connect(self._on_analysis_changed)
         ctrl.addWidget(self._combo)
@@ -551,17 +707,17 @@ class ResultCell(QWidget):
             return
 
         is_cp = (self._analysis_name == '-Cp(x)')
+        is_cp_xfoil = (self._analysis_name == 'Cp + Profil')
         is_profil_bl = (self._analysis_name == 'Profil + CL')
-        is_bl = self._analysis_name in (
-            'Ue(s)', 'Dstar(s)', 'Theta(s)', 'Cf(s)', 'H(s)',
-            'Ue(x)', 'Dstar(x)', 'Theta(x)', 'Cf(x)', 'H(x)')
+        is_bl = self._analysis_name in _BL_ANALYSES
         for role, sim_results in self._results.items():
-            if is_cp and not sim_results.has_cp:
+            if (is_cp or is_cp_xfoil) and not sim_results.has_cp:
                 continue
             if (is_bl or is_profil_bl) \
                     and not sim_results.has_bl:
                 continue
-            if not is_cp and not is_bl and not is_profil_bl \
+            if not is_cp and not is_cp_xfoil and not is_bl \
+                    and not is_profil_bl \
                     and not sim_results.has_polars:
                 continue
             if role == 'current' and not self._show_current:
@@ -580,10 +736,13 @@ class ResultCell(QWidget):
             if is_cp:
                 plot_fn(self._ax, sim_results, color,
                         label_base, self._selected_re)
-            elif is_profil_bl:
+            elif is_profil_bl or is_cp_xfoil:
                 plot_fn(self._ax, sim_results, color,
                         label_base, self._selected_re,
                         self._selected_alpha)
+            elif is_bl:
+                plot_fn(self._ax, sim_results, color,
+                        label_base, self._selected_alpha)
             else:
                 plot_fn(self._ax, sim_results, color,
                         label_base)
@@ -593,13 +752,15 @@ class ResultCell(QWidget):
         title = _analysis_label(self._analysis_name)
         if is_cp and self._selected_re is not None:
             title += '  %s' % _format_re(self._selected_re)
-        if is_profil_bl:
+        if is_profil_bl or is_cp_xfoil:
             if self._selected_re is not None:
                 title += '  %s' % _format_re(
                     self._selected_re)
             if self._selected_alpha is not None:
                 title += u'  \u03b1=%.1f\u00b0' % (
                     self._selected_alpha)
+        if is_bl and self._selected_alpha is not None:
+            title += u'  \u03b1=%.1f\u00b0' % self._selected_alpha
         self._ax.set_title(title, fontsize=9)
         self._ax.tick_params(labelsize=7)
 
@@ -678,10 +839,10 @@ class ResultCell(QWidget):
             return
         self._analysis_name = name
         self._legend_offset = 0
-        needs_re = name in ('-Cp(x)', 'Profil + CL')
-        self._combo_re.setVisible(needs_re)
-        self._combo_alpha.setVisible(name == 'Profil + CL')
-        if name == 'Profil + CL':
+        self._combo_re.setVisible(name in _NEEDS_RE)
+        needs_alpha = name in _NEEDS_ALPHA
+        self._combo_alpha.setVisible(needs_alpha)
+        if needs_alpha:
             self._populate_alpha_combo()
         self._replot()
 
@@ -780,12 +941,10 @@ class ResultCell(QWidget):
         if idx >= 0:
             self._combo_re.setCurrentIndex(idx)
         self._combo_re.blockSignals(False)
-        needs_re = self._analysis_name in (
-            '-Cp(x)', 'Profil + CL')
-        self._combo_re.setVisible(needs_re)
+        self._combo_re.setVisible(self._analysis_name in _NEEDS_RE)
 
     def _populate_alpha_combo(self):
-        u"""Peuple le combo alpha depuis les polaires."""
+        u"""Peuple le combo alpha depuis les polaires et les Cp."""
         self._combo_alpha.blockSignals(True)
         old_text = self._combo_alpha.currentText()
         self._combo_alpha.clear()
@@ -797,6 +956,18 @@ class ResultCell(QWidget):
                     if polar is not None:
                         for a in polar['alpha']:
                             alpha_set.add(float(a))
+            # Les distributions Cp peuvent exister sans polaire
+            if sim_results.has_cp:
+                for re_val, alphas in sim_results.cp.items():
+                    if isinstance(re_val, float):
+                        for a in alphas:
+                            alpha_set.add(float(a))
+            # Idem pour les couches limites (un DUMP par alpha)
+            if sim_results.has_bl:
+                for re_val, alphas in sim_results.bl.items():
+                    if isinstance(re_val, float):
+                        for a in alphas:
+                            alpha_set.add(float(a))
         for a in sorted(alpha_set):
             self._combo_alpha.addItem(
                 _(u'%.1f\u00b0') % a, a)
@@ -805,7 +976,7 @@ class ResultCell(QWidget):
             self._combo_alpha.setCurrentIndex(idx)
         self._combo_alpha.blockSignals(False)
         self._combo_alpha.setVisible(
-            self._analysis_name == 'Profil + CL')
+            self._analysis_name in _NEEDS_ALPHA)
 
     @property
     def _selected_re(self):

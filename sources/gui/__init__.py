@@ -7,4 +7,4 @@
 #   genere docs/manuel/version.tex depuis cette valeur).
 # - Installateur : a repercuter manuellement dans
 #   installer/AirfoilTools.iss (#define MyAppVersion).
-__version__ = "3.0"
+__version__ = "3.1"
