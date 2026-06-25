@@ -155,6 +155,12 @@ l'entrée de menu.
           surface du profil courant (distance le long de la normale).
           Voir section~\ref{sec:deviation},
           page~\pageref{sec:deviation}.\\
+    Solveur / XFoil, FlexFoil
+        & ---
+        & Choisit le \textbf{moteur de calcul} aérodynamique utilisé
+          pour les simulations. Le choix est mémorisé et s'applique au
+          prochain lancement. Sous-menu présent uniquement si un second
+          solveur est disponible. Voir l'encadré ci-dessous.\\
     \bottomrule
 \end{tabularx}
 
@@ -162,6 +168,22 @@ l'entrée de menu.
 Les deux modes de déviation sont \textbf{exclusifs} : choisir l'un
 décoche automatiquement l'autre. Le changement est répercuté
 immédiatement sur le tracé de l'onglet \menu{Profils}.
+\end{noteinfo}
+
+\begin{noteinfo}
+\textbf{Solveur aérodynamique.} AirfoilTools peut s'appuyer sur deux
+moteurs de calcul équivalents :
+\begin{itemize}
+    \item \textbf{XFoil} — l'exécutable historique de Mark Drela,
+        embarqué dans la distribution (toujours disponible) ;
+    \item \textbf{FlexFoil} — une réimplémentation native (Rust) du même
+        solveur, plus rapide à lancer car appelée en bibliothèque. Elle
+        n'est proposée que si elle est présente dans l'installation.
+\end{itemize}
+Les deux produisent les mêmes résultats (polaires, $C_p$, couche limite)
+aux différences numériques près, et obéissent aux mêmes paramètres
+(onglet \menu{Paramétrage XFoil}). Le réglage par défaut est
+\textbf{XFoil}.
 \end{noteinfo}
 
 \section{Menu \menu{Aide}}
