@@ -100,6 +100,60 @@ Le code d'adaptation serait modeste : un moteur qui appelle `solve()` /
 (`cp=[x,y,Cp]`, `bl[re][alpha]`, `cpi[alpha]`). Il **supprime** l'essentiel de
 `xfoil_preprocessor.py`, `xfoil_simulator.py` et `xfoil_postprocessor.py`.
 
+## Intégration réalisée (backend optionnel)
+
+FlexFoil est désormais intégré **comme second backend** derrière
+l'abstraction `AbstractSimulator`/pipeline existante, sélectionnable sans
+toucher au reste du code :
+
+- `sources/model/flexfoil_backend.py` — `FlexFoil{Preprocessor,Simulator,
+  Postprocessor}`. Produit **exactement le même contrat** que XFoil
+  (`polars`/`cp`/`cpi`/`bl`), si bien que GUI et `SimulationResults`
+  fonctionnent **sans modification**.
+- `sources/model/defaults_flexfoil.cfg` — paramètres alignés sur
+  `defaults_xfoil.cfg` (mêmes RE/alpha/NCRIT/XTR/MACH).
+- `sources/model/pipeline.py` — enregistrement *lazy* gardé par
+  `is_available()` ; helper `available_solvers()`.
+- GUI : menu **Options ▸ Solveur** (XFoil / FlexFoil), persisté via
+  `QSettings`, transmis au `SimulationWorker`. Le menu n'apparaît que si
+  FlexFoil est installé.
+
+### Choix techniques non évidents
+
+- **Cp visqueux** : FlexFoil n'expose pas le Cp visqueux (`SolveResult.cp`
+  est en réalité le Cp *non visqueux*). On le reconstruit depuis la
+  vitesse de bord de couche limite : `Cp = 1 − (Ue/Vinf)²` (exact à Mach
+  0, validé à 2·10⁻³ près).
+- **Ordonnée y** : ni Cp ni BL ne fournissent `y` ; reconstruit par
+  interpolation sur la géométrie panelisée.
+- **Couche limite** : FlexFoil la donne déjà séparée extrados/intrados.
+  On réassemble un contour Selig continu (BF→extrados→BA→intrados→BF)
+  avec abscisse curviligne `s`, pour rester compatible avec le contrat
+  XFoil (la GUI le re-découpe topologiquement).
+
+### Parité mesurée (NACA 2412, Re=1e6, XTR=0.2, via l'API `Simulation`)
+
+Voir [`resultats_parite_backends.txt`](resultats_parite_backends.txt) et
+[`compare_backends.py`](compare_backends.py).
+
+| Grandeur | Écart max FlexFoil vs XFoil |
+|----------|------------------------------|
+| Polaire CL / CD / CM | 2·10⁻⁴ / 1·10⁻⁵ / 5·10⁻⁵ |
+| Cp visqueux (extrados) | 2.6·10⁻³ |
+| Cp non visqueux | 9·10⁻⁴ |
+| δ\* / θ / Ue (extrados) | 0 / 0 / 9·10⁻⁴ |
+
+Rendu GUI de l'onglet Cp avec FlexFoil :
+[`tab_cp_flexfoil.png`](tab_cp_flexfoil.png).
+
+### Reste à faire pour une adoption complète
+
+- **Packaging PyInstaller** : embarquer `_rustfoil.*.pyd` + wrappers
+  (`.spec`) et figer Python 3.11 (cf. verrou cp311). Exclure `plotly`.
+- **Doc utilisateur** : mentionner le choix de solveur (chap. Interface /
+  Paramétrage).
+- Décision d'adoption (par défaut XFoil pour l'instant).
+
 ## Comment rejouer le spike
 
 ```bash
