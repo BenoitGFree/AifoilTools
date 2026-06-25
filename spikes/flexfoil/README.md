@@ -146,10 +146,32 @@ Voir [`resultats_parite_backends.txt`](resultats_parite_backends.txt) et
 Rendu GUI de l'onglet Cp avec FlexFoil :
 [`tab_cp_flexfoil.png`](tab_cp_flexfoil.png).
 
+### Packaging PyInstaller — fait et validé
+
+- `AirfoilTools.spec` : `_collect_flexfoil()` embarque le module natif
+  `_rustfoil.cp311-win_amd64.pyd` (collecte explicite par glob ;
+  `collect_dynamic_libs`/`collect_all` ne repèrent pas les `.pyd`
+  d'extension) + les wrappers Python en hiddenimports. `plotly`/`pandas`
+  exclus (dépendances optionnelles de flexfoil, jamais utilisées).
+  `defaults_flexfoil.cfg` ajouté aux datas. Collecte **optionnelle** :
+  build sans flexfoil → XFoil seul, sans erreur.
+- `run_gui.py` : auto-test `--selftest` (ou `AIRFOILTOOLS_SELFTEST=1`)
+  qui charge les backends et lance un calcul FlexFoil, sans GUI — pour
+  valider un build gelé.
+- **Vérifié sur l'exe gelé** (`dist/AirfoilTools/AirfoilTools.exe
+  --selftest`) : `Solveurs : flexfoil, xfoil` ; calcul FlexFoil natif OK
+  (cp/bl/cpi). GUI gelée démarre et reste stable.
+- L'installateur Inno Setup (`installer/AirfoilTools.iss`) copie
+  `dist/AirfoilTools/*` récursivement → le `.pyd` est embarqué sans
+  modification du `.iss`.
+- **Prérequis build** : environnement Python **3.11** (wheel cp311) avec
+  `flexfoil` et `pyinstaller` installés (le venv `uv` n'a pas de pip par
+  défaut : `python -m ensurepip` puis
+  `pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org pyinstaller`
+  derrière le proxy MITM).
+
 ### Reste à faire pour une adoption complète
 
-- **Packaging PyInstaller** : embarquer `_rustfoil.*.pyd` + wrappers
-  (`.spec`) et figer Python 3.11 (cf. verrou cp311). Exclure `plotly`.
 - **Doc utilisateur** : mentionner le choix de solveur (chap. Interface /
   Paramétrage).
 - Décision d'adoption (par défaut XFoil pour l'instant).
