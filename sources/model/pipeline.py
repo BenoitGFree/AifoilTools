@@ -52,6 +52,34 @@ def _ensure_xfoil_registered():
                         XFoilPostprocessor)
 
 
+def _ensure_flexfoil_registered():
+    u"""Enregistre FlexFoil si la bibliotheque est disponible (lazy).
+
+    Silencieux si flexfoil n'est pas installe : le solveur reste
+    simplement absent du registre (selectionnable uniquement quand la
+    dependance optionnelle est presente).
+    """
+    if 'flexfoil' in _SOLVER_REGISTRY:
+        return
+    from .flexfoil_backend import is_available
+    if not is_available():
+        return
+    from .flexfoil_backend import (
+        FlexFoilPreprocessor, FlexFoilSimulator, FlexFoilPostprocessor)
+    register_solver('flexfoil', FlexFoilPreprocessor, FlexFoilSimulator,
+                    FlexFoilPostprocessor)
+
+
+def available_solvers():
+    u"""Liste des solveurs disponibles (XFoil toujours, FlexFoil si installe).
+
+    :rtype: list[str]
+    """
+    _ensure_xfoil_registered()
+    _ensure_flexfoil_registered()
+    return sorted(_SOLVER_REGISTRY.keys())
+
+
 class FoilAnalysisPipeline(object):
     u"""Orchestre une analyse aerodynamique 2D complete.
 
@@ -73,6 +101,7 @@ class FoilAnalysisPipeline(object):
         :type exe_path: str or None
         """
         _ensure_xfoil_registered()
+        _ensure_flexfoil_registered()
 
         if solver not in _SOLVER_REGISTRY:
             raise ValueError(

@@ -24,7 +24,8 @@ class SimulationWorker(QThread):
     finished_ok = Signal(dict)
     finished_error = Signal(str)
 
-    def __init__(self, profils, params, parent=None, no_normalize_roles=None):
+    def __init__(self, profils, params, parent=None, no_normalize_roles=None,
+                 solver='xfoil'):
         u"""
         :param profils: dict {'current': Profil, 'reference': Profil}
                         (les valeurs peuvent etre None)
@@ -32,11 +33,13 @@ class SimulationWorker(QThread):
         :param no_normalize_roles: ensemble de roles a NE PAS normaliser
                         avant XFoil (ex. {'flap'} pour conserver le
                         braquage dans le repere du profil courant)
+        :param solver: nom du backend de calcul ('xfoil' ou 'flexfoil')
         """
         super().__init__(parent)
         self._profils = profils
         self._params = params
         self._no_normalize_roles = set(no_normalize_roles or ())
+        self._solver = solver
         self._work_dirs = {}   # {role: repertoire de travail XFoil}
 
     @property
@@ -63,7 +66,7 @@ class SimulationWorker(QThread):
 
                 normalize = role not in self._no_normalize_roles
                 sim = Simulation(profil, params=self._params,
-                                 normalize=normalize)
+                                 solver=self._solver, normalize=normalize)
                 # Memoriser le repertoire AVANT run() pour qu'il reste
                 # consultable meme si la simulation echoue.
                 self._work_dirs[role] = sim.work_dir

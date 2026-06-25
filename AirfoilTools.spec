@@ -57,11 +57,49 @@ def _rebuild_manual():
 _inject_version()
 _rebuild_manual()
 
+
+def _collect_flexfoil():
+    """Collecte le backend FlexFoil s'il est installe (dependance optionnelle).
+
+    FlexFoil (https://foil.flexcompute.com, MIT) est une bibliotheque
+    native : il faut embarquer le module Rust ``_rustfoil.*.pyd`` et les
+    wrappers Python. Retourne (binaries, hiddenimports). Si flexfoil
+    n'est pas installe dans l'environnement de build, retourne ([], []) :
+    le bundle se construit alors sans ce backend (XFoil reste disponible).
+    """
+    try:
+        import flexfoil  # noqa: F401
+    except Exception:
+        print("[spec] FlexFoil absent de l'environnement : backend non "
+              "embarque (XFoil seul).")
+        return [], []
+    import glob as _glob
+    ff_dir = os.path.dirname(flexfoil.__file__)
+    # Module natif Rust : collecte explicite (collect_dynamic_libs /
+    # collect_all ne reperent pas les .pyd d'extension). Place sous
+    # flexfoil/ pour rester importable comme flexfoil._rustfoil.
+    pyds = _glob.glob(os.path.join(ff_dir, '_rustfoil*.pyd'))
+    binaries = [(p, 'flexfoil') for p in pyds]
+    # On liste seulement les wrappers reellement utilises (pas
+    # flexfoil.server, qui depend de starlette/uvicorn non installes).
+    hidden = [
+        'model.flexfoil_backend',
+        'flexfoil', 'flexfoil.airfoil', 'flexfoil.database',
+        'flexfoil.polar', 'flexfoil._rustfoil',
+    ]
+    print("[spec] FlexFoil embarque (%d module(s) natif(s) : %s)."
+          % (len(binaries), ', '.join(os.path.basename(p) for p in pyds)))
+    return binaries, hidden
+
+
+_ff_binaries, _ff_hidden = _collect_flexfoil()
+
 # Manuels a embarquer : FR toujours, EN seulement s'il a ete compile
 # (manuel_en.pdf). Le menu Aide ouvre la version correspondant a la
 # langue de l'interface, avec fallback FR.
 _datas = [
     ('sources/model/defaults_xfoil.cfg', 'model'),
+    ('sources/model/defaults_flexfoil.cfg', 'model'),
     # Manuel utilisateur (accessible via menu Aide)
     ('docs/manuel/manuel.pdf', 'docs'),
     # Executable XFoil (necessaire aux simulations)
@@ -73,7 +111,7 @@ if os.path.isfile(os.path.join(SPECPATH, 'docs', 'manuel', 'manuel_en.pdf')):
 a = Analysis(
     ['run_gui.py'],
     pathex=['sources'],
-    binaries=[],
+    binaries=_ff_binaries,
     datas=_datas,
     hiddenimports=[
         # model package
@@ -99,15 +137,19 @@ a = Analysis(
         'gui.tab_xfoil',
         'gui.tab_results',
         'gui.result_cell',
+        'gui.tab_cp',
         'gui.simulation_worker',
         'gui.dialog_uiuc',
         # matplotlib backend pour PySide6
         'matplotlib.backends.backend_qtagg',
-    ],
+    ] + _ff_hidden,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    # plotly / pandas sont des dependances optionnelles de flexfoil,
+    # importees paresseusement (graphiques .plot() / export DataFrame)
+    # jamais utilisees par AirfoilTools : on les exclut du bundle.
+    excludes=['plotly', 'pandas'],
     noarchive=False,
 )
 

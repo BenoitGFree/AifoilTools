@@ -17,6 +17,15 @@ Default values at startup: Reynolds from 1\,000\,000 to
 \menu{ASEQ} sweep.
 \end{noteinfo}
 
+\begin{noteinfo}
+These parameters feed the \textbf{solver selected} in
+\menu{Options $\rightarrow$ Solver} (XFoil or FlexFoil, see
+chapter~\ref{chap:interface}). Both engines interpret the same settings;
+a few options specific to the XFoil executable (\menu{ASEQ} sweep,
+re-initialization on failure) have no effect on FlexFoil, which
+converges through a native method.
+\end{noteinfo}
+
 \section{Reynolds range}
 
 The \menu{Reynolds} area lets you define a \textbf{range} of

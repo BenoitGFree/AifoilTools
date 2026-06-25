@@ -78,6 +78,16 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(_("AirfoilTools"))
         self.resize(1200, 700)
 
+        # Backend de calcul ('xfoil' par defaut, 'flexfoil' si installe),
+        # persiste via QSettings. Verifie face aux solveurs reellement
+        # disponibles (FlexFoil ne l'est que si la dependance est presente).
+        from model.pipeline import available_solvers
+        self._available_solvers = available_solvers()
+        from PySide6.QtCore import QSettings
+        saved = QSettings().value('solver', 'xfoil')
+        self._solver = (saved if saved in self._available_solvers
+                        else 'xfoil')
+
         self._build_menus()
         self._build_tabs()
         self.statusBar().showMessage(_("Pret"))
@@ -304,6 +314,29 @@ class MainWindow(QMainWindow):
             lambda: self._on_set_deviation_mode('normal'))
         self._dev_mode_group.addAction(act_dev_norm)
         dev_menu.addAction(act_dev_norm)
+
+        # Sous-menu Solveur (backend de calcul aerodynamique)
+        # N'afficher le choix que si plusieurs backends sont disponibles.
+        if len(self._available_solvers) > 1:
+            solver_menu = options_menu.addMenu(_(u"&Solveur"))
+            solver_menu.setStatusTip(
+                _(u"Backend de calcul aerodynamique utilise pour les"
+                  u" simulations"))
+            self._solver_group = QActionGroup(self)
+            self._solver_group.setExclusive(True)
+            _solver_labels = {'xfoil': u'XFoil', 'flexfoil': u'FlexFoil'}
+            for name in self._available_solvers:
+                act_solver = QAction(
+                    _solver_labels.get(name, name), self)
+                act_solver.setCheckable(True)
+                act_solver.setChecked(name == self._solver)
+                act_solver.setStatusTip(
+                    _(u"Utiliser %s pour les calculs")
+                    % _solver_labels.get(name, name))
+                act_solver.triggered.connect(
+                    lambda checked, n=name: self._on_set_solver(n))
+                self._solver_group.addAction(act_solver)
+                solver_menu.addAction(act_solver)
 
         # Sous-menu Langue (effet au redemarrage)
         lang_menu = options_menu.addMenu(_(u"&Langue"))
@@ -691,7 +724,8 @@ class MainWindow(QMainWindow):
 
         from .simulation_worker import SimulationWorker
         self._sim_worker = SimulationWorker(
-            profils, params, parent=self, no_normalize_roles=no_normalize)
+            profils, params, parent=self, no_normalize_roles=no_normalize,
+            solver=self._solver)
         self._sim_worker.progress.connect(self._on_sim_progress)
         self._sim_worker.finished_ok.connect(self._on_sim_finished)
         self._sim_worker.finished_error.connect(self._on_sim_error)
@@ -786,6 +820,15 @@ class MainWindow(QMainWindow):
             self, _(u"Langue de l'interface"),
             _(u"La langue sera appliquee au prochain demarrage"
               u" d'AirfoilTools."))
+
+    def _on_set_solver(self, name):
+        u"""Change le backend de calcul et le persiste (effet immediat)."""
+        from PySide6.QtCore import QSettings
+        self._solver = name
+        QSettings().setValue('solver', name)
+        labels = {'xfoil': u'XFoil', 'flexfoil': u'FlexFoil'}
+        self.statusBar().showMessage(
+            _(u"Solveur : %s") % labels.get(name, name))
 
     def _on_open_manuel(self):
         """Ouvre le manuel utilisateur PDF avec le visualiseur par defaut."""

@@ -155,6 +155,12 @@ menu entry.
           surface of the current airfoil (distance along the normal).
           See section~\ref{sec:deviation},
           page~\pageref{sec:deviation}.\\
+    Solver / XFoil, FlexFoil
+        & ---
+        & Selects the aerodynamic \textbf{computation engine} used for
+          simulations. The choice is remembered and applies to the next
+          run. Submenu shown only if a second solver is available. See
+          the box below.\\
     \bottomrule
 \end{tabularx}
 
@@ -162,6 +168,21 @@ menu entry.
 The two deviation modes are \textbf{exclusive}: choosing one
 automatically unchecks the other. The change is reflected
 immediately on the plot of the \menu{Airfoils} tab.
+\end{noteinfo}
+
+\begin{noteinfo}
+\textbf{Aerodynamic solver.} AirfoilTools can rely on two equivalent
+computation engines:
+\begin{itemize}
+    \item \textbf{XFoil} --- Mark Drela's classic executable, bundled
+        with the distribution (always available);
+    \item \textbf{FlexFoil} --- a native (Rust) reimplementation of the
+        same solver, faster to launch because it is called as a library.
+        It is offered only if present in the installation.
+\end{itemize}
+Both produce the same results (polars, $C_p$, boundary layer) up to
+numerical differences, and obey the same parameters (\menu{XFoil
+Settings} tab). The default setting is \textbf{XFoil}.
 \end{noteinfo}
 
 \section{\menu{Help} menu}

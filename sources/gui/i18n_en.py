@@ -6,6 +6,10 @@ l'assemblage depuis tmp_i18n/.
 """
 
 EN_PHASE2 = {
+    "&Solveur": "&Solver",
+    "Backend de calcul aerodynamique utilise pour les simulations": "Aerodynamic solver backend used for simulations",
+    "Utiliser %s pour les calculs": "Use %s for computations",
+    "Solveur : %s": "Solver: %s",
     " %": " %",
     " °": " °",
     "ASEQ": "ASEQ",
