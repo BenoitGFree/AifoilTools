@@ -86,7 +86,7 @@ La **source unique** de la version est `__version__` dans
 `sources/gui/__init__.py` :
 
 ```python
-__version__ = "3.1"
+__version__ = "4.0"
 ```
 
 Elle alimente automatiquement :
@@ -101,7 +101,7 @@ d'outils Inno Setup, sans accès à Python) — reporter la même valeur
 dans `AirfoilTools.iss` :
 
 ```ini
-#define MyAppVersion "3.1"
+#define MyAppVersion "4.0"
 ```
 
 **Important** : ne pas changer `AppId` entre deux versions —

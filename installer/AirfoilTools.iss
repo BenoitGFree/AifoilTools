@@ -11,7 +11,7 @@
 
 #define MyAppName        "AirfoilTools"
 ; Garder synchronise avec sources/gui/__init__.py (__version__)
-#define MyAppVersion     "3.1"
+#define MyAppVersion     "4.0"
 #define MyAppPublisher   "Benoit Gagnaire"
 #define MyAppURL         "https://github.com/BenoitGFree/AirfoilTools"
 #define MyAppExeName     "AirfoilTools.exe"

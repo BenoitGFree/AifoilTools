@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.0] - 2026-06-26 20:00
+
+### Changed (Modifié)
+- **Passage en version 4.0** : `__version__` (`sources/gui/__init__.py`)
+  et `MyAppVersion` (`installer/AirfoilTools.iss`) portés à « 4.0 » ;
+  exemples du `installer/README.md` mis à jour. `setup.py` (version du
+  package pip `airfoiltools`) reste indépendant
+
 ## [Non publié] - 2026-06-26 19:45
 
 ### Added (Ajouté)
