@@ -1,5 +1,16 @@
 # Changelog
 
+## [Non publié] - 2026-06-26 19:45
+
+### Added (Ajouté)
+- **Barre de progression pendant les simulations** (`main_window.py`,
+  `simulation_worker.py`) : affichée à droite de la barre de statut au
+  lancement du solveur, masquée à la fin (succès ou erreur). Déterminée
+  (un cran par profil terminé) quand plusieurs profils sont simulés,
+  sinon indéterminée (animation « busy ») — un balayage XFoil/FlexFoil
+  s'exécutant en un seul sous-processus bloquant, sans avancement
+  intermédiaire exploitable. Nouveau signal `progress_step(int, int)`
+
 ## [Non publié] - 2026-06-26 19:15
 
 ### Fixed (Corrigé)

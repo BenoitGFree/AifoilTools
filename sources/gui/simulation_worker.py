@@ -16,11 +16,13 @@ class SimulationWorker(QThread):
 
     Signaux :
     - progress(str) : message de progression
+    - progress_step(int, int) : (profils termines, total) pour la barre
     - finished_ok(dict) : resultats {role: SimulationResults}
     - finished_error(str) : message d'erreur
     """
 
     progress = Signal(str)
+    progress_step = Signal(int, int)
     finished_ok = Signal(dict)
     finished_error = Signal(str)
 
@@ -57,9 +59,11 @@ class SimulationWorker(QThread):
         u"""Execute les simulations (dans le thread)."""
         results = {}
         try:
-            for role, profil in self._profils.items():
-                if profil is None:
-                    continue
+            todo = [(r, p) for r, p in self._profils.items()
+                    if p is not None]
+            total = len(todo)
+            self.progress_step.emit(0, total)
+            for done, (role, profil) in enumerate(todo):
                 label = profil.name or role
                 self.progress.emit("Simulation '%s'..." % label)
                 logger.info("Lancement simulation %s (%s)", role, label)
@@ -76,6 +80,7 @@ class SimulationWorker(QThread):
                 n_pts = sim_results.n_converged
                 self.progress.emit(
                     "'%s' : %d points converges" % (label, n_pts))
+                self.progress_step.emit(done + 1, total)
 
             self.finished_ok.emit(results)
 

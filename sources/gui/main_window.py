@@ -8,7 +8,8 @@ import subprocess
 import sys
 
 from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QTabWidget, QMenuBar, QStatusBar
+    QApplication, QMainWindow, QTabWidget, QMenuBar, QStatusBar,
+    QProgressBar
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
@@ -90,6 +91,15 @@ class MainWindow(QMainWindow):
 
         self._build_menus()
         self._build_tabs()
+
+        # Barre de progression (a droite de la barre de statut), masquee
+        # hors simulation. Determinee par profil quand on en simule
+        # plusieurs ; sinon indeterminee (animation « busy »).
+        self._progress = QProgressBar()
+        self._progress.setMaximumWidth(180)
+        self._progress.setVisible(False)
+        self.statusBar().addPermanentWidget(self._progress)
+
         self.statusBar().showMessage(_("Pret"))
 
     # ------------------------------------------------------------------
@@ -727,10 +737,15 @@ class MainWindow(QMainWindow):
             profils, params, parent=self, no_normalize_roles=no_normalize,
             solver=self._solver)
         self._sim_worker.progress.connect(self._on_sim_progress)
+        self._sim_worker.progress_step.connect(self._on_sim_progress_step)
         self._sim_worker.finished_ok.connect(self._on_sim_finished)
         self._sim_worker.finished_error.connect(self._on_sim_error)
 
         self._tab_xfoil.set_enabled(False)
+        # Demarrer en mode « busy » (indetermine) ; le 1er progress_step
+        # ajustera la plage selon le nombre de profils a simuler.
+        self._progress.setRange(0, 0)
+        self._progress.setVisible(True)
         self.statusBar().showMessage(_("Simulations en cours..."))
         self._sim_worker.start()
 
@@ -738,8 +753,29 @@ class MainWindow(QMainWindow):
         """Met a jour la barre de statut pendant la simulation."""
         self.statusBar().showMessage(msg)
 
+    def _on_sim_progress_step(self, done, total):
+        u"""Met a jour la barre de progression (profils termines / total).
+
+        Un seul profil : barre indeterminee (animation « busy ») car un
+        balayage XFoil/FlexFoil s'execute en un seul sous-processus
+        bloquant, sans avancement intermediaire exploitable. Plusieurs
+        profils : barre determinee, un cran par profil termine.
+        """
+        if total > 1:
+            self._progress.setRange(0, total)
+            self._progress.setValue(done)
+        else:
+            self._progress.setRange(0, 0)  # busy
+
+    def _hide_progress(self):
+        u"""Masque et reinitialise la barre de progression."""
+        self._progress.setVisible(False)
+        self._progress.setRange(0, 1)
+        self._progress.reset()
+
     def _on_sim_finished(self, results):
         u"""Traite les resultats des simulations."""
+        self._hide_progress()
         self._tab_xfoil.set_enabled(True)
         if self._sim_worker is not None:
             self._work_dirs.update(self._sim_worker.work_dirs)
@@ -766,6 +802,7 @@ class MainWindow(QMainWindow):
 
     def _on_sim_error(self, error_msg):
         """Affiche l'erreur de simulation."""
+        self._hide_progress()
         self._tab_xfoil.set_enabled(True)
         # Conserver les repertoires deja crees : le log d'un calcul en
         # echec est justement ce qu'on veut diagnostiquer.
