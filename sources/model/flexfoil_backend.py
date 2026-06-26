@@ -411,8 +411,27 @@ class FlexFoilPostprocessor(AbstractPostprocessor):
         up_x, up_y = FlexFoilPostprocessor._dedup(up_x, up_y)
         lo_x, lo_y = FlexFoilPostprocessor._dedup(lo_x, lo_y)
 
-        yu = np.interp(xu, up_x, up_y)
-        yl = np.interp(xl, lo_x, lo_y)
+        # Reconstruction de y avec gestion de l'enroulement au point d'arret.
+        # A incidence non nulle, l'arret quitte le BA : la couche limite d'un
+        # cote contourne le nez (ses 1eres stations, en ordre naturel, vont
+        # de l'arret jusqu'au BA en DECROISSANT en x, donc sur le nez de
+        # l'AUTRE surface). Interpoler tout le cote sur sa seule table donne
+        # un y errone pour cette portion d'enroulement -> saut vertical au BA.
+        # On bascule donc de table au point de rebroussement (x minimal de la
+        # station, = le BA dans l'ordre naturel) : avant lui, on lit le nez
+        # oppose ; apres, la surface principale.
+        def _reconstruct_y(xs, main_up):
+            k = int(np.argmin(xs))         # rebroussement = BA
+            y = np.empty_like(xs)
+            main_x, main_y = (up_x, up_y) if main_up else (lo_x, lo_y)
+            opp_x, opp_y = (lo_x, lo_y) if main_up else (up_x, up_y)
+            if k > 0:                       # portion d'enroulement (nez oppose)
+                y[:k] = np.interp(xs[:k], opp_x, opp_y)
+            y[k:] = np.interp(xs[k:], main_x, main_y)
+            return y
+
+        yu = _reconstruct_y(xu, main_up=True)
+        yl = _reconstruct_y(xl, main_up=False)
 
         def _get(key_u, key_l):
             return (np.asarray(bl.get(key_u, []), dtype=float),
@@ -424,9 +443,18 @@ class FlexFoilPostprocessor(AbstractPostprocessor):
         cfu, cfl = _get('cf_upper', 'cf_lower')
         hu, hl = _get('h_upper', 'h_lower')
 
-        # Ordre : extrados x decroissant, intrados x croissant
-        oe = np.argsort(xu)[::-1]
-        oi = np.argsort(xl)
+        # Ordre des stations : on PRESERVE l'ordre naturel de FlexFoil
+        # (stations integrees par abscisse curviligne depuis le point
+        # d'arret, du BA vers le BF). NE PAS trier par x : des que le point
+        # d'arret quitte le BA (toute incidence non nulle / profil cambre),
+        # la surface portant l'arret est double-valuee en x pres du BA
+        # (la couche limite contourne le nez). Un argsort(x) entrelace alors
+        # les deux branches et produit des zigzags (Cp alternant succion /
+        # pression). L'ordre naturel reste un contour continu.
+        # Extrados : sens inverse (BF -> BA, x globalement decroissant) ;
+        # intrados : sens naturel (BA -> BF, x globalement croissant).
+        oe = np.arange(xu.size)[::-1]
+        oi = np.arange(xl.size)
 
         def _pack(order, X, Y, Ue, Ds, Th, Cf, H):
             return (X[order], Y[order], Ue[order], Ds[order],

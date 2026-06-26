@@ -165,6 +165,34 @@ def _plot_cp_x(ax, sim_results, color, label_base, re_selected=None):
                 label=lbl)
 
 
+def _surface_slice(bl):
+    u"""Indices de la surface du profil dans des donnees BL (sillage exclu).
+
+    Le DUMP XFoil prolonge la couche limite du profil par le sillage : une
+    serie finale de points situes en aval du bord de fuite (x > 1), ou le
+    frottement parietal est identiquement nul (Cf = 0). Ces points ne font
+    pas partie de la couche limite *du profil* et faussent les traces :
+    queue parasite sur « Profil + CL », pic suivi d'une longue tiree sur
+    Dstar/Theta(x). On retire la serie finale contigue de tels points.
+
+    Le critere combine (Cf == 0 ET x > 1) est exact pour XFoil et inoffensif
+    pour les donnees FlexFoil (surface seule, sans sillage, x <= 1) : rien
+    n'est retire dans ce cas.
+
+    :param bl: dict de donnees couche limite (cles 'x', 'Cf', ...)
+    :returns: slice des points de surface (a appliquer a chaque tableau)
+    :rtype: slice
+    """
+    x = bl.get('x')
+    cf = bl.get('Cf')
+    if x is None or cf is None:
+        return slice(None)
+    i = len(x)
+    while i > 0 and cf[i - 1] == 0.0 and x[i - 1] > 1.0:
+        i -= 1
+    return slice(0, i)
+
+
 def _bl_at(alpha_dict, alpha_selected):
     u"""Selectionne les donnees BL d'un Re pour une incidence donnee.
 
@@ -202,7 +230,9 @@ def _plot_bl_var(ax, sim_results, color, label_base, x_key, y_key,
         ls = '-' if single else RE_LINESTYLES[i % len(RE_LINESTYLES)]
         lbl = label_base if single else (
             '%s %s' % (label_base, _format_re(re_val)))
-        ax.plot(bl[x_key], bl[y_key],
+        # Restreindre a la surface du profil (sillage XFoil exclu)
+        sl = _surface_slice(bl)
+        ax.plot(bl[x_key][sl], bl[y_key][sl],
                 color=color, linestyle=ls, label=lbl)
 
 
@@ -292,9 +322,13 @@ def _plot_profil_bl(ax, sim_results, color, label_base,
     if bl is None:
         return
 
-    x = bl['x']
-    y = bl['y']
-    dstar = bl['Dstar']
+    # Restreindre a la surface du profil : le sillage XFoil (x > 1, Cf = 0)
+    # n'a pas de normale sortante pertinente et produit une queue parasite
+    # ainsi qu'une frontiere delta* deformee en aval du bord de fuite.
+    sl = _surface_slice(bl)
+    x = bl['x'][sl]
+    y = bl['y'][sl]
+    dstar = bl['Dstar'][sl]
 
     # Rotation par l'angle d'incidence
     alpha_deg = alpha_selected if alpha_selected is not None else 0.0

@@ -1,5 +1,26 @@
 # Changelog
 
+## [Non publié] - 2026-06-26 18:30
+
+### Fixed (Corrigé)
+- **Zigzags du Cp FlexFoil au bord d'attaque** (`flexfoil_backend.py`,
+  `FlexFoilPostprocessor._surfaces`) : à incidence non nulle, le point
+  d'arrêt quitte le BA et la surface qui le porte devient double-valuée
+  en x (la couche limite contourne le nez). Le tri `np.argsort(x)`
+  entrelaçait alors les deux branches (Cp alternant succion/pression).
+  On préserve désormais l'ordre naturel des stations FlexFoil (abscisse
+  curviligne depuis l'arrêt)
+- **Encoche δ\* au bord d'attaque du profil FlexFoil** (`_surfaces`) : la
+  portion d'enroulement autour du nez recevait un `y` interpolé sur la
+  mauvaise surface (saut vertical au BA). `_reconstruct_y` bascule de
+  table au point de rebroussement (lecture du nez opposé avant le BA,
+  surface principale après)
+- **Sillage XFoil inclus dans les épaisseurs de couche limite**
+  (`result_cell.py`) : `_surface_slice` retire la traînée de sillage du
+  DUMP XFoil (points x > 1 à Cf nul) des tracés δ\*/θ/H et de
+  « Profil + CL », qui montraient une queue parasite et une frontière
+  δ\* déformée en aval du bord de fuite. Sans effet sur FlexFoil
+
 ## [Non publié] - 2026-06-22 22:30
 
 ### Added (Ajouté)
