@@ -1,5 +1,16 @@
 # Changelog
 
+## [Non publié] - 2026-06-26 19:15
+
+### Fixed (Corrigé)
+- **Menu contextuel du canvas de design inutilisable** (`profil_canvas.py`,
+  `_show_context_menu`) : `UnboundLocalError` sur `_`. Des dépaquetages de
+  tuple (`t, _, d = spline.project(...)`, `k, _ = spline._resolve_t(...)`)
+  utilisaient `_` comme variable jetable, masquant l'alias de traduction
+  i18n `_` du module ; tout `_("…")` plus haut dans la fonction levait alors
+  l'erreur et le clic droit était sans effet. Variables jetables renommées
+  (`_pt_ext`, `_pt_int`, `_t_local`)
+
 ## [Non publié] - 2026-06-26 18:30
 
 ### Fixed (Corrigé)

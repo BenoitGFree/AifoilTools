@@ -1294,8 +1294,8 @@ class ProfilCanvas(FigureCanvasQTAgg):
             click = np.array([event.xdata, event.ydata])
             s_ext = p.spline_extrados
             s_int = p.spline_intrados
-            t_ext, _, d_ext = s_ext.project(click)
-            t_int, _, d_int = s_int.project(click)
+            t_ext, _pt_ext, d_ext = s_ext.project(click)
+            t_int, _pt_int, d_int = s_int.project(click)
             if d_ext <= d_int:
                 self._param_spline = s_ext
                 self._param_side = 'Extrados'
@@ -1305,7 +1305,7 @@ class ProfilCanvas(FigureCanvasQTAgg):
                 self._param_side = 'Intrados'
                 t_proj = t_int
             spl = self._param_spline
-            k, _ = spl._resolve_t(t_proj)
+            k, _t_local = spl._resolve_t(t_proj)
             self._param_seg_idx = k
 
             # Sous-menu global (spline entiere)
