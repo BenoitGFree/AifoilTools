@@ -1,5 +1,17 @@
 # Changelog
 
+## [Non publié] - 2026-06-26 20:30
+
+### Documentation
+- **Manuel : barre de progression des simulations** (FR + EN, ch. 03 et
+  05) : description de la barre de progression (déterminée par profil /
+  indéterminée « busy ») affichée pendant le calcul
+- **Manuel : prérequis Python clarifiés** (FR + EN, ch. 02) : le solveur
+  optionnel FlexFoil nécessite spécifiquement Python 3.11 (wheels
+  `cp311`), distinct de la recommandation 3.13 pour XFoil
+- Revue de concordance FR/EN des 8 chapitres : structure, figures,
+  encadrés et listings vérifiés identiques
+
 ## [4.0] - 2026-06-26 20:00
 
 ### Changed (Modifié)

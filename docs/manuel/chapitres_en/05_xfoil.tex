@@ -213,9 +213,13 @@ the simulation:
         \menu{Profils} tab.
 \end{itemize}
 
-During the simulation, the tab controls are disabled,
-and the status bar shows the progress. At the end, the
-\menu{Results} tab is selected automatically.
+During the simulation, the tab controls are disabled, and a
+\textbf{progress bar} appears in the status bar: determinate (one
+step per completed airfoil) when several airfoils are simulated,
+otherwise indeterminate (a ``busy'' animation), since an
+angle-of-attack sweep runs as a single computation with no
+intermediate progress. At the end, the \menu{Results} tab is
+selected automatically.
 
 \begin{important}
 If you re-run a simulation for \textbf{only one} of the airfoils,
